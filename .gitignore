@@ -1,0 +1,62 @@
+# Build & Binaries
+build/
+bin/
+out/
+*.o
+*.obj
+*.so
+*.dylib
+*.dll
+*.a
+*.lib
+*.exe
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Testing/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+
+# Qt generated files
+*_autogen/
+moc_*.cpp
+moc_*.h
+ui_*.h
+qrc_*.cpp
+*.qrc.depends
+.qmake.stash
+.qmake.cache
+*.autosave
+
+# Qt Creator & IDEs
+*.user
+*.user.*
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Nix & Direnv
+.direnv/
+result
+result-*
+
+# Local EasePass databases & temporary files
+*.epdb
+*.tmp
+
+# Original Ease Pass Windows
+EasePass_Windows_Version_readonly_as_reference/
+
+# Custom build scripts
+build.sh
+launch.sh
+test.sh
