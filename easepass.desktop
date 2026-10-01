@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Ease Pass
+Comment=Secure Password Manager
+Exec=easepass
+Icon=easepass
+Terminal=false
+Type=Application
+Categories=Utility;Security;Office;
+StartupWMClass=easepass

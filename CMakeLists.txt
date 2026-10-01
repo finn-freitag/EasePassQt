@@ -114,3 +114,9 @@ target_link_libraries(test_easepass PRIVATE
     PkgConfig::ARGON2
     PkgConfig::ZXING
 )
+
+# Installation targets
+install(TARGETS easepass RUNTIME DESTINATION bin)
+install(FILES easepass.desktop DESTINATION share/applications)
+install(FILES assets/appicon.svg DESTINATION share/icons/hicolor/scalable/apps RENAME easepass.svg)
+install(FILES assets/appicon.png DESTINATION share/icons/hicolor/256x256/apps RENAME easepass.png)

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/appicon.svg" height="150px" width="auto" alt="alternate text">
+  <img src="./assets/appicon.svg" height="150px" width="auto" alt="Ease Pass">
 </p>
 <h1 align="center">Ease Pass (Qt 6 Edition for Linux)</h1>
 
@@ -33,12 +33,78 @@ A native C++ / Qt 6 rewrite of [**Ease Pass**](https://github.com/FrozenAssassin
   - Fallback to Google Favicon service and color-hashed initials avatars.
 - **Desktop Integration**:
   - Fully native Qt 6 application adhering to KDE Plasma 6 themes, light/dark palettes, and system shortcuts (Ctrl+N, Ctrl+F, Ctrl+E, Ctrl+L, F1).
+  - Includes `.desktop` entry and scalable icons for application menu integration.
 
 ---
 
-## 🛠️ Building & Running
+## ❄️ NixOS & Flakes Installation
 
-### Using NixOS / `nix-shell` (Recommended)
+Ease Pass provides first-class support for Nix Flakes and NixOS.
+
+### Quick Run (No Installation Required)
+
+You can run Ease Pass directly using `nix run`:
+
+```bash
+nix run github:finn-freitag/EasePassQt
+```
+
+### Install via NixOS Configuration (`flake.nix`)
+
+1. Add EasePassQt to your flake `inputs`:
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    easepass.url = "github:finn-freitag/EasePassQt";
+  };
+
+  outputs = { self, nixpkgs, easepass, ... }: {
+    nixosConfigurations.yourhostname = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [
+        # Option A: Install via environment.systemPackages
+        {
+          environment.systemPackages = [
+            easepass.packages.x86_64-linux.default
+          ];
+        }
+
+        # Option B: Use the included NixOS module
+        easepass.nixosModules.default
+        {
+          programs.easepass.enable = true;
+        }
+      ];
+    };
+  };
+}
+```
+
+### Home Manager
+
+Add it to your `home.packages`:
+
+```nix
+{
+  home.packages = [
+    inputs.easepass.packages.${pkgs.system}.default
+  ];
+}
+```
+
+### Temporary Profile Install
+
+```bash
+nix profile install github:finn-freitag/EasePassQt
+```
+
+---
+
+## 🛠️ Building from Source
+
+### Using `nix-shell` (Recommended for Local Development)
 
 A `shell.nix` is included with all required dependencies (`qt6`, `openssl`, `libargon2`, `zxing-cpp`, `cmake`, `gcc`, `pkg-config`).
 
@@ -66,10 +132,10 @@ Ensure you have the following installed:
 - `zxing-cpp` (>= 2.0)
 - CMake (>= 3.16) and a C++20 compiler
 
-Then build:
+Then build and install:
 ```bash
 mkdir -p build && cd build
 cmake ..
 make -j$(nproc)
-./easepass
+sudo make install
 ```
