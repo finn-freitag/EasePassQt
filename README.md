@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="EasePass/Assets/AppIcon/Icon.png" height="150px" width="auto" alt="alternate text">
+  <img src="./assets/appicon.svg" height="150px" width="auto" alt="alternate text">
 </p>
 <h1 align="center">Ease Pass (Qt 6 Edition for Linux)</h1>
 
