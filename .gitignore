@@ -50,7 +50,7 @@ result
 result-*
 
 # Local EasePass databases & temporary files
-*.epdb
+#*.epdb
 *.tmp
 
 # Original Ease Pass Windows
@@ -60,3 +60,6 @@ EasePass_Windows_Version_readonly_as_reference/
 build.sh
 launch.sh
 test.sh
+
+# temporary files
+steps.txt
