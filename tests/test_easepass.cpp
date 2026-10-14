@@ -54,7 +54,8 @@ void TestEasePass::testArgon2AndAes() {
 }
 
 void TestEasePass::testDecryptCSharpDatabase() {
-    QString testDbPath = "/home/finn/.gemini/antigravity/brain/d1125c4e-31fc-4747-bf21-ccd82f682f5b/scratch/verify_crypto/test_db.epdb";
+    // Fixture location is injected by tests/CMakeLists.txt (see tests/fixtures/README.md).
+    QString testDbPath = QStringLiteral(EASEPASS_TEST_FIXTURES_DIR "/test_db.epdb");
     QVERIFY(QFile::exists(testDbPath));
 
     DatabaseFile db;
@@ -143,7 +144,10 @@ void TestEasePass::testTotpGeneration() {
     // Test remaining seconds
     int rem = TotpHelper::getRemainingSeconds(30, 25);
     QCOMPARE(rem, 5); // 30 - (25 % 30) = 5
-    QCOMPARE(TotpHelper::getRemainingSeconds(30, 0), 30);
+    // Exact period boundary -> full period. Not checked at t=0: timestamps <= 0 mean
+    // "use the current time" (see steps.txt known problem P11), which made this flaky.
+    QCOMPARE(TotpHelper::getRemainingSeconds(30, 30), 30);
+    QCOMPARE(TotpHelper::getRemainingSeconds(30, 60), 30);
 }
 
 void TestEasePass::testTotpUriParsing() {

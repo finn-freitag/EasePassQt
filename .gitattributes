@@ -1,2 +1,6 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Encrypted databases / test fixtures: never touch line endings
+*.epdb binary
+*.png binary

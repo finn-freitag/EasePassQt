@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "easepass",
+  "version-string": "1.4.0",
+  "description": "Ease Pass password manager (Qt). Non-Qt dependencies for Windows/macOS builds; Qt itself comes from the Qt installer / install-qt-action.",
+  "dependencies": [
+    "openssl",
+    "argon2",
+    "zxing-cpp"
+  ]
+}

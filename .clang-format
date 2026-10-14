@@ -1,0 +1,20 @@
+# Matches the existing code style (4 spaces, attached braces, `Type *ptr`).
+# Format only files you touch; do not mass-reformat unrelated code.
+BasedOnStyle: LLVM
+Language: Cpp
+Standard: c++20
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 120
+BreakBeforeBraces: Attach
+AccessModifierOffset: -4
+PointerAlignment: Right
+ReferenceAlignment: Pointer
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+NamespaceIndentation: None
+FixNamespaceComments: true
+SortIncludes: Never
+IncludeBlocks: Preserve

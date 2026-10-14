@@ -20,6 +20,7 @@
 
           nativeBuildInputs = with pkgs; [
             cmake
+            ninja
             pkg-config
             qt6.wrapQtAppsHook
           ];
@@ -31,6 +32,14 @@
             libargon2
             zxing-cpp
           ];
+
+          # Only the fast tests; "slow" tests (full-cost Argon2) run in CI/dev builds.
+          doCheck = true;
+          checkPhase = ''
+            runHook preCheck
+            ctest -L unit --output-on-failure
+            runHook postCheck
+          '';
 
           meta = with pkgs.lib; {
             description = "Secure password manager rewritten in Qt 6 for Linux";
@@ -53,8 +62,10 @@
         default = pkgs.mkShell {
           nativeBuildInputs = with pkgs; [
             cmake
+            ninja
             pkg-config
             qt6.wrapQtAppsHook
+            clang-tools # clang-format
           ];
 
           buildInputs = with pkgs; [

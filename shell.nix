@@ -3,8 +3,10 @@
 pkgs.mkShell {
   nativeBuildInputs = with pkgs; [
     cmake
+    ninja
     pkg-config
     qt6.wrapQtAppsHook
+    clang-tools # clang-format
   ];
 
   buildInputs = with pkgs; [
