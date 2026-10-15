@@ -30,6 +30,9 @@ bool DatabaseManager::isDatabaseLoaded() const {
 }
 
 void DatabaseManager::setDatabase(std::unique_ptr<DatabaseFile> db) {
+    if (m_currentDb) {
+        m_currentDb->wipeSecrets();
+    }
     m_currentDb = std::move(db);
     if (m_currentDb) {
         addKnownDatabasePath(m_currentDb->filePath);
@@ -42,6 +45,7 @@ void DatabaseManager::setDatabase(std::unique_ptr<DatabaseFile> db) {
 
 void DatabaseManager::closeDatabase() {
     if (m_currentDb) {
+        m_currentDb->wipeSecrets();
         m_currentDb.reset();
         emit databaseClosed();
     }

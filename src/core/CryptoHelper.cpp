@@ -5,15 +5,16 @@
 #include <algorithm>
 #include <stdexcept>
 #include <argon2.h>
+#include <openssl/crypto.h>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 
 namespace EasePass::Core {
 
-QByteArray CryptoHelper::toUtf16LE(const QString& str) {
+QByteArray CryptoHelper::toUtf16LE(const QString &str) {
     QByteArray bytes;
     bytes.reserve(str.size() * 2);
-    const char16_t* u16 = reinterpret_cast<const char16_t*>(str.utf16());
+    const char16_t *u16 = reinterpret_cast<const char16_t *>(str.utf16());
     for (qsizetype i = 0; i < str.size(); ++i) {
         uint16_t u = static_cast<uint16_t>(u16[i]);
         bytes.append(static_cast<char>(u & 0xFF));
@@ -22,22 +23,25 @@ QByteArray CryptoHelper::toUtf16LE(const QString& str) {
     return bytes;
 }
 
-QByteArray CryptoHelper::customToBase64(const QByteArray& input) {
+QByteArray CryptoHelper::customToBase64(const QByteArray &input) {
+    SecureBuffer secureIn(input);
+    SecureBuffer secureOut = customToBase64(secureIn);
+    return secureOut.toQByteArray();
+}
+
+SecureBuffer CryptoHelper::customToBase64(const SecureBuffer &input) {
     static const char base64ByteTo[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     int nChars = static_cast<int>(std::ceil(static_cast<double>(input.size()) / 3.0)) * 4;
-    QByteArray outBase64Chars(nChars, '\0');
+    SecureBuffer outBase64Chars(nChars, '\0');
 
     int iByte = 0, iBit = 7, iBase64Bits = 0, iBase64Chars = 0;
     uint8_t base64Byte = 0;
 
     int length = static_cast<int>(input.size());
-    const uint8_t* inPtr = reinterpret_cast<const uint8_t*>(input.constData());
+    const uint8_t *inPtr = reinterpret_cast<const uint8_t *>(input.data());
 
     while (iByte < length) {
-        base64Byte = static_cast<uint8_t>(
-            (base64Byte << 1) |
-            ((inPtr[iByte] & (1 << iBit)) ? 1 : 0)
-        );
+        base64Byte = static_cast<uint8_t>((base64Byte << 1) | ((inPtr[iByte] & (1 << iBit)) ? 1 : 0));
 
         iBase64Bits++;
         iBit--;
@@ -60,25 +64,22 @@ QByteArray CryptoHelper::customToBase64(const QByteArray& input) {
     return outBase64Chars;
 }
 
-QByteArray CryptoHelper::argon2idHash(const QByteArray& passwordBytes,
-                                     const QByteArray& salt,
-                                     const QByteArray& associatedData,
-                                     uint32_t t_cost,
-                                     uint32_t m_cost,
-                                     uint32_t lanes,
-                                     size_t hashLen) {
-    QByteArray out(static_cast<int>(hashLen), 0);
+SecureBuffer CryptoHelper::argon2idHash(const SecureBuffer &passwordBytes, const QByteArray &salt,
+                                        const QByteArray &associatedData, uint32_t t_cost, uint32_t m_cost,
+                                        uint32_t lanes, size_t hashLen) {
+    SecureBuffer out(hashLen, 0);
     argon2_context context;
     std::memset(&context, 0, sizeof(context));
-    context.out = reinterpret_cast<uint8_t*>(out.data());
+    context.out = reinterpret_cast<uint8_t *>(out.data());
     context.outlen = static_cast<uint32_t>(hashLen);
-    context.pwd = reinterpret_cast<uint8_t*>(const_cast<char*>(passwordBytes.constData()));
+    context.pwd = reinterpret_cast<uint8_t *>(const_cast<char *>(passwordBytes.data()));
     context.pwdlen = static_cast<uint32_t>(passwordBytes.size());
-    context.salt = reinterpret_cast<uint8_t*>(const_cast<char*>(salt.constData()));
+    context.salt = reinterpret_cast<uint8_t *>(const_cast<char *>(salt.constData()));
     context.saltlen = static_cast<uint32_t>(salt.size());
     context.secret = nullptr;
     context.secretlen = 0;
-    context.ad = associatedData.isEmpty() ? nullptr : reinterpret_cast<uint8_t*>(const_cast<char*>(associatedData.constData()));
+    context.ad = associatedData.isEmpty() ? nullptr
+                                          : reinterpret_cast<uint8_t *>(const_cast<char *>(associatedData.constData()));
     context.adlen = static_cast<uint32_t>(associatedData.size());
     context.t_cost = t_cost;
     context.m_cost = m_cost;
@@ -88,36 +89,44 @@ QByteArray CryptoHelper::argon2idHash(const QByteArray& passwordBytes,
     context.flags = ARGON2_DEFAULT_FLAGS;
 
     int res = argon2id_ctx(&context);
+    OPENSSL_cleanse(&context, sizeof(context));
     if (res != ARGON2_OK) {
-        return QByteArray();
+        return SecureBuffer();
     }
     return out;
 }
 
-QByteArray CryptoHelper::deriveOuterKey(const QString& password) {
+QByteArray CryptoHelper::argon2idHash(const QByteArray &passwordBytes, const QByteArray &salt,
+                                      const QByteArray &associatedData, uint32_t t_cost, uint32_t m_cost,
+                                      uint32_t lanes, size_t hashLen) {
+    SecureBuffer securePw(passwordBytes);
+    SecureBuffer res = argon2idHash(securePw, salt, associatedData, t_cost, m_cost, lanes, hashLen);
+    return res.toQByteArray();
+}
+
+SecureBuffer CryptoHelper::deriveOuterKey(const SecretString &password) {
     QByteArray salt = "EasePassArgonHash";
-    QByteArray pwBytes = toUtf16LE(password);
+    SecureBuffer pwBytes = password.toUtf16LE();
     return argon2idHash(pwBytes, salt);
 }
 
-QByteArray CryptoHelper::deriveInnerKey(const QString& password,
-                                       const QString& secondFactor,
-                                       bool useOldAssociatedData) {
+SecureBuffer CryptoHelper::deriveInnerKey(const SecretString &password, const SecretString &secondFactor,
+                                          bool useOldAssociatedData) {
     QByteArray salt = "EasePassArgonHash";
     QByteArray ad = useOldAssociatedData ? "Database_Version_1,4" : "Database_Version_1.4";
 
     if (!secondFactor.isEmpty()) {
-        QByteArray sfBytes = toUtf16LE(secondFactor);
+        SecureBuffer sfBytes = secondFactor.toUtf16LE();
         return argon2idHash(sfBytes, salt, ad);
     } else {
-        QByteArray pwBytes = toUtf16LE(password);
-        QByteArray b64 = customToBase64(pwBytes);
+        SecureBuffer pwBytes = password.toUtf16LE();
+        SecureBuffer b64 = customToBase64(pwBytes);
         std::reverse(b64.begin(), b64.end());
         return argon2idHash(b64, salt, ad);
     }
 }
 
-QByteArray CryptoHelper::encryptAes(const QByteArray& plaintext, const QByteArray& key) {
+QByteArray CryptoHelper::encryptAes(const QByteArray &plaintext, const SecureBuffer &key) {
     if (key.size() != 32) {
         return QByteArray();
     }
@@ -127,11 +136,12 @@ QByteArray CryptoHelper::encryptAes(const QByteArray& plaintext, const QByteArra
         return QByteArray();
     }
 
-    EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
-    if (!ctx) return QByteArray();
+    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+    if (!ctx)
+        return QByteArray();
 
-    if (1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), nullptr,
-                                reinterpret_cast<const uint8_t*>(key.constData()), iv)) {
+    if (1 !=
+        EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), nullptr, reinterpret_cast<const uint8_t *>(key.constData()), iv)) {
         EVP_CIPHER_CTX_free(ctx);
         return QByteArray();
     }
@@ -139,14 +149,14 @@ QByteArray CryptoHelper::encryptAes(const QByteArray& plaintext, const QByteArra
     QByteArray cipher;
     cipher.resize(plaintext.size() + 32);
     int outLen1 = 0;
-    if (1 != EVP_EncryptUpdate(ctx, reinterpret_cast<uint8_t*>(cipher.data()), &outLen1,
-                               reinterpret_cast<const uint8_t*>(plaintext.constData()), plaintext.size())) {
+    if (1 != EVP_EncryptUpdate(ctx, reinterpret_cast<uint8_t *>(cipher.data()), &outLen1,
+                               reinterpret_cast<const uint8_t *>(plaintext.constData()), plaintext.size())) {
         EVP_CIPHER_CTX_free(ctx);
         return QByteArray();
     }
 
     int outLen2 = 0;
-    if (1 != EVP_EncryptFinal_ex(ctx, reinterpret_cast<uint8_t*>(cipher.data()) + outLen1, &outLen2)) {
+    if (1 != EVP_EncryptFinal_ex(ctx, reinterpret_cast<uint8_t *>(cipher.data()) + outLen1, &outLen2)) {
         EVP_CIPHER_CTX_free(ctx);
         return QByteArray();
     }
@@ -156,40 +166,44 @@ QByteArray CryptoHelper::encryptAes(const QByteArray& plaintext, const QByteArra
 
     QByteArray result;
     result.reserve(16 + cipher.size());
-    result.append(reinterpret_cast<const char*>(iv), 16);
+    result.append(reinterpret_cast<const char *>(iv), 16);
     result.append(cipher);
     return result;
 }
 
-bool CryptoHelper::decryptAes(const QByteArray& cipherWithIv, const QByteArray& key, QByteArray& outPlaintext) {
+QByteArray CryptoHelper::encryptAes(const QByteArray &plaintext, const QByteArray &key) {
+    return encryptAes(plaintext, SecureBuffer(key));
+}
+
+bool CryptoHelper::decryptAes(const QByteArray &cipherWithIv, const SecureBuffer &key, QByteArray &outPlaintext) {
     if (cipherWithIv.size() < 16 || key.size() != 32) {
         return false;
     }
 
-    const uint8_t* iv = reinterpret_cast<const uint8_t*>(cipherWithIv.constData());
-    const uint8_t* cipher = iv + 16;
+    const uint8_t *iv = reinterpret_cast<const uint8_t *>(cipherWithIv.constData());
+    const uint8_t *cipher = iv + 16;
     int cipherLen = cipherWithIv.size() - 16;
 
-    EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
-    if (!ctx) return false;
+    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+    if (!ctx)
+        return false;
 
-    if (1 != EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), nullptr,
-                                reinterpret_cast<const uint8_t*>(key.constData()), iv)) {
+    if (1 !=
+        EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), nullptr, reinterpret_cast<const uint8_t *>(key.constData()), iv)) {
         EVP_CIPHER_CTX_free(ctx);
         return false;
     }
 
     outPlaintext.resize(cipherLen + 16);
     int outLen1 = 0;
-    if (1 != EVP_DecryptUpdate(ctx, reinterpret_cast<uint8_t*>(outPlaintext.data()), &outLen1,
-                               cipher, cipherLen)) {
+    if (1 != EVP_DecryptUpdate(ctx, reinterpret_cast<uint8_t *>(outPlaintext.data()), &outLen1, cipher, cipherLen)) {
         EVP_CIPHER_CTX_free(ctx);
         outPlaintext.clear();
         return false;
     }
 
     int outLen2 = 0;
-    if (1 != EVP_DecryptFinal_ex(ctx, reinterpret_cast<uint8_t*>(outPlaintext.data()) + outLen1, &outLen2)) {
+    if (1 != EVP_DecryptFinal_ex(ctx, reinterpret_cast<uint8_t *>(outPlaintext.data()) + outLen1, &outLen2)) {
         EVP_CIPHER_CTX_free(ctx);
         outPlaintext.clear();
         return false;
@@ -200,7 +214,11 @@ bool CryptoHelper::decryptAes(const QByteArray& cipherWithIv, const QByteArray& 
     return true;
 }
 
-QByteArray CryptoHelper::addVersionTag(const QByteArray& data, int version) {
+bool CryptoHelper::decryptAes(const QByteArray &cipherWithIv, const QByteArray &key, QByteArray &outPlaintext) {
+    return decryptAes(cipherWithIv, SecureBuffer(key), outPlaintext);
+}
+
+QByteArray CryptoHelper::addVersionTag(const QByteArray &data, int version) {
     static const char ident[] = "epdbversion";
     QByteArray res;
     res.reserve(11 + 4 + data.size());
@@ -214,16 +232,16 @@ QByteArray CryptoHelper::addVersionTag(const QByteArray& data, int version) {
     return res;
 }
 
-bool CryptoHelper::extractVersionTag(const QByteArray& fileData, int& outVersion, QByteArray& outData) {
+bool CryptoHelper::extractVersionTag(const QByteArray &fileData, int &outVersion, QByteArray &outData) {
     static const char ident[] = "epdbversion";
-    if (fileData.size() < 15) return false;
-    if (std::memcmp(fileData.constData(), ident, 11) != 0) return false;
+    if (fileData.size() < 15)
+        return false;
+    if (std::memcmp(fileData.constData(), ident, 11) != 0)
+        return false;
 
-    const uint8_t* vPtr = reinterpret_cast<const uint8_t*>(fileData.constData() + 11);
-    uint32_t v = static_cast<uint32_t>(vPtr[0]) |
-                 (static_cast<uint32_t>(vPtr[1]) << 8) |
-                 (static_cast<uint32_t>(vPtr[2]) << 16) |
-                 (static_cast<uint32_t>(vPtr[3]) << 24);
+    const uint8_t *vPtr = reinterpret_cast<const uint8_t *>(fileData.constData() + 11);
+    uint32_t v = static_cast<uint32_t>(vPtr[0]) | (static_cast<uint32_t>(vPtr[1]) << 8) |
+                 (static_cast<uint32_t>(vPtr[2]) << 16) | (static_cast<uint32_t>(vPtr[3]) << 24);
     outVersion = static_cast<int>(v);
     outData = fileData.mid(15);
     return true;

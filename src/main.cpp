@@ -1,8 +1,13 @@
 #include <QApplication>
 #include <QIcon>
 #include "MainWindow.h"
+#include "ICoreDumpControl.h"
 
 int main(int argc, char *argv[]) {
+    // Disable core dumps early to prevent sensitive memory exposure in crash dumps (T3)
+    EasePass::Core::PlatformCoreDumpControl coreDumpControl;
+    coreDumpControl.disableCoreDumps();
+
     QApplication app(argc, argv);
 
     app.setApplicationName("EasePass");

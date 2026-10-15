@@ -33,6 +33,7 @@ set(TEST_CORE_SOURCES
     core/DatabaseManagerTest.cpp
     core/WebsiteIconManagerTest.cpp
     core/AppSettingsTest.cpp
+    core/SecureMemoryTest.cpp
 )
 
 set(TEST_CORE_HEADERS
@@ -45,6 +46,7 @@ set(TEST_CORE_HEADERS
     core/DatabaseManagerTest.h
     core/WebsiteIconManagerTest.h
     core/AppSettingsTest.h
+    core/SecureMemoryTest.h
 )
 
 add_executable(test_core ${TEST_CORE_SOURCES} ${TEST_CORE_HEADERS})
@@ -146,6 +148,22 @@ set(TEST_CORE_UNIT_FUNCTIONS
     testLegacyKeysMigration
     testResetToDefaults
     testDatabaseManagerUsesAppSettings
+    testSecureBufferBasicAllocAndSize
+    testSecureBufferZeroOnDestructionWithHook
+    testSecureBufferZeroWithCustomAllocator
+    testSecureBufferCopySemantics
+    testSecureBufferMoveSemantics
+    testSecureBufferResizeAndReserve
+    testSecureBufferConstantTimeComparison
+    testSecureBufferAppend
+    testSecretStringBasicAndZeroOnDestruction
+    testSecretStringCopyAndMove
+    testSecretStringComparisonAndConversion
+    testSecretStringToUtf16LE
+    testCryptoHelperWithSecureBufferAndSecretString
+    testDatabaseFileWipeSecrets
+    testPlatformCoreDumpControl
+    testFakeCoreDumpControlInjection
 )
 
 easepass_add_qtest(test_core

@@ -76,6 +76,9 @@ set(CORE_SOURCES
     src/core/INetworkClient.cpp
     src/core/ISettingsStore.cpp
     src/core/AppSettings.cpp
+    src/core/SecureBuffer.cpp
+    src/core/SecretString.cpp
+    src/core/ICoreDumpControl.cpp
 )
 
 set(CORE_HEADERS
@@ -91,6 +94,9 @@ set(CORE_HEADERS
     src/core/INetworkClient.h
     src/core/ISettingsStore.h
     src/core/AppSettings.h
+    src/core/SecureBuffer.h
+    src/core/SecretString.h
+    src/core/ICoreDumpControl.h
 )
 
 add_library(easepass_core STATIC ${CORE_SOURCES} ${CORE_HEADERS})

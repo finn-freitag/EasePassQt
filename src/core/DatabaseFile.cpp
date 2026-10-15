@@ -7,13 +7,21 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QSaveFile>
+#include <openssl/crypto.h>
 
 namespace EasePass::Core {
 
-LoadResult DatabaseFile::loadFromFile(const QString& path,
-                                      const QString& masterPassword,
-                                      DatabaseFile& outDb,
-                                      const QString& secondFactor) {
+DatabaseFile::~DatabaseFile() {
+    wipeSecrets();
+}
+
+void DatabaseFile::wipeSecrets() {
+    masterPassword.clear();
+    secondFactor.clear();
+}
+
+LoadResult DatabaseFile::loadFromFile(const QString &path, const SecretString &masterPassword, DatabaseFile &outDb,
+                                      const SecretString &secondFactor) {
     QFile file(path);
     if (!file.exists() || !file.open(QIODevice::ReadOnly)) {
         return LoadResult::DatabaseNotFound;
@@ -32,7 +40,7 @@ LoadResult DatabaseFile::loadFromFile(const QString& path,
         return LoadResult::WrongFormat;
     }
 
-    QByteArray outerKey = CryptoHelper::deriveOuterKey(masterPassword);
+    SecureBuffer outerKey = CryptoHelper::deriveOuterKey(masterPassword);
     QByteArray outerPlain;
     if (!CryptoHelper::decryptAes(outerCipher, outerKey, outerPlain)) {
         return LoadResult::WrongPassword;
@@ -70,7 +78,7 @@ LoadResult DatabaseFile::loadFromFile(const QString& path,
     QString dataBase64 = outerObj.value("Data").toString();
     QByteArray innerCipher = QByteArray::fromBase64(dataBase64.toUtf8());
 
-    QByteArray innerKey = CryptoHelper::deriveInnerKey(masterPassword, secondFactor, false);
+    SecureBuffer innerKey = CryptoHelper::deriveInnerKey(masterPassword, secondFactor, false);
     QByteArray innerPlain;
     bool decrypted = CryptoHelper::decryptAes(innerCipher, innerKey, innerPlain);
 
@@ -95,16 +103,19 @@ LoadResult DatabaseFile::loadFromFile(const QString& path,
 
     outDb.items.clear();
     QJsonArray itemsArray = innerDoc.array();
-    for (const auto& val : itemsArray) {
+    for (const auto &val : itemsArray) {
         if (val.isObject()) {
             outDb.items.append(PasswordItem::fromJson(val.toObject()));
         }
     }
 
+    // Cleanse sensitive decrypted buffer from memory
+    OPENSSL_cleanse(innerPlain.data(), static_cast<size_t>(innerPlain.size()));
+
     return LoadResult::Success;
 }
 
-bool DatabaseFile::saveToFile(const QString& path) {
+bool DatabaseFile::saveToFile(const QString &path) {
     if (isReadOnly) {
         return false;
     }
@@ -116,15 +127,16 @@ bool DatabaseFile::saveToFile(const QString& path) {
 
     // 1. Serialize items to JSON
     QJsonArray itemsArray;
-    for (const auto& item : items) {
+    for (const auto &item : items) {
         itemsArray.append(item.toJson());
     }
     QJsonDocument innerDoc(itemsArray);
     QByteArray innerPlain = innerDoc.toJson(QJsonDocument::Indented);
 
     // 2. Encrypt inner JSON
-    QByteArray innerKey = CryptoHelper::deriveInnerKey(masterPassword, secondFactor, false);
+    SecureBuffer innerKey = CryptoHelper::deriveInnerKey(masterPassword, secondFactor, false);
     QByteArray innerCipher = CryptoHelper::encryptAes(innerPlain, innerKey);
+    OPENSSL_cleanse(innerPlain.data(), static_cast<size_t>(innerPlain.size()));
     if (innerCipher.isEmpty()) {
         return false;
     }
@@ -144,7 +156,7 @@ bool DatabaseFile::saveToFile(const QString& path) {
     QByteArray outerPlain = outerDoc.toJson(QJsonDocument::Compact);
 
     // 4. Encrypt outer JSON
-    QByteArray outerKey = CryptoHelper::deriveOuterKey(masterPassword);
+    SecureBuffer outerKey = CryptoHelper::deriveOuterKey(masterPassword);
     QByteArray outerCipher = CryptoHelper::encryptAes(outerPlain, outerKey);
     if (outerCipher.isEmpty()) {
         return false;
@@ -172,11 +184,11 @@ bool DatabaseFile::saveToFile(const QString& path) {
     return true;
 }
 
-void DatabaseFile::addItem(const PasswordItem& item) {
+void DatabaseFile::addItem(const PasswordItem &item) {
     items.append(item);
 }
 
-void DatabaseFile::updateItem(int index, const PasswordItem& item) {
+void DatabaseFile::updateItem(int index, const PasswordItem &item) {
     if (index >= 0 && index < items.size()) {
         items[index] = item;
     }
@@ -188,9 +200,9 @@ void DatabaseFile::deleteItem(int index) {
     }
 }
 
-int DatabaseFile::countOccurrences(const QString& password) const {
+int DatabaseFile::countOccurrences(const QString &password) const {
     int count = 0;
-    for (const auto& item : items) {
+    for (const auto &item : items) {
         if (item.password == password) {
             count++;
         }
