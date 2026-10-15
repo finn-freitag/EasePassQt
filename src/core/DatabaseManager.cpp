@@ -1,28 +1,27 @@
 #include "DatabaseManager.h"
 
-#include <QSettings>
-#include <QStandardPaths>
 #include <QDir>
 #include <QFileInfo>
+#include <QFile>
 
 namespace EasePass::Core {
 
-DatabaseManager& DatabaseManager::instance() {
+DatabaseManager &DatabaseManager::instance() {
     static DatabaseManager mgr;
     return mgr;
 }
 
-DatabaseManager::DatabaseManager() {
+DatabaseManager::DatabaseManager() : m_settings(std::make_shared<AppSettings>()) {
     // Ensure default directory exists
     QFileInfo defInfo(getDefaultDatabasePath());
     QDir().mkpath(defInfo.absolutePath());
 }
 
-DatabaseFile* DatabaseManager::currentDatabase() {
+DatabaseFile *DatabaseManager::currentDatabase() {
     return m_currentDb.get();
 }
 
-const DatabaseFile* DatabaseManager::currentDatabase() const {
+const DatabaseFile *DatabaseManager::currentDatabase() const {
     return m_currentDb.get();
 }
 
@@ -49,8 +48,7 @@ void DatabaseManager::closeDatabase() {
 }
 
 QStringList DatabaseManager::getKnownDatabasePaths() const {
-    QSettings settings("EasePass", "EasePassQt");
-    QStringList list = settings.value("knownDatabases").toStringList();
+    QStringList list = m_settings->databasePaths();
     QString defPath = getDefaultDatabasePath();
     if (!list.contains(defPath) && QFile::exists(defPath)) {
         list.prepend(defPath);
@@ -58,26 +56,20 @@ QStringList DatabaseManager::getKnownDatabasePaths() const {
     return list;
 }
 
-void DatabaseManager::addKnownDatabasePath(const QString& path) {
-    if (path.isEmpty()) return;
-    QSettings settings("EasePass", "EasePassQt");
-    QStringList list = settings.value("knownDatabases").toStringList();
-    if (!list.contains(path)) {
-        list.append(path);
-        settings.setValue("knownDatabases", list);
-    }
+void DatabaseManager::addKnownDatabasePath(const QString &path) {
+    if (path.isEmpty())
+        return;
+    m_settings->addDatabasePath(path);
 }
 
-void DatabaseManager::removeKnownDatabasePath(const QString& path) {
-    QSettings settings("EasePass", "EasePassQt");
-    QStringList list = settings.value("knownDatabases").toStringList();
-    list.removeAll(path);
-    settings.setValue("knownDatabases", list);
+void DatabaseManager::removeKnownDatabasePath(const QString &path) {
+    if (path.isEmpty())
+        return;
+    m_settings->removeDatabasePath(path);
 }
 
 QString DatabaseManager::getLastUsedDatabasePath() const {
-    QSettings settings("EasePass", "EasePassQt");
-    QString path = settings.value("lastUsedDatabase").toString();
+    QString path = m_settings->lastDatabase();
     if (path.isEmpty() || !QFile::exists(path)) {
         QString defPath = getDefaultDatabasePath();
         if (QFile::exists(defPath)) {
@@ -87,17 +79,22 @@ QString DatabaseManager::getLastUsedDatabasePath() const {
     return path;
 }
 
-void DatabaseManager::setLastUsedDatabasePath(const QString& path) {
-    QSettings settings("EasePass", "EasePassQt");
-    settings.setValue("lastUsedDatabase", path);
+void DatabaseManager::setLastUsedDatabasePath(const QString &path) {
+    m_settings->setLastDatabase(path);
 }
 
 QString DatabaseManager::getDefaultDatabasePath() {
-    QString dataDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-    if (dataDir.isEmpty()) {
-        dataDir = QDir::homePath() + "/.local/share/EasePass";
+    return AppSettings::defaultDatabasePath();
+}
+
+AppSettings *DatabaseManager::settings() const {
+    return m_settings.get();
+}
+
+void DatabaseManager::setSettings(std::shared_ptr<AppSettings> settings) {
+    if (settings) {
+        m_settings = std::move(settings);
     }
-    return dataDir + "/easepass.epdb";
 }
 
 } // namespace EasePass::Core

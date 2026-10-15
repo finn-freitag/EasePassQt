@@ -32,6 +32,7 @@ set(TEST_CORE_SOURCES
     core/QrCodeScannerTest.cpp
     core/DatabaseManagerTest.cpp
     core/WebsiteIconManagerTest.cpp
+    core/AppSettingsTest.cpp
 )
 
 set(TEST_CORE_HEADERS
@@ -43,6 +44,7 @@ set(TEST_CORE_HEADERS
     core/QrCodeScannerTest.h
     core/DatabaseManagerTest.h
     core/WebsiteIconManagerTest.h
+    core/AppSettingsTest.h
 )
 
 add_executable(test_core ${TEST_CORE_SOURCES} ${TEST_CORE_HEADERS})
@@ -135,6 +137,15 @@ set(TEST_CORE_UNIT_FUNCTIONS
     testDiskCacheHit
     testFailureFallbackToGoogleFavicons
     testEmptyDomainHandling
+    testDefaults
+    testSetGetAndSignals
+    testRangeClamping
+    testWindowGeometry
+    testDatabasePathsAddRemoveDedupe
+    testPersistenceAcrossInstances
+    testLegacyKeysMigration
+    testResetToDefaults
+    testDatabaseManagerUsesAppSettings
 )
 
 easepass_add_qtest(test_core

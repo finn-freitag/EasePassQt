@@ -74,6 +74,8 @@ set(CORE_SOURCES
     src/core/WebsiteIconManager.cpp
     src/core/QrCodeScanner.cpp
     src/core/INetworkClient.cpp
+    src/core/ISettingsStore.cpp
+    src/core/AppSettings.cpp
 )
 
 set(CORE_HEADERS
@@ -87,6 +89,8 @@ set(CORE_HEADERS
     src/core/QrCodeScanner.h
     src/core/IClock.h
     src/core/INetworkClient.h
+    src/core/ISettingsStore.h
+    src/core/AppSettings.h
 )
 
 add_library(easepass_core STATIC ${CORE_SOURCES} ${CORE_HEADERS})
