@@ -8,12 +8,13 @@
 
 namespace EasePass::Core {
 
-QByteArray TotpHelper::base32Decode(const QString& input) {
+QByteArray TotpHelper::base32Decode(const QString &input) {
     QString clean = input.trimmed().remove(' ').remove('-').toUpper();
     while (clean.endsWith('=')) {
         clean.chop(1);
     }
-    if (clean.isEmpty()) return QByteArray();
+    if (clean.isEmpty())
+        return QByteArray();
 
     int byteCount = clean.length() * 5 / 8;
     QByteArray returnArray(byteCount, 0);
@@ -24,14 +25,17 @@ QByteArray TotpHelper::base32Decode(const QString& input) {
 
     auto charToValue = [](QChar c) -> int {
         char ch = c.toLatin1();
-        if (ch >= 'A' && ch <= 'Z') return ch - 'A';
-        if (ch >= '2' && ch <= '7') return ch - '2' + 26;
+        if (ch >= 'A' && ch <= 'Z')
+            return ch - 'A';
+        if (ch >= '2' && ch <= '7')
+            return ch - '2' + 26;
         return -1;
     };
 
     for (int i = 0; i < clean.length(); ++i) {
         int val = charToValue(clean[i]);
-        if (val < 0) continue;
+        if (val < 0)
+            continue;
 
         if (bitsRemaining > 5) {
             int mask = val << (bitsRemaining - 5);
@@ -55,16 +59,16 @@ QByteArray TotpHelper::base32Decode(const QString& input) {
     return returnArray;
 }
 
-QString TotpHelper::generateToken(const QString& secret,
-                                  qint64 timestampSeconds,
-                                  int digits,
-                                  int period,
-                                  const QString& algorithm) {
-    if (period <= 0) period = 30;
-    if (digits <= 0) digits = 6;
+QString TotpHelper::generateToken(const QString &secret, qint64 timestampSeconds, int digits, int period,
+                                  const QString &algorithm) {
+    if (period <= 0)
+        period = 30;
+    if (digits <= 0)
+        digits = 6;
 
     QByteArray key = base32Decode(secret);
-    if (key.isEmpty()) return QString();
+    if (key.isEmpty())
+        return QString();
 
     uint64_t timeCounter = static_cast<uint64_t>(timestampSeconds / period);
     uint8_t timeBytes[8];
@@ -73,7 +77,7 @@ QString TotpHelper::generateToken(const QString& secret,
         timeCounter >>= 8;
     }
 
-    const EVP_MD* md = EVP_sha1();
+    const EVP_MD *md = EVP_sha1();
     if (algorithm.compare("SHA256", Qt::CaseInsensitive) == 0) {
         md = EVP_sha256();
     } else if (algorithm.compare("SHA512", Qt::CaseInsensitive) == 0) {
@@ -101,26 +105,29 @@ QString TotpHelper::generateToken(const QString& secret,
     return QString("%1").arg(code, digits, 10, QChar('0'));
 }
 
-QString TotpHelper::generateCurrentToken(const QString& secret,
-                                         int digits,
-                                         int period,
-                                         const QString& algorithm) {
-    return generateToken(secret, QDateTime::currentSecsSinceEpoch(), digits, period, algorithm);
+QString TotpHelper::generateCurrentToken(const QString &secret, int digits, int period, const QString &algorithm,
+                                         const IClock *clock) {
+    qint64 now = clock ? clock->currentSecsSinceEpoch() : SystemClock::instance().currentSecsSinceEpoch();
+    return generateToken(secret, now, digits, period, algorithm);
 }
 
-int TotpHelper::getRemainingSeconds(int period, qint64 timestampSeconds) {
-    if (period <= 0) period = 30;
-    qint64 t = (timestampSeconds > 0) ? timestampSeconds : QDateTime::currentSecsSinceEpoch();
+int TotpHelper::getRemainingSeconds(int period, std::optional<qint64> timestampSeconds, const IClock *clock) {
+    if (period <= 0)
+        period = 30;
+    qint64 t = timestampSeconds.has_value()
+                   ? *timestampSeconds
+                   : (clock ? clock->currentSecsSinceEpoch() : SystemClock::instance().currentSecsSinceEpoch());
     int rem = period - static_cast<int>(t % period);
     return (rem == 0) ? period : rem;
 }
 
-double TotpHelper::getProgress(int period, qint64 timestampSeconds) {
-    if (period <= 0) period = 30;
-    return static_cast<double>(getRemainingSeconds(period, timestampSeconds)) / static_cast<double>(period);
+double TotpHelper::getProgress(int period, std::optional<qint64> timestampSeconds, const IClock *clock) {
+    if (period <= 0)
+        period = 30;
+    return static_cast<double>(getRemainingSeconds(period, timestampSeconds, clock)) / static_cast<double>(period);
 }
 
-bool TotpHelper::parseOtpauthUri(const QString& uri, TotpParameters& outParams) {
+bool TotpHelper::parseOtpauthUri(const QString &uri, TotpParameters &outParams) {
     if (!uri.startsWith("otpauth://totp/", Qt::CaseInsensitive)) {
         return false;
     }
@@ -131,7 +138,8 @@ bool TotpHelper::parseOtpauthUri(const QString& uri, TotpParameters& outParams) 
     outParams.period = 30;
 
     QString path = url.path();
-    if (path.startsWith("/")) path = path.mid(1);
+    if (path.startsWith("/"))
+        path = path.mid(1);
 
     if (path.contains(":")) {
         QStringList parts = path.split(":");
@@ -154,18 +162,20 @@ bool TotpHelper::parseOtpauthUri(const QString& uri, TotpParameters& outParams) 
     if (query.hasQueryItem("digits")) {
         bool ok = false;
         int d = query.queryItemValue("digits").toInt(&ok);
-        if (ok && d > 0) outParams.digits = d;
+        if (ok && d > 0)
+            outParams.digits = d;
     }
     if (query.hasQueryItem("period")) {
         bool ok = false;
         int p = query.queryItemValue("period").toInt(&ok);
-        if (ok && p > 0) outParams.period = p;
+        if (ok && p > 0)
+            outParams.period = p;
     }
 
     return !outParams.secret.isEmpty();
 }
 
-QString TotpHelper::generateOtpauthUri(const TotpParameters& params) {
+QString TotpHelper::generateOtpauthUri(const TotpParameters &params) {
     QUrl url;
     url.setScheme("otpauth");
     url.setHost("totp");

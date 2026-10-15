@@ -24,7 +24,7 @@ Raise it when every target ships 6.12.
 |--------|------|
 | `easepass_core` | static library, `src/core`; links only Qt Core/Gui/Network, OpenSSL, argon2, zxing-cpp |
 | `easepass` | Widgets application (legacy UI, replaced by the QML app in T24) |
-| `test_easepass` | QtTest executable, registered with CTest |
+| `test_core` | QtTest executable for core module, registered with CTest (alias: `test_easepass`) |
 
 Dependencies are found via their CMake package config first (vcpkg on Windows,
 `ZXingConfig.cmake` on Linux) and fall back to pkg-config (`libargon2`, `zxing`).
@@ -72,7 +72,7 @@ test (`<executable>.<function>`) in `tests/CMakeLists.txt` with a label:
 - `slow`: tests that run Argon2 with production parameters (250 MB x 10 iterations)
 - `integration`: reserved
 
-A guard test (`test_easepass.all_functions_registered`) fails if a test function exists in
+A guard test (`test_core.all_functions_registered`) fails if a test function exists in
 the executable but is not registered with CTest. Tests run with `QT_QPA_PLATFORM=offscreen`.
 Fixtures live in `tests/fixtures/` (see its README).
 

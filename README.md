@@ -120,7 +120,7 @@ A `shell.nix` is included with all required dependencies (`qt6`, `openssl`, `lib
 
 3. Run the automated test suite:
    ```bash
-   nix-shell --run "./build/test_easepass"
+   nix-shell --run "ctest --test-dir build --output-on-failure"
    ```
 
 ### Building on Other Linux Distributions

@@ -5,19 +5,19 @@
 #include <QFile>
 #include <QUrl>
 #include <QNetworkRequest>
-#include <QNetworkReply>
 #include <QCryptographicHash>
-#include <QImageReader>
-#include <QBuffer>
 
 namespace EasePass::Core {
 
-WebsiteIconManager& WebsiteIconManager::instance() {
+WebsiteIconManager &WebsiteIconManager::instance() {
     static WebsiteIconManager inst;
     return inst;
 }
 
-WebsiteIconManager::WebsiteIconManager() {
+WebsiteIconManager::WebsiteIconManager(std::shared_ptr<INetworkClient> client) : m_netClient(std::move(client)) {
+    if (!m_netClient) {
+        m_netClient = std::make_shared<QtNetworkClient>(this);
+    }
     QString cacheBase = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
     if (cacheBase.isEmpty()) {
         cacheBase = QDir::homePath() + "/.cache/EasePass";
@@ -26,9 +26,24 @@ WebsiteIconManager::WebsiteIconManager() {
     QDir().mkpath(m_cacheDir);
 }
 
-QString WebsiteIconManager::extractDomain(const QString& website) {
+void WebsiteIconManager::setNetworkClient(std::shared_ptr<INetworkClient> client) {
+    m_netClient = std::move(client);
+}
+
+void WebsiteIconManager::setCacheDir(const QString &dir) {
+    m_cacheDir = dir;
+    QDir().mkpath(m_cacheDir);
+}
+
+void WebsiteIconManager::clearCache() {
+    m_memoryCache.clear();
+    m_pendingDownloads.clear();
+}
+
+QString WebsiteIconManager::extractDomain(const QString &website) {
     QString s = website.trimmed();
-    if (s.isEmpty()) return QString();
+    if (s.isEmpty())
+        return QString();
 
     if (!s.startsWith("http://", Qt::CaseInsensitive) && !s.startsWith("https://", Qt::CaseInsensitive)) {
         s = "https://" + s;
@@ -42,14 +57,15 @@ QString WebsiteIconManager::extractDomain(const QString& website) {
     return host.toLower();
 }
 
-QString WebsiteIconManager::getCachePath(const QString& domain) const {
+QString WebsiteIconManager::getCachePath(const QString &domain) const {
     QByteArray hash = QCryptographicHash::hash(domain.toUtf8(), QCryptographicHash::Md5).toHex();
     return m_cacheDir + "/" + QString::fromLatin1(hash) + ".png";
 }
 
-QPixmap WebsiteIconManager::getIcon(const QString& website, int size) {
+QPixmap WebsiteIconManager::getIcon(const QString &website, int size) {
     QString domain = extractDomain(website);
-    if (domain.isEmpty()) return QPixmap();
+    if (domain.isEmpty())
+        return QPixmap();
 
     if (m_memoryCache.contains(domain)) {
         QPixmap p = m_memoryCache.value(domain);
@@ -71,7 +87,7 @@ QPixmap WebsiteIconManager::getIcon(const QString& website, int size) {
     return QPixmap();
 }
 
-void WebsiteIconManager::requestIcon(const QString& website) {
+void WebsiteIconManager::requestIcon(const QString &website) {
     QString domain = extractDomain(website);
     if (domain.isEmpty() || m_pendingDownloads.contains(domain)) {
         return;
@@ -83,37 +99,31 @@ void WebsiteIconManager::requestIcon(const QString& website) {
     startDownload(domain, url, false);
 }
 
-void WebsiteIconManager::startDownload(const QString& domain, const QUrl& url, bool isFallback) {
+void WebsiteIconManager::startDownload(const QString &domain, const QUrl &url, bool isFallback) {
+    if (!m_netClient) {
+        m_pendingDownloads.remove(domain);
+        return;
+    }
+
     QNetworkRequest request(url);
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
     request.setHeader(QNetworkRequest::UserAgentHeader, "Mozilla/5.0 (X11; Linux x86_64) EasePass/1.4");
 
-    QNetworkReply* reply = m_netManager.get(request);
-    reply->setProperty("domain", domain);
-    reply->setProperty("isFallback", isFallback);
-
-    connect(reply, &QNetworkReply::finished, this, &WebsiteIconManager::onReplyFinished);
+    m_netClient->get(request, [this, domain, url, isFallback](const NetworkResponse &resp) {
+        handleResponse(domain, url, isFallback, resp);
+    });
 }
 
-void WebsiteIconManager::onReplyFinished() {
-    auto* reply = qobject_cast<QNetworkReply*>(sender());
-    if (!reply) return;
-    reply->deleteLater();
-
-    QString domain = reply->property("domain").toString();
-    bool isFallback = reply->property("isFallback").toBool();
-
-    if (reply->error() == QNetworkReply::NoError && reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() == 200) {
-        QByteArray data = reply->readAll();
-        if (data.size() >= 10) {
-            QPixmap pix;
-            if (pix.loadFromData(data)) {
-                m_memoryCache[domain] = pix;
-                pix.save(getCachePath(domain), "PNG");
-                m_pendingDownloads.remove(domain);
-                emit iconLoaded(domain);
-                return;
-            }
+void WebsiteIconManager::handleResponse(const QString &domain, const QUrl & /*url*/, bool isFallback,
+                                        const NetworkResponse &resp) {
+    if (resp.statusCode == 200 && resp.data.size() >= 10) {
+        QPixmap pix;
+        if (pix.loadFromData(resp.data)) {
+            m_memoryCache[domain] = pix;
+            pix.save(getCachePath(domain), "PNG");
+            m_pendingDownloads.remove(domain);
+            emit iconLoaded(domain);
+            return;
         }
     }
 
