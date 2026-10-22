@@ -10,12 +10,16 @@
 #include "PasswordViewerWidget.h"
 #include "PasswordItem.h"
 
+namespace EasePass::Core {
+class DatabaseService;
+} // namespace EasePass::Core
+
 namespace EasePass::UI {
 
 class PasswordsWidget : public QWidget {
     Q_OBJECT
 public:
-    explicit PasswordsWidget(QWidget* parent = nullptr);
+    explicit PasswordsWidget(Core::DatabaseService* service, QWidget* parent = nullptr);
 
     void refreshList();
 
@@ -32,11 +36,13 @@ private slots:
     void onListSelectionChanged();
     void onSortChanged(int sortType);
     void onIconLoaded(const QString& domain);
+    void onSaveFailed(const QString& message);
 
 private:
     void setupUi();
-    void saveDatabase();
     int getOriginalIndexFromItem(QListWidgetItem* item) const;
+
+    Core::DatabaseService* m_service = nullptr;
 
     enum SortOption {
         SortNameAsc,

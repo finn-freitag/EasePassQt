@@ -6,13 +6,22 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QProgressBar>
+#include <memory>
+
+#include "DatabaseFile.h"
+#include "SecretString.h"
+
+namespace EasePass::Core {
+class DatabaseService;
+class IDatabaseSource;
+} // namespace EasePass::Core
 
 namespace EasePass::UI {
 
 class LoginWidget : public QWidget {
     Q_OBJECT
 public:
-    explicit LoginWidget(QWidget* parent = nullptr);
+    explicit LoginWidget(Core::DatabaseService* service, QWidget* parent = nullptr);
 
     void reset();
 
@@ -26,11 +35,20 @@ private slots:
     void onUnlockClicked();
     void onToggleShowPassword();
     void onBrowseDatabase();
+    void onOpenFinished(Core::LoadResult result);
 
 private:
     void setupUi();
     void populateDatabases();
     void setBusy(bool busy);
+    void finishUnlock();
+
+    Core::DatabaseService* m_service = nullptr;
+    // State of an unlock started by this widget (the service is shared with MainWindow)
+    bool m_unlockInProgress = false;
+    std::shared_ptr<Core::IDatabaseSource> m_pendingSource;
+    QString m_pendingPath;
+    Core::SecretString m_pendingPassword;
 
     QComboBox* m_dbComboBox = nullptr;
     QLineEdit* m_passwordEdit = nullptr;

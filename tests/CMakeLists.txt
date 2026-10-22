@@ -34,6 +34,9 @@ set(TEST_CORE_SOURCES
     core/WebsiteIconManagerTest.cpp
     core/AppSettingsTest.cpp
     core/SecureMemoryTest.cpp
+    core/LocalFileDatabaseSourceTest.cpp
+    core/DeferredSaveManagerTest.cpp
+    core/DatabaseServiceTest.cpp
 )
 
 set(TEST_CORE_HEADERS
@@ -47,6 +50,10 @@ set(TEST_CORE_HEADERS
     core/WebsiteIconManagerTest.h
     core/AppSettingsTest.h
     core/SecureMemoryTest.h
+    core/LocalFileDatabaseSourceTest.h
+    core/DeferredSaveManagerTest.h
+    core/DatabaseServiceTest.h
+    core/FakeDatabaseSource.h
 )
 
 add_executable(test_core ${TEST_CORE_SOURCES} ${TEST_CORE_HEADERS})
@@ -73,6 +80,7 @@ set(TEST_CORE_SLOW_FUNCTIONS
     testLoadWrongPassword
     testSaveAndLoadRoundtrip
     testSecondFactorHandling
+    testOpenCSharpFixtureThroughService
 )
 
 set(TEST_CORE_UNIT_FUNCTIONS
@@ -164,6 +172,40 @@ set(TEST_CORE_UNIT_FUNCTIONS
     testDatabaseFileWipeSecrets
     testPlatformCoreDumpControl
     testFakeCoreDumpControlInjection
+    testNameDescriptionAndAvailability
+    testGetBytesMissingAndExisting
+    testSaveCreatesFileAndBackup
+    testAtomicSaveKeepsOldFileWhenWriteFails
+    testAtomicSaveFailsWhenDirectoryMissing
+    testForcedReadOnlyRejectsSave
+    testReadOnlyFileIsReadOnly
+    testLastModifiedAndChangedSignal
+    testDebounceCoalescesRequests
+    testFlushRunsImmediately
+    testFlushWithoutPendingIsNoOp
+    testRequestsDuringSaveRunOnceAfterwards
+    testCancelPending
+    testErrorReportedBySignal
+    testSaveNowAndIdleSignal
+    testSerializeLoadFromBytesRoundtrip
+    testOpenSuccessIsAsync
+    testOpenWrongPasswordAsync
+    testOpenNeedsSecondFactor
+    testOpenAvailabilityHandling
+    testOpenWhileOpeningRejected
+    testOpenNullSourceRejected
+    testMutationSchedulesDeferredSave
+    testConcurrentEditsCoalesceIntoOneSave
+    testEditsDuringRunningSaveAreSavedAfterwards
+    testFlushOnCloseThenLogout
+    testReadOnlyRejectsMutation
+    testSourceBecomingReadOnly
+    testSaveFailureReportedAndRetried
+    testLockWipesSecrets
+    testCloseWhileOpeningDiscardsResult
+    testDestructorFlushesPendingSave
+    testRegisterClickPersistedOnClose
+    testLocalFileSourceEndToEnd
 )
 
 easepass_add_qtest(test_core

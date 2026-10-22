@@ -14,6 +14,9 @@
 #include "WebsiteIconManagerTest.h"
 #include "AppSettingsTest.h"
 #include "SecureMemoryTest.h"
+#include "LocalFileDatabaseSourceTest.h"
+#include "DeferredSaveManagerTest.h"
+#include "DatabaseServiceTest.h"
 
 int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
@@ -29,6 +32,9 @@ int main(int argc, char *argv[]) {
     testObjects.push_back(std::make_unique<WebsiteIconManagerTest>());
     testObjects.push_back(std::make_unique<AppSettingsTest>());
     testObjects.push_back(std::make_unique<SecureMemoryTest>());
+    testObjects.push_back(std::make_unique<LocalFileDatabaseSourceTest>());
+    testObjects.push_back(std::make_unique<DeferredSaveManagerTest>());
+    testObjects.push_back(std::make_unique<DatabaseServiceTest>());
 
     // 1. If -functions is requested, print functions for every test object
     for (int i = 1; i < argc; ++i) {

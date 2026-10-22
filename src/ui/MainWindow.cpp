@@ -1,9 +1,12 @@
 #include "MainWindow.h"
 #include "DatabaseManager.h"
+#include "DatabaseService.h"
+#include "LocalFileDatabaseSource.h"
 #include "CreateDatabaseDialog.h"
 #include "PasswordGeneratorDialog.h"
 #include "AboutDialog.h"
 
+#include <QCloseEvent>
 #include <QMenuBar>
 #include <QMenu>
 #include <QAction>
@@ -25,15 +28,16 @@ MainWindow::MainWindow(QWidget* parent)
 }
 
 void MainWindow::setupUi() {
+    m_service = new Core::DatabaseService(this);
     m_stack = new QStackedWidget(this);
 
-    m_loginWidget = new LoginWidget(this);
+    m_loginWidget = new LoginWidget(m_service, this);
     connect(m_loginWidget, &LoginWidget::loginSuccess, this, &MainWindow::onLoginSuccess);
     connect(m_loginWidget, &LoginWidget::createNewDatabaseRequested, this, &MainWindow::onCreateNewDatabase);
     connect(m_loginWidget, &LoginWidget::aboutRequested, this, &MainWindow::onAboutRequested);
     m_stack->addWidget(m_loginWidget);
 
-    m_passwordsWidget = new PasswordsWidget(this);
+    m_passwordsWidget = new PasswordsWidget(m_service, this);
     connect(m_passwordsWidget, &PasswordsWidget::logoutRequested, this, &MainWindow::onLogoutRequested);
     connect(m_passwordsWidget, &PasswordsWidget::aboutRequested, this, &MainWindow::onAboutRequested);
     m_stack->addWidget(m_passwordsWidget);
@@ -80,10 +84,14 @@ void MainWindow::setupMenuBar() {
     connect(aboutAct, &QAction::triggered, this, &MainWindow::onAboutRequested);
 }
 
+void MainWindow::closeEvent(QCloseEvent* event) {
+    m_service->shutdown();
+    QMainWindow::closeEvent(event);
+}
+
 void MainWindow::onLoginSuccess() {
-    auto* db = Core::DatabaseManager::instance().currentDatabase();
-    if (db) {
-        QFileInfo fi(db->filePath);
+    if (m_service->source()) {
+        QFileInfo fi(m_service->source()->sourceDescription());
         setWindowTitle(QString("Ease Pass - %1").arg(fi.fileName()));
     } else {
         setWindowTitle("Ease Pass");
@@ -94,7 +102,7 @@ void MainWindow::onLoginSuccess() {
 }
 
 void MainWindow::onLogoutRequested() {
-    Core::DatabaseManager::instance().closeDatabase();
+    m_service->close();
     setWindowTitle("Ease Pass");
     m_loginWidget->reset();
     m_stack->setCurrentWidget(m_loginWidget);
@@ -108,15 +116,21 @@ void MainWindow::onCreateNewDatabase() {
 
         Core::DatabaseManager::instance().addKnownDatabasePath(path);
         Core::DatabaseManager::instance().setLastUsedDatabasePath(path);
+        m_loginWidget->reset();
 
-        // Directly open the newly created database
-        auto db = std::make_unique<Core::DatabaseFile>();
-        if (Core::DatabaseFile::loadFromFile(path, pass, *db) == Core::LoadResult::Success) {
-            Core::DatabaseManager::instance().setDatabase(std::move(db));
-            onLoginSuccess();
-        } else {
-            m_loginWidget->reset();
-        }
+        // Open the newly created database through DatabaseService
+        auto source = std::make_shared<Core::LocalFileDatabaseSource>(path);
+        auto conn = std::make_shared<QMetaObject::Connection>();
+        *conn = connect(m_service, &Core::DatabaseService::openFinished, this,
+                        [this, conn](Core::LoadResult res) {
+                            disconnect(*conn);
+                            if (res == Core::LoadResult::Success) {
+                                onLoginSuccess();
+                            } else {
+                                m_loginWidget->reset();
+                            }
+                        });
+        m_service->open(std::move(source), Core::SecretString(pass));
     }
 }
 

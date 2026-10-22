@@ -104,25 +104,25 @@ QByteArray CryptoHelper::argon2idHash(const QByteArray &passwordBytes, const QBy
     return res.toQByteArray();
 }
 
-SecureBuffer CryptoHelper::deriveOuterKey(const SecretString &password) {
+SecureBuffer CryptoHelper::deriveOuterKey(const SecretString &password, const KdfParams &kdf) {
     QByteArray salt = "EasePassArgonHash";
     SecureBuffer pwBytes = password.toUtf16LE();
-    return argon2idHash(pwBytes, salt);
+    return argon2idHash(pwBytes, salt, QByteArray(), kdf.timeCost, kdf.memoryCostKiB, kdf.lanes);
 }
 
 SecureBuffer CryptoHelper::deriveInnerKey(const SecretString &password, const SecretString &secondFactor,
-                                          bool useOldAssociatedData) {
+                                          bool useOldAssociatedData, const KdfParams &kdf) {
     QByteArray salt = "EasePassArgonHash";
     QByteArray ad = useOldAssociatedData ? "Database_Version_1,4" : "Database_Version_1.4";
 
     if (!secondFactor.isEmpty()) {
         SecureBuffer sfBytes = secondFactor.toUtf16LE();
-        return argon2idHash(sfBytes, salt, ad);
+        return argon2idHash(sfBytes, salt, ad, kdf.timeCost, kdf.memoryCostKiB, kdf.lanes);
     } else {
         SecureBuffer pwBytes = password.toUtf16LE();
         SecureBuffer b64 = customToBase64(pwBytes);
         std::reverse(b64.begin(), b64.end());
-        return argon2idHash(b64, salt, ad);
+        return argon2idHash(b64, salt, ad, kdf.timeCost, kdf.memoryCostKiB, kdf.lanes);
     }
 }
 

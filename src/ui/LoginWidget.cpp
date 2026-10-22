@@ -1,27 +1,30 @@
 #include "LoginWidget.h"
 #include "DatabaseManager.h"
 #include "DatabaseFile.h"
+#include "DatabaseService.h"
+#include "LocalFileDatabaseSource.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QFileDialog>
 #include <QFileInfo>
-#include <QThread>
 #include <QInputDialog>
 #include <QIcon>
 #include <QFont>
 
 namespace EasePass::UI {
 
-LoginWidget::LoginWidget(QWidget* parent)
-    : QWidget(parent) {
+LoginWidget::LoginWidget(Core::DatabaseService* service, QWidget* parent)
+    : QWidget(parent), m_service(service) {
     setupUi();
+    connect(m_service, &Core::DatabaseService::openFinished, this, &LoginWidget::onOpenFinished);
     reset();
 }
 
 void LoginWidget::reset() {
     m_passwordEdit->clear();
     m_errorLabel->clear();
+    finishUnlock();
     setBusy(false);
     populateDatabases();
     m_passwordEdit->setFocus();
@@ -228,65 +231,77 @@ void LoginWidget::onUnlockClicked() {
     m_errorLabel->clear();
     setBusy(true);
 
-    // Run Argon2 and AES decryption in worker thread
-    auto* workerThread = QThread::create([this, path, password]() {
-        auto db = std::make_unique<Core::DatabaseFile>();
-        Core::LoadResult res = Core::DatabaseFile::loadFromFile(path, password, *db);
+    m_pendingSource = std::make_shared<Core::LocalFileDatabaseSource>(path);
+    m_pendingPath = path;
+    m_pendingPassword = Core::SecretString(password);
+    m_unlockInProgress = true;
+    if (!m_service->open(m_pendingSource, m_pendingPassword)) {
+        finishUnlock();
+        setBusy(false);
+    }
+}
 
-        QMetaObject::invokeMethod(this, [this, db = std::move(db), res, path, password]() mutable {
-            if (res == Core::LoadResult::NeedsSecondFactor) {
-                bool ok = false;
-                QString token = QInputDialog::getText(this, "Second Factor Authentication",
-                                                      "Please enter your 2FA token:",
-                                                      QLineEdit::Password, QString(), &ok);
-                if (!ok || token.isEmpty()) {
-                    setBusy(false);
-                    m_errorLabel->setText("Second factor required.");
-                    return;
-                }
+void LoginWidget::finishUnlock() {
+    m_unlockInProgress = false;
+    m_pendingSource.reset();
+    m_pendingPath.clear();
+    m_pendingPassword.clear();
+}
 
-                // Retry with second factor
-                auto* retryThread = QThread::create([this, path, password, token]() {
-                    auto db2 = std::make_unique<Core::DatabaseFile>();
-                    Core::LoadResult res2 = Core::DatabaseFile::loadFromFile(path, password, *db2, token);
-                    QMetaObject::invokeMethod(this, [this, db2 = std::move(db2), res2]() mutable {
-                        setBusy(false);
-                        if (res2 == Core::LoadResult::Success) {
-                            Core::DatabaseManager::instance().setDatabase(std::move(db2));
-                            emit loginSuccess();
-                        } else if (res2 == Core::LoadResult::WrongPassword) {
-                            m_errorLabel->setText("Incorrect master password or 2FA token.");
-                        } else {
-                            m_errorLabel->setText("Failed to decrypt database.");
-                        }
-                    });
-                });
-                connect(retryThread, &QThread::finished, retryThread, &QObject::deleteLater);
-                retryThread->start();
-                return;
-            }
+void LoginWidget::onOpenFinished(Core::LoadResult result) {
+    if (!m_unlockInProgress) {
+        return;
+    }
 
+    if (result == Core::LoadResult::NeedsSecondFactor) {
+        bool ok = false;
+        QString token = QInputDialog::getText(this, "Second Factor Authentication",
+                                              "Please enter your 2FA token:",
+                                              QLineEdit::Password, QString(), &ok);
+        if (!ok || token.isEmpty()) {
+            finishUnlock();
             setBusy(false);
+            m_errorLabel->setText("Second factor required.");
+            return;
+        }
+        if (!m_service->open(m_pendingSource, m_pendingPassword, Core::SecretString(token))) {
+            finishUnlock();
+            setBusy(false);
+            m_errorLabel->setText("Failed to decrypt database.");
+        }
+        return;
+    }
 
-            if (res == Core::LoadResult::Success) {
-                Core::DatabaseManager::instance().setDatabase(std::move(db));
-                emit loginSuccess();
-            } else if (res == Core::LoadResult::WrongPassword) {
-                m_errorLabel->setText("Incorrect master password.");
-                m_passwordEdit->selectAll();
-                m_passwordEdit->setFocus();
-            } else if (res == Core::LoadResult::WrongFormat) {
-                m_errorLabel->setText("Invalid database format or corrupted file.");
-            } else if (res == Core::LoadResult::DatabaseNotFound) {
-                m_errorLabel->setText("Database file could not be found.");
-            } else {
-                m_errorLabel->setText("An error occurred while loading the database.");
-            }
-        });
-    });
+    const QString path = m_pendingPath;
+    finishUnlock();
+    setBusy(false);
 
-    connect(workerThread, &QThread::finished, workerThread, &QObject::deleteLater);
-    workerThread->start();
+    switch (result) {
+    case Core::LoadResult::Success:
+        Core::DatabaseManager::instance().addKnownDatabasePath(path);
+        Core::DatabaseManager::instance().setLastUsedDatabasePath(path);
+        emit loginSuccess();
+        break;
+    case Core::LoadResult::WrongPassword:
+        m_errorLabel->setText("Incorrect master password or 2FA token.");
+        m_passwordEdit->selectAll();
+        m_passwordEdit->setFocus();
+        break;
+    case Core::LoadResult::WrongFormat:
+        m_errorLabel->setText("Invalid database format or corrupted file.");
+        break;
+    case Core::LoadResult::DatabaseNotFound:
+    case Core::LoadResult::SourceUnavailable:
+        m_errorLabel->setText("Database file could not be found.");
+        break;
+    case Core::LoadResult::SourceLocked:
+        m_errorLabel->setText("Database is locked by another user.");
+        break;
+    case Core::LoadResult::NeedsSecondFactor:
+    case Core::LoadResult::Error:
+        m_errorLabel->setText("An error occurred while loading the database.");
+        break;
+    }
 }
 
 } // namespace EasePass::UI

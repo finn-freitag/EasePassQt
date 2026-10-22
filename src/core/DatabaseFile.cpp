@@ -30,6 +30,17 @@ LoadResult DatabaseFile::loadFromFile(const QString &path, const SecretString &m
     QByteArray fileBytes = file.readAll();
     file.close();
 
+    LoadResult res = loadFromBytes(fileBytes, masterPassword, outDb, secondFactor);
+    if (res == LoadResult::Success || res == LoadResult::NeedsSecondFactor) {
+        outDb.filePath = path;
+        QFileInfo fileInfo(path);
+        outDb.isReadOnly = !fileInfo.isWritable();
+    }
+    return res;
+}
+
+LoadResult DatabaseFile::loadFromBytes(const QByteArray &fileBytes, const SecretString &masterPassword,
+                                       DatabaseFile &outDb, const SecretString &secondFactor, const KdfParams &kdf) {
     int versionTag = 0;
     QByteArray outerCipher;
     if (!CryptoHelper::extractVersionTag(fileBytes, versionTag, outerCipher)) {
@@ -40,7 +51,7 @@ LoadResult DatabaseFile::loadFromFile(const QString &path, const SecretString &m
         return LoadResult::WrongFormat;
     }
 
-    SecureBuffer outerKey = CryptoHelper::deriveOuterKey(masterPassword);
+    SecureBuffer outerKey = CryptoHelper::deriveOuterKey(masterPassword, kdf);
     QByteArray outerPlain;
     if (!CryptoHelper::decryptAes(outerCipher, outerKey, outerPlain)) {
         return LoadResult::WrongPassword;
@@ -57,7 +68,6 @@ LoadResult DatabaseFile::loadFromFile(const QString &path, const SecretString &m
     }
 
     QJsonObject outerObj = outerDoc.object();
-    outDb.filePath = path;
     outDb.masterPassword = masterPassword;
     outDb.databaseFileType = outerObj.value("DatabaseFileType").toInt(0);
     outDb.version = outerObj.value("Version").toDouble(1.4);
@@ -65,9 +75,6 @@ LoadResult DatabaseFile::loadFromFile(const QString &path, const SecretString &m
     QJsonObject settingsObj = outerObj.value("Settings").toObject();
     outDb.useSecondFactor = settingsObj.value("UseSecondFactor").toBool(false);
     outDb.secondFactorType = settingsObj.value("SecondFactorType").toInt(0);
-
-    QFileInfo fileInfo(path);
-    outDb.isReadOnly = !fileInfo.isWritable();
 
     if (outDb.useSecondFactor && secondFactor.isEmpty()) {
         return LoadResult::NeedsSecondFactor;
@@ -78,13 +85,13 @@ LoadResult DatabaseFile::loadFromFile(const QString &path, const SecretString &m
     QString dataBase64 = outerObj.value("Data").toString();
     QByteArray innerCipher = QByteArray::fromBase64(dataBase64.toUtf8());
 
-    SecureBuffer innerKey = CryptoHelper::deriveInnerKey(masterPassword, secondFactor, false);
+    SecureBuffer innerKey = CryptoHelper::deriveInnerKey(masterPassword, secondFactor, false, kdf);
     QByteArray innerPlain;
     bool decrypted = CryptoHelper::decryptAes(innerCipher, innerKey, innerPlain);
 
     if (!decrypted) {
         // Try backwards-compatibility associated data
-        innerKey = CryptoHelper::deriveInnerKey(masterPassword, secondFactor, true);
+        innerKey = CryptoHelper::deriveInnerKey(masterPassword, secondFactor, true, kdf);
         decrypted = CryptoHelper::decryptAes(innerCipher, innerKey, innerPlain);
     }
 
@@ -125,45 +132,11 @@ bool DatabaseFile::saveToFile(const QString &path) {
         return false;
     }
 
-    // 1. Serialize items to JSON
-    QJsonArray itemsArray;
-    for (const auto &item : items) {
-        itemsArray.append(item.toJson());
-    }
-    QJsonDocument innerDoc(itemsArray);
-    QByteArray innerPlain = innerDoc.toJson(QJsonDocument::Indented);
-
-    // 2. Encrypt inner JSON
-    SecureBuffer innerKey = CryptoHelper::deriveInnerKey(masterPassword, secondFactor, false);
-    QByteArray innerCipher = CryptoHelper::encryptAes(innerPlain, innerKey);
-    OPENSSL_cleanse(innerPlain.data(), static_cast<size_t>(innerPlain.size()));
-    if (innerCipher.isEmpty()) {
+    // 1.-5. Serialize, encrypt and add the version tag
+    QByteArray finalBytes = serialize();
+    if (finalBytes.isEmpty()) {
         return false;
     }
-
-    // 3. Construct outer JSON
-    QJsonObject settingsObj;
-    settingsObj["UseSecondFactor"] = useSecondFactor;
-    settingsObj["SecondFactorType"] = secondFactorType;
-
-    QJsonObject outerObj;
-    outerObj["DatabaseFileType"] = databaseFileType;
-    outerObj["Version"] = version;
-    outerObj["Settings"] = settingsObj;
-    outerObj["Data"] = QString::fromUtf8(innerCipher.toBase64());
-
-    QJsonDocument outerDoc(outerObj);
-    QByteArray outerPlain = outerDoc.toJson(QJsonDocument::Compact);
-
-    // 4. Encrypt outer JSON
-    SecureBuffer outerKey = CryptoHelper::deriveOuterKey(masterPassword);
-    QByteArray outerCipher = CryptoHelper::encryptAes(outerPlain, outerKey);
-    if (outerCipher.isEmpty()) {
-        return false;
-    }
-
-    // 5. Add version tag
-    QByteArray finalBytes = CryptoHelper::addVersionTag(outerCipher, CryptoHelper::CURRENT_DB_VERSION_TAG);
 
     // 6. Write atomically using QSaveFile
     QSaveFile saveFile(targetPath);
@@ -182,6 +155,48 @@ bool DatabaseFile::saveToFile(const QString &path) {
 
     filePath = targetPath;
     return true;
+}
+
+QByteArray DatabaseFile::serialize(const KdfParams &kdf) const {
+    // 1. Serialize items to JSON
+    QJsonArray itemsArray;
+    for (const auto &item : items) {
+        itemsArray.append(item.toJson());
+    }
+    QJsonDocument innerDoc(itemsArray);
+    QByteArray innerPlain = innerDoc.toJson(QJsonDocument::Indented);
+
+    // 2. Encrypt inner JSON
+    SecureBuffer innerKey = CryptoHelper::deriveInnerKey(masterPassword, secondFactor, false, kdf);
+    QByteArray innerCipher = CryptoHelper::encryptAes(innerPlain, innerKey);
+    OPENSSL_cleanse(innerPlain.data(), static_cast<size_t>(innerPlain.size()));
+    if (innerCipher.isEmpty()) {
+        return QByteArray();
+    }
+
+    // 3. Construct outer JSON
+    QJsonObject settingsObj;
+    settingsObj["UseSecondFactor"] = useSecondFactor;
+    settingsObj["SecondFactorType"] = secondFactorType;
+
+    QJsonObject outerObj;
+    outerObj["DatabaseFileType"] = databaseFileType;
+    outerObj["Version"] = version;
+    outerObj["Settings"] = settingsObj;
+    outerObj["Data"] = QString::fromUtf8(innerCipher.toBase64());
+
+    QJsonDocument outerDoc(outerObj);
+    QByteArray outerPlain = outerDoc.toJson(QJsonDocument::Compact);
+
+    // 4. Encrypt outer JSON
+    SecureBuffer outerKey = CryptoHelper::deriveOuterKey(masterPassword, kdf);
+    QByteArray outerCipher = CryptoHelper::encryptAes(outerPlain, outerKey);
+    if (outerCipher.isEmpty()) {
+        return QByteArray();
+    }
+
+    // 5. Add version tag
+    return CryptoHelper::addVersionTag(outerCipher, CryptoHelper::CURRENT_DB_VERSION_TAG);
 }
 
 void DatabaseFile::addItem(const PasswordItem &item) {

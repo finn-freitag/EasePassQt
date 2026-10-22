@@ -1,5 +1,6 @@
 #include "PasswordsWidget.h"
-#include "DatabaseManager.h"
+#include "DatabaseService.h"
+#include "IDatabaseSource.h"
 #include "EditItemDialog.h"
 #include "WebsiteIconManager.h"
 
@@ -82,10 +83,12 @@ QWidget* createListItemWidget(const Core::PasswordItem& item) {
 
 } // namespace
 
-PasswordsWidget::PasswordsWidget(QWidget* parent)
-    : QWidget(parent) {
+PasswordsWidget::PasswordsWidget(Core::DatabaseService* service, QWidget* parent)
+    : QWidget(parent), m_service(service) {
     setupUi();
 
+    connect(m_service, &Core::DatabaseService::saveFailed, this, &PasswordsWidget::onSaveFailed);
+    connect(m_service, &Core::DatabaseService::readOnlyChanged, this, [this]() { refreshList(); });
     connect(&Core::WebsiteIconManager::instance(), &Core::WebsiteIconManager::iconLoaded,
             this, &PasswordsWidget::onIconLoaded);
 }
@@ -187,16 +190,18 @@ void PasswordsWidget::setupUi() {
 }
 
 void PasswordsWidget::refreshList() {
-    auto* db = Core::DatabaseManager::instance().currentDatabase();
-    if (!db) {
+    if (!m_service || !m_service->isOpen()) {
         m_listWidget->clear();
         m_viewer->clear();
+        m_newEntryBtn->setEnabled(false);
         m_dbStatusLabel->setText("No database loaded");
         return;
     }
 
-    QFileInfo fi(db->filePath);
-    m_dbStatusLabel->setText(QString("%1 (%2 entries)").arg(fi.fileName()).arg(db->items.size()));
+    m_newEntryBtn->setEnabled(!m_service->isReadOnly());
+    const auto& items = m_service->items();
+    const QString name = m_service->source() ? m_service->source()->databaseName() : QString();
+    m_dbStatusLabel->setText(QString("%1 (%2 entries)").arg(name).arg(items.size()));
 
     struct ItemEntry {
         int originalIndex;
@@ -206,8 +211,8 @@ void PasswordsWidget::refreshList() {
     QList<ItemEntry> visibleEntries;
     QString filter = m_filterText.trimmed();
 
-    for (int i = 0; i < db->items.size(); ++i) {
-        const auto& it = db->items[i];
+    for (int i = 0; i < items.size(); ++i) {
+        const auto& it = items[i];
         if (!filter.isEmpty()) {
             bool match = it.displayName.contains(filter, Qt::CaseInsensitive) ||
                          it.username.contains(filter, Qt::CaseInsensitive) ||
@@ -289,10 +294,9 @@ void PasswordsWidget::onListSelectionChanged() {
     }
 
     int origIdx = getOriginalIndexFromItem(item);
-    auto* db = Core::DatabaseManager::instance().currentDatabase();
-    if (db && origIdx >= 0 && origIdx < db->items.size()) {
-        db->items[origIdx].registerClick();
-        m_viewer->setItem(db->items[origIdx], origIdx);
+    if (m_service && m_service->isOpen() && origIdx >= 0 && origIdx < m_service->itemCount()) {
+        m_service->registerClick(origIdx);
+        m_viewer->setItem(m_service->items()[origIdx], origIdx);
     } else {
         m_viewer->clear();
     }
@@ -309,18 +313,16 @@ void PasswordsWidget::onSortChanged(int sortType) {
 }
 
 void PasswordsWidget::onNewEntry() {
-    auto* db = Core::DatabaseManager::instance().currentDatabase();
-    if (!db) return;
+    if (!m_service || !m_service->isOpen() || m_service->isReadOnly()) return;
 
     EditItemDialog dlg(this);
     if (dlg.exec() == QDialog::Accepted) {
         Core::PasswordItem newItem = dlg.getItem();
-        db->addItem(newItem);
-        saveDatabase();
+        if (!m_service->addItem(newItem)) return;
         refreshList();
 
         // Select the newly added item
-        int newIdx = db->items.size() - 1;
+        int newIdx = m_service->itemCount() - 1;
         for (int i = 0; i < m_listWidget->count(); ++i) {
             if (getOriginalIndexFromItem(m_listWidget->item(i)) == newIdx) {
                 m_listWidget->setCurrentRow(i);
@@ -331,48 +333,41 @@ void PasswordsWidget::onNewEntry() {
 }
 
 void PasswordsWidget::onEditEntry(int originalIndex) {
-    auto* db = Core::DatabaseManager::instance().currentDatabase();
-    if (!db || originalIndex < 0 || originalIndex >= db->items.size()) return;
+    if (!m_service || !m_service->isOpen() || m_service->isReadOnly()) return;
+    if (originalIndex < 0 || originalIndex >= m_service->itemCount()) return;
 
-    EditItemDialog dlg(db->items[originalIndex], this);
+    EditItemDialog dlg(m_service->items()[originalIndex], this);
     if (dlg.exec() == QDialog::Accepted) {
-        db->updateItem(originalIndex, dlg.getItem());
-        saveDatabase();
-        refreshList();
+        if (m_service->updateItem(originalIndex, dlg.getItem())) {
+            refreshList();
+        }
     }
 }
 
 void PasswordsWidget::onDeleteEntry(int originalIndex) {
-    auto* db = Core::DatabaseManager::instance().currentDatabase();
-    if (!db || originalIndex < 0 || originalIndex >= db->items.size()) return;
+    if (!m_service || !m_service->isOpen() || m_service->isReadOnly()) return;
+    if (originalIndex < 0 || originalIndex >= m_service->itemCount()) return;
 
-    QString name = db->items[originalIndex].displayName;
+    QString name = m_service->items()[originalIndex].displayName;
     auto res = QMessageBox::question(this, "Delete Entry",
                                      QString("Are you sure you want to delete \"%1\"?").arg(name),
                                      QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
     if (res == QMessageBox::Yes) {
-        db->deleteItem(originalIndex);
-        saveDatabase();
-        refreshList();
+        if (m_service->deleteItem(originalIndex)) {
+            refreshList();
+        }
     }
 }
 
 void PasswordsWidget::onItemModified(int originalIndex, const Core::PasswordItem& item) {
-    auto* db = Core::DatabaseManager::instance().currentDatabase();
-    if (!db || originalIndex < 0 || originalIndex >= db->items.size()) return;
-
-    db->updateItem(originalIndex, item);
-    saveDatabase();
-    refreshList();
+    if (!m_service || !m_service->isOpen()) return;
+    if (m_service->updateItem(originalIndex, item)) {
+        refreshList();
+    }
 }
 
-void PasswordsWidget::saveDatabase() {
-    auto* db = Core::DatabaseManager::instance().currentDatabase();
-    if (!db) return;
-
-    if (!db->saveToFile()) {
-        QMessageBox::critical(this, "Save Failed", "Could not save database to file!");
-    }
+void PasswordsWidget::onSaveFailed(const QString& message) {
+    QMessageBox::critical(this, "Save Failed", message);
 }
 
 void PasswordsWidget::onIconLoaded(const QString&) {

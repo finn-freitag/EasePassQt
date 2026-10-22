@@ -9,6 +9,25 @@
 
 namespace EasePass::Core {
 
+/**
+ * @brief Argon2id cost parameters used to derive the database keys.
+ *
+ * The default-constructed value (== production()) is the only one that produces databases
+ * compatible with the C# app (C#: Helper/Security/HashHelper.cs: 250 MB, 10 iterations,
+ * 10 lanes). Cheaper values exist ONLY so tests can run fast (steps.txt 3.3): they are
+ * reachable solely through an explicit function/constructor parameter, there is no global
+ * switch, and the parameters are never written into a database file.
+ */
+struct KdfParams {
+    uint32_t timeCost = 10;
+    uint32_t memoryCostKiB = 256000;
+    uint32_t lanes = 10;
+
+    static constexpr KdfParams production() { return KdfParams{}; }
+    bool isProduction() const { return *this == production(); }
+    bool operator==(const KdfParams &) const = default;
+};
+
 class CryptoHelper {
 public:
     static const int CURRENT_DB_VERSION_TAG = 3;
@@ -27,10 +46,11 @@ public:
                                    const QByteArray &associatedData = QByteArray(), uint32_t t_cost = 10,
                                    uint32_t m_cost = 256000, uint32_t lanes = 10, size_t hashLen = 32);
 
-    static SecureBuffer deriveOuterKey(const SecretString &password);
+    static SecureBuffer deriveOuterKey(const SecretString &password, const KdfParams &kdf = KdfParams::production());
 
     static SecureBuffer deriveInnerKey(const SecretString &password, const SecretString &secondFactor = SecretString(),
-                                       bool useOldAssociatedData = false);
+                                       bool useOldAssociatedData = false,
+                                       const KdfParams &kdf = KdfParams::production());
 
     static QByteArray encryptAes(const QByteArray &plaintext, const SecureBuffer &key);
     static QByteArray encryptAes(const QByteArray &plaintext, const QByteArray &key);

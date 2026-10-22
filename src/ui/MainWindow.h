@@ -5,12 +5,19 @@
 #include "LoginWidget.h"
 #include "PasswordsWidget.h"
 
+namespace EasePass::Core {
+class DatabaseService;
+} // namespace EasePass::Core
+
 namespace EasePass::UI {
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
     explicit MainWindow(QWidget* parent = nullptr);
+
+protected:
+    void closeEvent(QCloseEvent* event) override;
 
 private slots:
     void onLoginSuccess();
@@ -24,6 +31,7 @@ private:
     void setupUi();
     void setupMenuBar();
 
+    Core::DatabaseService* m_service = nullptr;
     QStackedWidget* m_stack = nullptr;
     LoginWidget* m_loginWidget = nullptr;
     PasswordsWidget* m_passwordsWidget = nullptr;
