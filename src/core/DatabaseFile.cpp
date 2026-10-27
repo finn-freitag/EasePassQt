@@ -1,5 +1,6 @@
 #include "DatabaseFile.h"
 #include "CryptoHelper.h"
+#include "SortingHelper.h"
 
 #include <QFile>
 #include <QFileInfo>
@@ -223,6 +224,14 @@ int DatabaseFile::countOccurrences(const QString &password) const {
         }
     }
     return count;
+}
+
+void DatabaseFile::clearOldClicksCache(const IClock *clock) {
+    SortingHelper::clearOldClicksCache(*this, clock);
+}
+
+void DatabaseFile::resetPopularity() {
+    SortingHelper::resetPopularity(*this);
 }
 
 } // namespace EasePass::Core

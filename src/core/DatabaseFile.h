@@ -64,6 +64,8 @@ public:
     void deleteItem(int index);
 
     int countOccurrences(const QString &password) const;
+    void clearOldClicksCache(const IClock *clock = nullptr);
+    void resetPopularity();
 };
 
 } // namespace EasePass::Core

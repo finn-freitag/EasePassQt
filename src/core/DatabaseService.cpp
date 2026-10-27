@@ -256,12 +256,21 @@ bool DatabaseService::setItems(const QList<PasswordItem> &items) {
     return true;
 }
 
-bool DatabaseService::registerClick(int index) {
+bool DatabaseService::registerClick(int index, const IClock *clock) {
     if (!canMutate() || index < 0 || index >= m_db->items.size()) {
         return false;
     }
-    m_db->items[index].registerClick();
+    m_db->items[index].registerClick(clock);
     ++m_changeGeneration; // no itemsChanged(): only popularity data changed, no save scheduled
+    return true;
+}
+
+bool DatabaseService::resetPopularity() {
+    if (!canMutate()) {
+        return false;
+    }
+    m_db->resetPopularity();
+    markChanged(true);
     return true;
 }
 

@@ -37,6 +37,7 @@ set(TEST_CORE_SOURCES
     core/LocalFileDatabaseSourceTest.cpp
     core/DeferredSaveManagerTest.cpp
     core/DatabaseServiceTest.cpp
+    core/ItemLogicTest.cpp
 )
 
 set(TEST_CORE_HEADERS
@@ -54,6 +55,7 @@ set(TEST_CORE_HEADERS
     core/DeferredSaveManagerTest.h
     core/DatabaseServiceTest.h
     core/FakeDatabaseSource.h
+    core/ItemLogicTest.h
 )
 
 add_executable(test_core ${TEST_CORE_SOURCES} ${TEST_CORE_HEADERS})
@@ -206,6 +208,28 @@ set(TEST_CORE_UNIT_FUNCTIONS
     testDestructorFlushesPendingSave
     testRegisterClickPersistedOnClose
     testLocalFileSourceEndToEnd
+    testCommonPasswordSequenceModes
+    testSpecialCharClassification
+    testPasswordStrengthKnownSamples
+    testPasswordStrengthRepeatedChars
+    testPasswordStrengthReuseCount
+    testIsSecureWithSelectiveClasses
+    testSortByName
+    testSortByUsername
+    testSortByNotes
+    testSortByFirstTag
+    testSortByWebsite
+    testSortByPopularLastYear
+    testSortByPopularLast30DaysWithClock
+    testSortByPasswordStrength
+    testSortStabilityAndUnicodeCase
+    testClearOldClicksCacheAndResetPopularity
+    testFreeTextSearchAllFields
+    testTagSearchSyntaxAndSuggestions
+    testTagSearchNoResultsFound
+    testFindItemsByNameAndTag
+    testEmailAddressIndexer
+    testPasswordItemTagHelper
 )
 
 easepass_add_qtest(test_core

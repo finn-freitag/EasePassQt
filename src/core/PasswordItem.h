@@ -4,6 +4,7 @@
 #include <QStringList>
 #include <QJsonObject>
 #include <QColor>
+#include "IClock.h"
 
 namespace EasePass::Core {
 
@@ -25,13 +26,13 @@ public:
     bool has2FA() const { return !secret.trimmed().isEmpty(); }
 
     QJsonObject toJson() const;
-    static PasswordItem fromJson(const QJsonObject& json);
+    static PasswordItem fromJson(const QJsonObject &json);
 
     QColor avatarColor() const;
     QColor avatarTextColor() const;
     QString avatarLetter() const;
 
-    void registerClick();
+    void registerClick(const IClock *clock = nullptr);
 };
 
 } // namespace EasePass::Core

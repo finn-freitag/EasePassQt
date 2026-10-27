@@ -3,6 +3,7 @@
 #include <QJsonArray>
 #include <QCryptographicHash>
 #include <QDateTime>
+#include <QTimeZone>
 
 namespace EasePass::Core {
 
@@ -18,13 +19,13 @@ QJsonObject PasswordItem::toJson() const {
     obj["Algorithm"] = algorithm.isEmpty() ? "SHA1" : algorithm;
 
     QJsonArray clicksArray;
-    for (const auto& c : clicks) {
+    for (const auto &c : clicks) {
         clicksArray.append(c);
     }
     obj["Clicks"] = clicksArray;
 
     QJsonArray tagsArray;
-    for (const auto& t : tags) {
+    for (const auto &t : tags) {
         tagsArray.append(t);
     }
     obj["Tags"] = tagsArray;
@@ -35,7 +36,7 @@ QJsonObject PasswordItem::toJson() const {
     return obj;
 }
 
-PasswordItem PasswordItem::fromJson(const QJsonObject& json) {
+PasswordItem PasswordItem::fromJson(const QJsonObject &json) {
     PasswordItem item;
     item.password = json.value("Password").toString();
     item.username = json.value("Username").toString();
@@ -47,12 +48,12 @@ PasswordItem PasswordItem::fromJson(const QJsonObject& json) {
     item.algorithm = json.value("Algorithm").toString("SHA1");
 
     QJsonArray clicksArray = json.value("Clicks").toArray();
-    for (const auto& val : clicksArray) {
+    for (const auto &val : clicksArray) {
         item.clicks.append(val.toString());
     }
 
     QJsonArray tagsArray = json.value("Tags").toArray();
-    for (const auto& val : tagsArray) {
+    for (const auto &val : tagsArray) {
         item.tags.append(val.toString());
     }
 
@@ -90,8 +91,10 @@ QString PasswordItem::avatarLetter() const {
     return trimmed.left(1).toUpper();
 }
 
-void PasswordItem::registerClick() {
-    clicks.append(QDate::currentDate().toString("d.M.yyyy"));
+void PasswordItem::registerClick(const IClock *clock) {
+    QDate date = clock ? QDateTime::fromSecsSinceEpoch(clock->currentSecsSinceEpoch(), QTimeZone::UTC).date()
+                       : QDate::currentDate();
+    clicks.append(date.toString("d.M.yyyy"));
 }
 
 } // namespace EasePass::Core

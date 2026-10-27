@@ -84,7 +84,9 @@ public:
     bool setItems(const QList<PasswordItem> &items);
     /// Registers a click (popularity). Marks the database dirty but schedules no save: the
     /// click is persisted with the next save or on close.
-    bool registerClick(int index);
+    bool registerClick(int index, const IClock *clock = nullptr);
+    /// Clears all click history across all items and schedules a deferred save (C#: ResetPopularity_Click).
+    bool resetPopularity();
 
     int saveDelayMs() const { return m_saver->delayMs(); }
     void setSaveDelayMs(int delayMs) { m_saver->setDelayMs(delayMs); }
