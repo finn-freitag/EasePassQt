@@ -1,6 +1,9 @@
 #include "MainWindow.h"
 #include "DatabaseManager.h"
 #include "DatabaseService.h"
+#include "PrintService.h"
+#include <QDateTime>
+#include <QMessageBox>
 #include "LocalFileDatabaseSource.h"
 #include "CreateDatabaseDialog.h"
 #include "PasswordGeneratorDialog.h"
@@ -64,6 +67,36 @@ void MainWindow::setupMenuBar() {
     auto* lockAct = fileMenu->addAction("&Lock Database");
     lockAct->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_L));
     connect(lockAct, &QAction::triggered, this, &MainWindow::onLogoutRequested);
+
+    fileMenu->addSeparator();
+
+    // T10: print / PDF export of the open database
+    auto printItems = [this](int mode) {
+        if (!m_service->isOpen()) {
+            QMessageBox::information(this, tr("Print"), tr("Open a database first."));
+            return;
+        }
+        App::PrintService printer;
+        App::PrintService::Options opts;
+        opts.title = m_service->displayName();
+        opts.printedAt = QDateTime::currentDateTime();
+        if (!printer.askOptions(opts, this))
+            return;
+        const auto items = m_service->items();
+        if (mode == 0)
+            printer.print(items, opts, this);
+        else if (mode == 1)
+            printer.preview(items, opts, this);
+        else
+            printer.exportPdfInteractive(items, opts, this);
+    };
+    auto* printAct = fileMenu->addAction(tr("&Print..."));
+    printAct->setShortcut(QKeySequence::Print);
+    connect(printAct, &QAction::triggered, this, [printItems]() { printItems(0); });
+    auto* previewAct = fileMenu->addAction(tr("Print Pre&view..."));
+    connect(previewAct, &QAction::triggered, this, [printItems]() { printItems(1); });
+    auto* pdfAct = fileMenu->addAction(tr("&Export PDF..."));
+    connect(pdfAct, &QAction::triggered, this, [printItems]() { printItems(2); });
 
     fileMenu->addSeparator();
 

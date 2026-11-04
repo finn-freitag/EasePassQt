@@ -42,6 +42,7 @@ set(TEST_CORE_SOURCES
     core/ClipboardInactivityTest.cpp
     core/LeakCheckServiceTest.cpp
     core/ScreenScanTest.cpp
+    core/PrintTest.cpp
 )
 
 set(TEST_CORE_HEADERS
@@ -64,6 +65,7 @@ set(TEST_CORE_HEADERS
     core/ClipboardInactivityTest.h
     core/LeakCheckServiceTest.h
     core/ScreenScanTest.h
+    core/PrintTest.h
 )
 
 add_executable(test_core ${TEST_CORE_SOURCES} ${TEST_CORE_HEADERS})
@@ -74,6 +76,7 @@ target_compile_definitions(test_core PRIVATE
 
 target_link_libraries(test_core PRIVATE
     easepass_core
+    easepass_app
     Qt6::Test
     easepass_warnings
 )
@@ -306,6 +309,14 @@ set(TEST_CORE_UNIT_FUNCTIONS
     testScreenQrScannerCaptureFailureAndCancel
     testScreenQrScannerUnavailableBackend
     testWebcamControllerDetectsAndThrottles
+    testHtmlContainsFieldsAndEscapes
+    testPasswordsExcludedByDefault
+    testPasswordsIncludedWhenRequested
+    testPdfHasPagesAndMetadata
+    testLongListPaginates
+    testEmptyListStillOnePage
+    testPrintServiceExportPdfFile
+    testPrintServiceExportPdfBadPath
 )
 
 easepass_add_qtest(test_core

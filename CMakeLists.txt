@@ -21,7 +21,7 @@ set(CMAKE_AUTOUIC ON)
 option(EASEPASS_BUILD_TESTS "Build the test executables" ON)
 option(EASEPASS_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 
-find_package(Qt6 ${EASEPASS_QT_MIN_VERSION} REQUIRED COMPONENTS Core Gui Widgets Network Svg)
+find_package(Qt6 ${EASEPASS_QT_MIN_VERSION} REQUIRED COMPONENTS Core Gui Widgets Network Svg PrintSupport)
 find_package(OpenSSL REQUIRED)
 
 # Linux: xdg-desktop-portal screen capture via QtDBus (D4).
@@ -117,6 +117,7 @@ set(CORE_SOURCES
     src/core/PortalScreenCapture.cpp
     src/core/ScreenQrScanner.cpp
     src/core/IWebcamScanner.cpp
+    src/core/PrintDocumentBuilder.cpp
 )
 
 set(CORE_HEADERS
@@ -158,6 +159,7 @@ set(CORE_HEADERS
     src/core/PortalScreenCapture.h
     src/core/ScreenQrScanner.h
     src/core/IWebcamScanner.h
+    src/core/PrintDocumentBuilder.h
 )
 
 add_library(easepass_core STATIC ${CORE_SOURCES} ${CORE_HEADERS})
@@ -183,6 +185,17 @@ if(EASEPASS_HAVE_PORTAL)
     target_link_libraries(easepass_core PRIVATE Qt6::DBus)
     target_compile_definitions(easepass_core PUBLIC EASEPASS_HAVE_PORTAL)
 endif()
+
+# --- App services (QML-facing later; Widgets dialogs for now) -----------------
+add_library(easepass_app STATIC
+    src/app/PrintService.cpp
+    src/app/PrintService.h
+)
+target_include_directories(easepass_app PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/app)
+target_link_libraries(easepass_app
+    PUBLIC easepass_core Qt6::Widgets Qt6::PrintSupport
+    PRIVATE easepass_warnings
+)
 
 # --- Multimedia (webcam) -----------------------------------------------------
 if(EASEPASS_WITH_MULTIMEDIA)
@@ -247,6 +260,7 @@ target_include_directories(easepass PRIVATE
 
 target_link_libraries(easepass PRIVATE
     easepass_core
+    easepass_app
     Qt6::Widgets
     Qt6::Svg
     easepass_warnings
