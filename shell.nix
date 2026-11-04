@@ -13,6 +13,7 @@ pkgs.mkShell {
     gcc
     qt6.qtbase
     qt6.qtsvg
+    qt6.qtmultimedia
     openssl
     libargon2
     zxing-cpp

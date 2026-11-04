@@ -55,6 +55,7 @@ jobs:
           # Must stay >= EASEPASS_QT_MIN_VERSION (CMakeLists.txt)
           version: "6.11.*"
           arch: win64_msvc2022_64
+          modules: qtmultimedia
           cache: true
 
       - name: MSVC developer environment

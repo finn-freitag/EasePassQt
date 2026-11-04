@@ -24,6 +24,22 @@ option(EASEPASS_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 find_package(Qt6 ${EASEPASS_QT_MIN_VERSION} REQUIRED COMPONENTS Core Gui Widgets Network Svg)
 find_package(OpenSSL REQUIRED)
 
+# Linux: xdg-desktop-portal screen capture via QtDBus (D4).
+if(UNIX AND NOT APPLE)
+    find_package(Qt6 ${EASEPASS_QT_MIN_VERSION} REQUIRED COMPONENTS DBus)
+    set(EASEPASS_HAVE_PORTAL ON)
+endif()
+
+# Webcam QR scanning (T9) needs Qt Multimedia; optional so minimal builds still work.
+option(EASEPASS_WITH_MULTIMEDIA "Build webcam QR scanning (Qt Multimedia)" ON)
+if(EASEPASS_WITH_MULTIMEDIA)
+    find_package(Qt6 ${EASEPASS_QT_MIN_VERSION} QUIET COMPONENTS Multimedia)
+    if(NOT Qt6Multimedia_FOUND)
+        message(WARNING "Qt Multimedia not found: webcam scanning disabled")
+        set(EASEPASS_WITH_MULTIMEDIA OFF)
+    endif()
+endif()
+
 # --- argon2 / zxing-cpp ------------------------------------------------------
 # Prefer CMake package configs (vcpkg on Windows, zxing-cpp's own config on Linux),
 # fall back to pkg-config (Nix, most Linux distributions).
@@ -96,6 +112,11 @@ set(CORE_SOURCES
     src/core/ClipboardManager.cpp
     src/core/InactivityManager.cpp
     src/core/LeakCheckService.cpp
+    src/core/ScreenGeometry.cpp
+    src/core/IScreenCapture.cpp
+    src/core/PortalScreenCapture.cpp
+    src/core/ScreenQrScanner.cpp
+    src/core/IWebcamScanner.cpp
 )
 
 set(CORE_HEADERS
@@ -132,6 +153,11 @@ set(CORE_HEADERS
     src/core/ClipboardManager.h
     src/core/InactivityManager.h
     src/core/LeakCheckService.h
+    src/core/ScreenGeometry.h
+    src/core/IScreenCapture.h
+    src/core/PortalScreenCapture.h
+    src/core/ScreenQrScanner.h
+    src/core/IWebcamScanner.h
 )
 
 add_library(easepass_core STATIC ${CORE_SOURCES} ${CORE_HEADERS})
@@ -152,6 +178,25 @@ target_link_libraries(easepass_core
         easepass_zxing
         easepass_warnings
 )
+
+if(EASEPASS_HAVE_PORTAL)
+    target_link_libraries(easepass_core PRIVATE Qt6::DBus)
+    target_compile_definitions(easepass_core PUBLIC EASEPASS_HAVE_PORTAL)
+endif()
+
+# --- Multimedia (webcam) -----------------------------------------------------
+if(EASEPASS_WITH_MULTIMEDIA)
+    add_library(easepass_multimedia STATIC
+        src/multimedia/QtWebcamScanner.cpp
+        src/multimedia/QtWebcamScanner.h
+    )
+    target_include_directories(easepass_multimedia PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/multimedia)
+    target_link_libraries(easepass_multimedia
+        PUBLIC easepass_core Qt6::Multimedia
+        PRIVATE easepass_warnings
+    )
+    target_compile_definitions(easepass_multimedia PUBLIC EASEPASS_HAVE_MULTIMEDIA)
+endif()
 
 # --- Widgets application (legacy UI, replaced by the QML app in T24) ----------
 set(UI_SOURCES
@@ -206,6 +251,10 @@ target_link_libraries(easepass PRIVATE
     Qt6::Svg
     easepass_warnings
 )
+if(EASEPASS_WITH_MULTIMEDIA)
+    target_sources(easepass PRIVATE src/ui/WebcamScanDialog.cpp src/ui/WebcamScanDialog.h)
+    target_link_libraries(easepass PRIVATE easepass_multimedia)
+endif()
 
 # --- Tests -------------------------------------------------------------------
 if(EASEPASS_BUILD_TESTS)

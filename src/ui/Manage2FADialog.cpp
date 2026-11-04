@@ -2,6 +2,10 @@
 #include "TotpHelper.h"
 #include "QrCodeScanner.h"
 #include "ScreenCaptureDialog.h"
+#include "ScreenQrScanner.h"
+#ifdef EASEPASS_HAVE_MULTIMEDIA
+#include "WebcamScanDialog.h"
+#endif
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -11,6 +15,8 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QFont>
+#include <QScreen>
+#include <QWindow>
 
 namespace EasePass::UI {
 
@@ -56,6 +62,15 @@ void Manage2FADialog::setupUi() {
     qrLayout->addWidget(scanFileBtn);
     qrLayout->addWidget(scanClipBtn);
     qrLayout->addWidget(scanScreenBtn);
+#ifdef EASEPASS_HAVE_MULTIMEDIA
+    auto* scanWebcamBtn = new QPushButton(tr("Scan Webcam..."), this);
+    connect(scanWebcamBtn, &QPushButton::clicked, this, [this]() {
+        WebcamScanDialog dlg(this);
+        if (dlg.exec() == QDialog::Accepted && !dlg.scannedResult().isEmpty())
+            loadFromUriOrSecret(dlg.scannedResult());
+    });
+    qrLayout->addWidget(scanWebcamBtn);
+#endif
     mainLayout->addWidget(qrGroup);
 
     // Parameters box
@@ -193,15 +208,35 @@ void Manage2FADialog::onScanClipboard() {
 }
 
 void Manage2FADialog::onScanScreen() {
+    // T9: capture via portal (Wayland) or QScreen, scan on a worker thread, accept a single
+    // auto-detected code, otherwise let the user select a region.
+    QScreen* screen = windowHandle() ? windowHandle()->screen() : nullptr;
+    auto* scanner = new Core::ScreenQrScanner(std::shared_ptr<Core::IScreenCapture>(Core::createScreenCapture()), this);
     hide();
-    ScreenCaptureDialog screenDlg(this);
-    if (screenDlg.exec() == QDialog::Accepted) {
-        QString text = screenDlg.scannedResult();
-        if (!text.isEmpty()) {
-            loadFromUriOrSecret(text);
+    connect(scanner, &Core::ScreenQrScanner::finished, this, [this, scanner, screen](const Core::ScreenQrScanner::Outcome& o) {
+        using S = Core::ScreenQrScanner::Status;
+        QString text;
+        if (o.status == S::Found) {
+            text = o.text;
+        } else if (o.status == S::NoneFound || o.status == S::Multiple) {
+            const QString msg = o.status == S::Multiple ? tr("Several QR codes found. Select one.")
+                                                        : tr("No QR code detected automatically.");
+            QObject::disconnect(scanner, &Core::ScreenQrScanner::finished, this, nullptr);
+            ScreenCaptureDialog dlg(scanner, screen, msg, nullptr);
+            if (dlg.exec() == QDialog::Accepted)
+                text = dlg.scannedResult();
+        } else if (o.status == S::Failed) {
+            show();
+            QMessageBox::warning(this, tr("Scan Failed"), o.errorString);
         }
-    }
-    show();
+        scanner->clear();
+        scanner->deleteLater();
+        show();
+        if (!text.isEmpty())
+            loadFromUriOrSecret(text);
+    });
+    // Give the compositor time to unmap this dialog before capturing.
+    QTimer::singleShot(300, scanner, &Core::ScreenQrScanner::start);
 }
 
 void Manage2FADialog::onRemove2FA() {

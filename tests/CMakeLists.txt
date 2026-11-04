@@ -41,6 +41,7 @@ set(TEST_CORE_SOURCES
     core/DatabaseOperationsTest.cpp
     core/ClipboardInactivityTest.cpp
     core/LeakCheckServiceTest.cpp
+    core/ScreenScanTest.cpp
 )
 
 set(TEST_CORE_HEADERS
@@ -62,6 +63,7 @@ set(TEST_CORE_HEADERS
     core/DatabaseOperationsTest.h
     core/ClipboardInactivityTest.h
     core/LeakCheckServiceTest.h
+    core/ScreenScanTest.h
 )
 
 add_executable(test_core ${TEST_CORE_SOURCES} ${TEST_CORE_HEADERS})
@@ -288,6 +290,22 @@ set(TEST_CORE_UNIT_FUNCTIONS
     testConcurrentChecksShareRequest
     testDisabledBySettingNoRequest
     testEmptyPasswordUnknown
+    testLogicalToDeviceDprScales
+    testUnionGeometryNegativeOrigin
+    testMapSelectionToImage
+    testMapSelectionClipsAndRejects
+    testComposeScreensMixedDpr
+    testChooseBackend
+    testPortalRequestPath
+    testPortalResponseParsing
+    testScanDecision
+    testScanImageAllAsync
+    testScreenQrScannerFindsCode
+    testScreenQrScannerNoCode
+    testScreenQrScannerRegionOnScaledMultiMonitor
+    testScreenQrScannerCaptureFailureAndCancel
+    testScreenQrScannerUnavailableBackend
+    testWebcamControllerDetectsAndThrottles
 )
 
 easepass_add_qtest(test_core

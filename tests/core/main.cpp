@@ -21,6 +21,7 @@
 #include "DatabaseOperationsTest.h"
 #include "ClipboardInactivityTest.h"
 #include "LeakCheckServiceTest.h"
+#include "ScreenScanTest.h"
 
 int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
@@ -43,6 +44,7 @@ int main(int argc, char *argv[]) {
     testObjects.push_back(std::make_unique<DatabaseOperationsTest>());
     testObjects.push_back(std::make_unique<ClipboardInactivityTest>());
     testObjects.push_back(std::make_unique<LeakCheckServiceTest>());
+    testObjects.push_back(std::make_unique<ScreenScanTest>());
 
     // 1. If -functions is requested, print functions for every test object
     for (int i = 1; i < argc; ++i) {
