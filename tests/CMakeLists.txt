@@ -40,6 +40,7 @@ set(TEST_CORE_SOURCES
     core/ItemLogicTest.cpp
     core/DatabaseOperationsTest.cpp
     core/ClipboardInactivityTest.cpp
+    core/LeakCheckServiceTest.cpp
 )
 
 set(TEST_CORE_HEADERS
@@ -60,6 +61,7 @@ set(TEST_CORE_HEADERS
     core/ItemLogicTest.h
     core/DatabaseOperationsTest.h
     core/ClipboardInactivityTest.h
+    core/LeakCheckServiceTest.h
 )
 
 add_executable(test_core ${TEST_CORE_SOURCES} ${TEST_CORE_HEADERS})
@@ -275,6 +277,17 @@ set(TEST_CORE_UNIT_FUNCTIONS
     testInactivityFollowsSettingChange
     testFaviconFetchDisabledBySetting
     testFaviconFetchDefaultOffWithoutSettings
+    testSha1HexAndSuffixParsing
+    testLeakedPassword
+    testNotLeakedPassword
+    testOnlyPrefixIsSent
+    testNetworkErrorGivesUnknown
+    testMalformedResponseGivesUnknown
+    testCacheHitAvoidsRequest
+    testCacheExpires
+    testConcurrentChecksShareRequest
+    testDisabledBySettingNoRequest
+    testEmptyPasswordUnknown
 )
 
 easepass_add_qtest(test_core

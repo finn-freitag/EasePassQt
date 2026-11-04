@@ -95,6 +95,7 @@ set(CORE_SOURCES
     src/core/IClipboard.cpp
     src/core/ClipboardManager.cpp
     src/core/InactivityManager.cpp
+    src/core/LeakCheckService.cpp
 )
 
 set(CORE_HEADERS
@@ -130,6 +131,7 @@ set(CORE_HEADERS
     src/core/IClipboard.h
     src/core/ClipboardManager.h
     src/core/InactivityManager.h
+    src/core/LeakCheckService.h
 )
 
 add_library(easepass_core STATIC ${CORE_SOURCES} ${CORE_HEADERS})
