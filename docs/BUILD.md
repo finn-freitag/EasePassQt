@@ -24,6 +24,9 @@ Raise it when every target ships 6.12.
 |--------|------|
 | `easepass_core` | static library, `src/core`; links only Qt Core/Gui/Network, OpenSSL, argon2, zxing-cpp |
 | `easepass` | Widgets application (legacy UI, replaced by the QML app in T24) |
+| `easepass_qml_module` (+`plugin`) | static QML module `EasePass` in `qml/EasePass`: `Theme` singleton, control library, icons |
+| `easepass_qml` | Qt Quick application (D14); shows the component gallery until the pages exist (T12+) |
+| `test_qml` | QtQuickTest runner; one CTest test per `tests/qml/tst_*.qml`, QML warnings fail the test |
 | `test_core` | QtTest executable for core module, registered with CTest (alias: `test_easepass`) |
 
 Dependencies are found via their CMake package config first (vcpkg on Windows,
@@ -87,3 +90,16 @@ Own targets compile with `-Wall -Wextra` (GCC/Clang) or `/W4` (MSVC).
 
 `.github/workflows/ci.yml`: Linux job (Nix dev shell, presets, ctest, `nix build`) and Windows
 job (MSVC, vcpkg manifest, `install-qt-action`, presets, ctest).
+
+## QML module (T11)
+
+- Style: `FluentWinUI3` (ships with Qt >= 6.8 on every platform) if found in Qt's QML dirs,
+  else `Basic`; `QT_QUICK_CONTROLS_STYLE` overrides it (`src/qmlapp/QuickStyle.cpp`).
+- `Theme` (singleton): follows the system light/dark scheme; `Theme.themeMode` forces
+  light/dark. All component colours, radii, spacing and font sizes come from it.
+- Icons: own monochrome SVGs in `qml/EasePass/icons/` (no Segoe glyphs), tinted at use.
+- Components never touch the clipboard; copy controls emit `copyRequested(text)`, which the
+  view models (T12) route to `ClipboardManager`.
+- On Nix the desktop session can export QML/plugin paths of another Qt version. `test_qml`
+  pins `QML_IMPORT_PATH`/`QT_PLUGIN_PATH` to the Qt it was built against; to run
+  `easepass_qml` from a dev shell, use the same approach or the wrapped Nix package.

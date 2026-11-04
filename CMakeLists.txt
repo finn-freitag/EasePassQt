@@ -21,7 +21,8 @@ set(CMAKE_AUTOUIC ON)
 option(EASEPASS_BUILD_TESTS "Build the test executables" ON)
 option(EASEPASS_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 
-find_package(Qt6 ${EASEPASS_QT_MIN_VERSION} REQUIRED COMPONENTS Core Gui Widgets Network Svg PrintSupport)
+find_package(Qt6 ${EASEPASS_QT_MIN_VERSION} REQUIRED COMPONENTS Core Gui Widgets Network Svg PrintSupport
+             Qml Quick QuickControls2)
 find_package(OpenSSL REQUIRED)
 
 # Linux: xdg-desktop-portal screen capture via QtDBus (D4).
@@ -270,6 +271,31 @@ if(EASEPASS_WITH_MULTIMEDIA)
     target_link_libraries(easepass PRIVATE easepass_multimedia)
 endif()
 
+# --- QML application (T11, D14: second target; becomes `easepass` in T24) ------
+qt_policy(SET QTP0001 NEW)   # QML modules under qrc:/qt/qml/
+add_subdirectory(qml/EasePass)
+
+add_executable(easepass_qml
+    src/qmlapp/main.cpp
+    src/qmlapp/QuickStyle.cpp
+    src/qmlapp/QuickStyle.h
+    ${RESOURCES}
+)
+target_include_directories(easepass_qml PRIVATE src/qmlapp)
+if(WIN32)
+    set_target_properties(easepass_qml PROPERTIES WIN32_EXECUTABLE ON)
+endif()
+target_link_libraries(easepass_qml PRIVATE
+    easepass_core
+    easepass_app
+    easepass_qml_module
+    easepass_qml_moduleplugin
+    Qt6::Widgets
+    Qt6::Quick
+    Qt6::QuickControls2
+    easepass_warnings
+)
+
 # --- Tests -------------------------------------------------------------------
 if(EASEPASS_BUILD_TESTS)
     enable_testing()
@@ -278,7 +304,7 @@ endif()
 
 # Installation targets
 include(GNUInstallDirs)
-install(TARGETS easepass RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS easepass easepass_qml RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 if(UNIX AND NOT APPLE)
     install(FILES easepass.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
     install(FILES assets/appicon.svg DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps RENAME easepass.svg)

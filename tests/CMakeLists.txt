@@ -343,3 +343,59 @@ set_tests_properties(test_core.all_functions_registered PROPERTIES
     LABELS unit
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
+
+# --- test_qml (QML module, QtQuickTest; steps.txt T11) ------------------------
+find_package(Qt6 ${EASEPASS_QT_MIN_VERSION} REQUIRED COMPONENTS QuickTest)
+file(GLOB EASEPASS_QML_TESTS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_*.qml)
+
+add_executable(test_qml
+    qml/main.cpp
+    ${CMAKE_SOURCE_DIR}/src/qmlapp/QuickStyle.cpp
+    ${EASEPASS_QML_TESTS}
+)
+target_include_directories(test_qml PRIVATE ${CMAKE_SOURCE_DIR}/src/qmlapp)
+target_compile_definitions(test_qml PRIVATE
+    EASEPASS_QML_TEST_DIR="${CMAKE_CURRENT_SOURCE_DIR}/qml"
+)
+target_link_libraries(test_qml PRIVATE
+    easepass_qml_module
+    easepass_qml_moduleplugin
+    Qt6::QuickTest
+    Qt6::Quick
+    Qt6::QuickControls2
+    Qt6::Widgets
+    easepass_warnings
+)
+
+# Pin QML import and plugin paths to the Qt installation we built against, so stray
+# QML2_IMPORT_PATH / NIXPKGS_QT6_QML_IMPORT_PATH / QT_PLUGIN_PATH entries from the desktop
+# session (possibly another Qt version) cannot inject incompatible plugins. On Nix every Qt
+# module has its own prefix, so collect the prefixes of the modules the tests need
+# (Qt6<Module>_DIR = <prefix>/lib/cmake/Qt6<Module>).
+set(EASEPASS_QML_TEST_ENV
+    "QML2_IMPORT_PATH=unset:"
+    "NIXPKGS_QT6_QML_IMPORT_PATH=unset:"
+    "QML_IMPORT_PATH=reset:"
+    "QT_PLUGIN_PATH=reset:")
+foreach(_mod IN ITEMS Qml Svg)
+    get_filename_component(_prefix "${Qt6${_mod}_DIR}/../../.." ABSOLUTE)
+    if(EXISTS "${_prefix}/${QT6_INSTALL_QML}")
+        list(APPEND EASEPASS_QML_TEST_ENV "QML_IMPORT_PATH=path_list_append:${_prefix}/${QT6_INSTALL_QML}")
+    endif()
+    if(EXISTS "${_prefix}/${QT6_INSTALL_PLUGINS}")
+        list(APPEND EASEPASS_QML_TEST_ENV "QT_PLUGIN_PATH=path_list_append:${_prefix}/${QT6_INSTALL_PLUGINS}")
+    endif()
+endforeach()
+list(REMOVE_DUPLICATES EASEPASS_QML_TEST_ENV)
+
+# One CTest test per QML test file (new tst_*.qml files are picked up automatically).
+foreach(qml_test IN LISTS EASEPASS_QML_TESTS)
+    get_filename_component(qml_test_name ${qml_test} NAME_WE)
+    add_test(NAME test_qml.${qml_test_name}
+             COMMAND $<TARGET_FILE:test_qml> -input ${qml_test})
+    set_tests_properties(test_qml.${qml_test_name} PROPERTIES
+        LABELS unit
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+        ENVIRONMENT_MODIFICATION "${EASEPASS_QML_TEST_ENV}"
+    )
+endforeach()
