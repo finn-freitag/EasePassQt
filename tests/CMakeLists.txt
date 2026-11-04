@@ -344,6 +344,69 @@ set_tests_properties(test_core.all_functions_registered PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
 
+# --- test_app (view models / services, steps.txt T12) --------------------------
+add_executable(test_app
+    app/main.cpp
+    app/AppTests.h
+    app/AppTestSupport.h
+    app/ControllersTest.cpp
+    app/PasswordModelsTest.cpp
+    app/ItemViewModelTest.cpp
+    app/AppServicesTest.cpp
+)
+target_compile_definitions(test_app PRIVATE EASEPASS_TEST_FIXTURES_DIR="${EASEPASS_TEST_FIXTURES_DIR}")
+target_link_libraries(test_app PRIVATE easepass_app Qt6::Test Qt6::Qml easepass_warnings)
+
+set(TEST_APP_UNIT_FUNCTIONS
+    testNavigationNeedsOpenDatabase
+    testOpenAndLockResetNavigation
+    testGoBackSkipsUnavailablePages
+    testOpenSuccessBusyFlags
+    testOpenWrongPasswordError
+    testOpenNeedsSecondFactor
+    testOpenEmptyPathError
+    testLockAndSaveErrors
+    testCreateDatabaseValidationAndSuccess
+    testListModelRolesAndNoSecrets
+    testListModelResetsOnChanges
+    testFilterFreeTextAndTags
+    testTagSuggestions
+    testSortModesAndOrder
+    testSourceIndexMapping
+    testLoadEditCancel
+    testCommitUpdatesService
+    testNewItemCommitAndValidation
+    testTotpValidationErrors
+    testDeleteItem
+    testSafetyChecksAndReuse
+    testLeakCheckStates
+    testLeakResultForStalePasswordIgnored
+    testTotpSharedTimerTicks
+    testApplyOtpauthUri
+    testCopyActionsUseClipboardAndRegisterClick
+    testUnloadOnLock
+    testTotpTimerRefCount
+    testDialogServiceRequestResponse
+    testDialogServiceCancelAll
+    testClipboardService
+    testSettingsViewModel
+    testPrintViewModelExportPdf
+    testScreenScanViewModelFound
+    testScreenScanViewModelFailureAndClear
+    testAppContextQmlRegistration
+)
+easepass_add_qtest(test_app LABELS unit FUNCTIONS ${TEST_APP_UNIT_FUNCTIONS})
+add_test(NAME test_app.all_functions_registered
+    COMMAND ${CMAKE_COMMAND}
+        -DTEST_EXE=$<TARGET_FILE:test_app>
+        "-DREGISTERED=${TEST_APP_UNIT_FUNCTIONS}"
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/CheckRegisteredTests.cmake
+)
+set_tests_properties(test_app.all_functions_registered PROPERTIES
+    LABELS unit
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)
+
 # --- test_qml (QML module, QtQuickTest; steps.txt T11) ------------------------
 find_package(Qt6 ${EASEPASS_QT_MIN_VERSION} REQUIRED COMPONENTS QuickTest)
 file(GLOB EASEPASS_QML_TESTS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_*.qml)
@@ -398,4 +461,9 @@ foreach(qml_test IN LISTS EASEPASS_QML_TESTS)
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
         ENVIRONMENT_MODIFICATION "${EASEPASS_QML_TEST_ENV}"
     )
+endforeach()
+
+# test_app loads QML (AppContext registration test): pin the same Qt paths as test_qml.
+foreach(fn IN LISTS TEST_APP_UNIT_FUNCTIONS)
+    set_tests_properties(test_app.${fn} PROPERTIES ENVIRONMENT_MODIFICATION "${EASEPASS_QML_TEST_ENV}")
 endforeach()

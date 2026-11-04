@@ -191,10 +191,34 @@ endif()
 add_library(easepass_app STATIC
     src/app/PrintService.cpp
     src/app/PrintService.h
+    src/app/AppController.cpp
+    src/app/AppController.h
+    src/app/DatabaseController.cpp
+    src/app/DatabaseController.h
+    src/app/PasswordListModel.cpp
+    src/app/PasswordListModel.h
+    src/app/PasswordFilterModel.cpp
+    src/app/PasswordFilterModel.h
+    src/app/TotpTimerService.cpp
+    src/app/TotpTimerService.h
+    src/app/ItemViewModel.cpp
+    src/app/ItemViewModel.h
+    src/app/SettingsViewModel.cpp
+    src/app/SettingsViewModel.h
+    src/app/DialogService.cpp
+    src/app/DialogService.h
+    src/app/ClipboardService.cpp
+    src/app/ClipboardService.h
+    src/app/PrintViewModel.cpp
+    src/app/PrintViewModel.h
+    src/app/ScreenScanViewModel.cpp
+    src/app/ScreenScanViewModel.h
+    src/app/AppContext.cpp
+    src/app/AppContext.h
 )
 target_include_directories(easepass_app PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/app)
 target_link_libraries(easepass_app
-    PUBLIC easepass_core Qt6::Widgets Qt6::PrintSupport
+    PUBLIC easepass_core Qt6::Widgets Qt6::PrintSupport Qt6::Qml
     PRIVATE easepass_warnings
 )
 

@@ -2,12 +2,12 @@ import QtQuick
 import QtQuick.Controls
 
 // C#: Controls/SearchPasswordsBox.xaml(.cs) - search field with search icon, info label
-// ("x of y") and suggestions. A query starting with '#' is a tag search; keyPressed reports
+// ("x of y") and suggestions. A query starting with '/' is a tag search (C#), keyPressed reports
 // that flag so the view model can complete tags.
 SuggestionBox {
     id: root
     property string infoLabel: ""
-    readonly property bool isTagSearch: text.startsWith("#")
+    readonly property bool isTagSearch: text.startsWith("/")
     signal searchKeyPressed(bool isTagSearch, var event)
 
     placeholderText: qsTr("Search passwords")

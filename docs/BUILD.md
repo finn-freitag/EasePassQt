@@ -26,6 +26,8 @@ Raise it when every target ships 6.12.
 | `easepass` | Widgets application (legacy UI, replaced by the QML app in T24) |
 | `easepass_qml_module` (+`plugin`) | static QML module `EasePass` in `qml/EasePass`: `Theme` singleton, control library, icons |
 | `easepass_qml` | Qt Quick application (D14); shows the component gallery until the pages exist (T12+) |
+| `easepass_app` | static library `src/app`: view models + services (T12), `AppContext` composition root |
+| `test_app` | QtTest executable for the view models (fakes only), one CTest test per function |
 | `test_qml` | QtQuickTest runner; one CTest test per `tests/qml/tst_*.qml`, QML warnings fail the test |
 | `test_core` | QtTest executable for core module, registered with CTest (alias: `test_easepass`) |
 
@@ -103,3 +105,25 @@ job (MSVC, vcpkg manifest, `install-qt-action`, presets, ctest).
 - On Nix the desktop session can export QML/plugin paths of another Qt version. `test_qml`
   pins `QML_IMPORT_PATH`/`QT_PLUGIN_PATH` to the Qt it was built against; to run
   `easepass_qml` from a dev shell, use the same approach or the wrapped Nix package.
+
+## View models (T12)
+
+`App::AppContext` builds the whole object graph from `AppContext::Deps` (settings store,
+clipboard, network client, screen capture, clock, KDF params; defaults are the real
+implementations) and `registerQml()` exposes these singletons in the QML module
+`EasePass.App` 1.0:
+
+| QML name | C++ class | Purpose |
+|----------|-----------|---------|
+| `AppController` | `AppController` | pages Login/Register/Passwords/Database/Settings/About/Plugins, back stack |
+| `DatabaseController` | `DatabaseController` | open/lock/create/save, busy + error state |
+| `PasswordList` | `PasswordFilterModel` over `PasswordListModel` | search (`/tag` = tag search), sort, suggestions |
+| `ItemViewModel` | `ItemViewModel` | edit buffer, validation, strength + leak checks, TOTP |
+| `SettingsViewModel` | `SettingsViewModel` | `settings` (AppSettings), limits, resets |
+| `DialogService` | `DialogService` | C++ -> QML dialog requests (`respond(id, result)`), InfoBar messages |
+| `ClipboardService` | `ClipboardService` | copy with auto-clear (ClipboardManager) |
+| `PrintViewModel` | `PrintViewModel` | print / preview / PDF export |
+| `ScreenScanViewModel` | `ScreenScanViewModel` | QR scan from the screen |
+| `TotpTimer` | `TotpTimerService` | the one shared 1 s TOTP timer |
+
+Secrets (passwords, 2FA secrets) are never list-model roles; only `ItemViewModel` exposes them.

@@ -56,13 +56,13 @@ Item {
             compare(s.Accessible.name, "Search passwords")
             const keys = createTemporaryObject(spyC, top, { target: s, signalName: "searchKeyPressed" })
             s.forceActiveFocus()
-            keyClick(Qt.Key_NumberSign)
+            keyClick(Qt.Key_Slash)
             verify(s.isTagSearch)
             compare(keys.count, 1)
             verify(!keys.signalArguments[0][0]) // reported before the text changes (C# PreviewKeyDown)
             keyClick(Qt.Key_W)
             verify(keys.signalArguments[1][0])
-            s.suggestions = [{ text: "#work" }, { text: "#web" }]
+            s.suggestions = [{ text: "/work" }, { text: "/web" }]
             tryVerify(() => s.suggestionsOpen)
             const chosen = createTemporaryObject(spyC, top, { target: s, signalName: "suggestionChosen" })
             const list = findChild(s, "suggestionList")
@@ -70,8 +70,8 @@ Item {
             tryVerify(() => list.count === 2)
             keyClick(Qt.Key_Down); keyClick(Qt.Key_Down); keyClick(Qt.Key_Enter)
             compare(chosen.count, 1)
-            compare(chosen.signalArguments[0][0].text, "#web")
-            compare(s.text, "#web")
+            compare(chosen.signalArguments[0][0].text, "/web")
+            compare(s.text, "/web")
             s.setTextProgrammatically("abc")
             verify(!s.isTagSearch)
         }

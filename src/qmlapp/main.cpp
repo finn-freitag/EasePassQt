@@ -5,6 +5,7 @@
 #include <QQmlApplicationEngine>
 #include <QtQml/qqmlextensionplugin.h>
 
+#include "AppContext.h"
 #include "ICoreDumpControl.h"
 #include "QuickStyle.h"
 
@@ -24,6 +25,10 @@ int main(int argc, char *argv[]) {
     app.setWindowIcon(QIcon(":/assets/appicon.svg"));
 
     EasePass::App::applyQuickStyle();
+
+    // Composition root: Core services + view models, exposed as "EasePass.App" singletons (T12).
+    EasePass::App::AppContext context;
+    context.registerQml();
 
     QQmlApplicationEngine engine;
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &app,
