@@ -45,6 +45,17 @@ SecretString &SecretString::operator=(const char *str) {
     return *this;
 }
 
+qsizetype SecretString::codePointCount() const noexcept {
+    qsizetype count = 0;
+    const auto *p = reinterpret_cast<const unsigned char *>(m_buffer.constData());
+    for (size_t i = 0; i < m_buffer.size(); ++i) {
+        if ((p[i] & 0xC0) != 0x80) { // skip UTF-8 continuation bytes
+            ++count;
+        }
+    }
+    return count;
+}
+
 QString SecretString::toQString() const {
     if (m_buffer.isEmpty())
         return QString();

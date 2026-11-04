@@ -41,6 +41,8 @@ public:
     bool empty() const noexcept { return m_buffer.empty(); }
     size_t size() const noexcept { return m_buffer.size(); }
     size_t length() const noexcept { return m_buffer.size(); }
+    /// Number of Unicode code points (UTF-8 lead bytes) without creating a QString copy.
+    qsizetype codePointCount() const noexcept;
 
     const char *c_str() const noexcept { return m_buffer.constData(); }
     const char *constData() const noexcept { return m_buffer.constData(); }

@@ -38,6 +38,7 @@ set(TEST_CORE_SOURCES
     core/DeferredSaveManagerTest.cpp
     core/DatabaseServiceTest.cpp
     core/ItemLogicTest.cpp
+    core/DatabaseOperationsTest.cpp
 )
 
 set(TEST_CORE_HEADERS
@@ -56,6 +57,7 @@ set(TEST_CORE_HEADERS
     core/DatabaseServiceTest.h
     core/FakeDatabaseSource.h
     core/ItemLogicTest.h
+    core/DatabaseOperationsTest.h
 )
 
 add_executable(test_core ${TEST_CORE_SOURCES} ${TEST_CORE_HEADERS})
@@ -230,6 +232,33 @@ set(TEST_CORE_UNIT_FUNCTIONS
     testFindItemsByNameAndTag
     testEmailAddressIndexer
     testPasswordItemTagHelper
+    testSecondFactorTypesAndTokenGenerator
+    testSanitizeAndBuildDatabasePath
+    testValidateNewPasswordAndCreate
+    testCreateDatabase
+    testCreateDatabaseWithSecondFactor
+    testCreateDatabaseNeverOverwrites
+    testRenameDatabase
+    testRenameRejectsLoadedAndExisting
+    testDeleteDatabaseRemovesFromKnownList
+    testDeleteRejectsLastAndLoaded
+    testImportDatabaseFile
+    testReadItemsFromFileWrongPassword
+    testChangeMasterPassword
+    testChangeMasterPasswordValidation
+    testChangeMasterPasswordSaveFailureRestoresOld
+    testSetAndRemoveSecondFactor
+    testSecondFactorUnsupportedAndInvalid
+    testRotateOneTimeSecondFactor
+    testImportPasswordsMergeRules
+    testImportPasswordsFromFile
+    testExportDatabaseCopy
+    testExportWithNewPasswordOpensWithNewPasswordOnly
+    testExportSelectedItemsAndBackup
+    testExportRejectsOpenDatabaseFile
+    testForceSave
+    testTemporaryDatabaseIsReadOnly
+    testOperationsWithoutOpenDatabase
 )
 
 easepass_add_qtest(test_core

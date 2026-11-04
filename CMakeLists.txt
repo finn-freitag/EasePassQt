@@ -89,6 +89,9 @@ set(CORE_SOURCES
     src/core/SearchPasswordsManager.cpp
     src/core/EmailAddressIndexer.cpp
     src/core/PasswordItemTagHelper.cpp
+    src/core/SecondFactor.cpp
+    src/core/DatabaseOperationResult.cpp
+    src/core/DatabaseOperations.cpp
 )
 
 set(CORE_HEADERS
@@ -118,6 +121,9 @@ set(CORE_HEADERS
     src/core/SearchPasswordsManager.h
     src/core/EmailAddressIndexer.h
     src/core/PasswordItemTagHelper.h
+    src/core/SecondFactor.h
+    src/core/DatabaseOperationResult.h
+    src/core/DatabaseOperations.h
 )
 
 add_library(easepass_core STATIC ${CORE_SOURCES} ${CORE_HEADERS})
