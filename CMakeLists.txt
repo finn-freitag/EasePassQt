@@ -92,6 +92,9 @@ set(CORE_SOURCES
     src/core/SecondFactor.cpp
     src/core/DatabaseOperationResult.cpp
     src/core/DatabaseOperations.cpp
+    src/core/IClipboard.cpp
+    src/core/ClipboardManager.cpp
+    src/core/InactivityManager.cpp
 )
 
 set(CORE_HEADERS
@@ -124,6 +127,9 @@ set(CORE_HEADERS
     src/core/SecondFactor.h
     src/core/DatabaseOperationResult.h
     src/core/DatabaseOperations.h
+    src/core/IClipboard.h
+    src/core/ClipboardManager.h
+    src/core/InactivityManager.h
 )
 
 add_library(easepass_core STATIC ${CORE_SOURCES} ${CORE_HEADERS})

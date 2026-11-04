@@ -4,11 +4,19 @@
 #include <QPixmap>
 #include <QMap>
 #include <QSet>
+#include <QPointer>
 #include <memory>
 #include "INetworkClient.h"
 
 namespace EasePass::Core {
 
+class AppSettings;
+
+/**
+ * Favicon fetching with memory/disk cache. Network access only happens when
+ * AppSettings::fetchFavicons is on (default off, P8); without settings the default applies.
+ * Already cached icons are still returned when fetching is off (no network involved).
+ */
 class WebsiteIconManager : public QObject {
     Q_OBJECT
 public:
@@ -25,6 +33,9 @@ public:
     void setCacheDir(const QString &dir);
     void clearCache();
 
+    void setSettings(AppSettings *settings);
+    bool fetchingAllowed() const;
+
 signals:
     void iconLoaded(const QString &domain);
 
@@ -37,6 +48,7 @@ private:
     QMap<QString, QPixmap> m_memoryCache;
     QSet<QString> m_pendingDownloads;
     QString m_cacheDir;
+    QPointer<AppSettings> m_settings;
 };
 
 } // namespace EasePass::Core

@@ -39,6 +39,7 @@ set(TEST_CORE_SOURCES
     core/DatabaseServiceTest.cpp
     core/ItemLogicTest.cpp
     core/DatabaseOperationsTest.cpp
+    core/ClipboardInactivityTest.cpp
 )
 
 set(TEST_CORE_HEADERS
@@ -58,6 +59,7 @@ set(TEST_CORE_HEADERS
     core/FakeDatabaseSource.h
     core/ItemLogicTest.h
     core/DatabaseOperationsTest.h
+    core/ClipboardInactivityTest.h
 )
 
 add_executable(test_core ${TEST_CORE_SOURCES} ${TEST_CORE_HEADERS})
@@ -259,6 +261,20 @@ set(TEST_CORE_UNIT_FUNCTIONS
     testForceSave
     testTemporaryDatabaseIsReadOnly
     testOperationsWithoutOpenDatabase
+    testClipboardClearedAfterTimeout
+    testClipboardNotClearedIfUserCopiedOther
+    testClipboardRecopyRestartsTimer
+    testClipboardDisabledWhenZero
+    testClipboardSecretFlagAndEmptyText
+    testClipboardClearOnDestruction
+    testInactivityLogoutAfterTimeout
+    testInactivityActivityResetsTimer
+    testInactivityWarningThenLogout
+    testInactivityWarningCancelledByActivity
+    testInactivityDisabled
+    testInactivityFollowsSettingChange
+    testFaviconFetchDisabledBySetting
+    testFaviconFetchDefaultOffWithoutSettings
 )
 
 easepass_add_qtest(test_core

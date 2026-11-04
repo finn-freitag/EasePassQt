@@ -1,6 +1,7 @@
 #include "WebsiteIconManagerTest.h"
 #include "WebsiteIconManager.h"
 #include "INetworkClient.h"
+#include "AppSettings.h"
 #include <QTest>
 #include <QSignalSpy>
 #include <QTemporaryDir>
@@ -70,6 +71,9 @@ void WebsiteIconManagerTest::testCacheMissAndAsyncLoad() {
     fakeNet->setResponse(faviconUrl, 200, createSamplePngData());
 
     WebsiteIconManager mgr(fakeNet);
+    auto settings = AppSettings::createInMemory();
+    settings->setFetchFavicons(true);
+    mgr.setSettings(settings.get());
     mgr.setCacheDir(tempDir.path());
 
     QSignalSpy spyLoaded(&mgr, &WebsiteIconManager::iconLoaded);
@@ -96,6 +100,9 @@ void WebsiteIconManagerTest::testMemoryCacheHit() {
     fakeNet->setResponse(faviconUrl, 200, createSamplePngData());
 
     WebsiteIconManager mgr(fakeNet);
+    auto settings = AppSettings::createInMemory();
+    settings->setFetchFavicons(true);
+    mgr.setSettings(settings.get());
     mgr.setCacheDir(tempDir.path());
 
     // First request triggers download
@@ -117,6 +124,9 @@ void WebsiteIconManagerTest::testDiskCacheHit() {
     fakeNet->setResponse(faviconUrl, 200, createSamplePngData());
 
     WebsiteIconManager mgr(fakeNet);
+    auto settings = AppSettings::createInMemory();
+    settings->setFetchFavicons(true);
+    mgr.setSettings(settings.get());
     mgr.setCacheDir(tempDir.path());
 
     // Fetch and save to disk
@@ -144,6 +154,9 @@ void WebsiteIconManagerTest::testFailureFallbackToGoogleFavicons() {
     fakeNet->setResponse(fallbackUrl, 200, createSamplePngData());
 
     WebsiteIconManager mgr(fakeNet);
+    auto settings = AppSettings::createInMemory();
+    settings->setFetchFavicons(true);
+    mgr.setSettings(settings.get());
     mgr.setCacheDir(tempDir.path());
 
     QSignalSpy spyLoaded(&mgr, &WebsiteIconManager::iconLoaded);
@@ -166,6 +179,9 @@ void WebsiteIconManagerTest::testFailureFallbackToGoogleFavicons() {
 void WebsiteIconManagerTest::testEmptyDomainHandling() {
     auto fakeNet = std::make_shared<FakeNetworkClient>();
     WebsiteIconManager mgr(fakeNet);
+    auto settings = AppSettings::createInMemory();
+    settings->setFetchFavicons(true);
+    mgr.setSettings(settings.get());
 
     QPixmap emptyIcon = mgr.getIcon("");
     QVERIFY(emptyIcon.isNull());

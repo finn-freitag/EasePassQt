@@ -19,6 +19,7 @@
 #include "DatabaseServiceTest.h"
 #include "ItemLogicTest.h"
 #include "DatabaseOperationsTest.h"
+#include "ClipboardInactivityTest.h"
 
 int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
@@ -39,6 +40,7 @@ int main(int argc, char *argv[]) {
     testObjects.push_back(std::make_unique<DatabaseServiceTest>());
     testObjects.push_back(std::make_unique<ItemLogicTest>());
     testObjects.push_back(std::make_unique<DatabaseOperationsTest>());
+    testObjects.push_back(std::make_unique<ClipboardInactivityTest>());
 
     // 1. If -functions is requested, print functions for every test object
     for (int i = 1; i < argc; ++i) {

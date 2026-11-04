@@ -1,4 +1,5 @@
 #include "WebsiteIconManager.h"
+#include "AppSettings.h"
 
 #include <QStandardPaths>
 #include <QDir>
@@ -33,6 +34,14 @@ void WebsiteIconManager::setNetworkClient(std::shared_ptr<INetworkClient> client
 void WebsiteIconManager::setCacheDir(const QString &dir) {
     m_cacheDir = dir;
     QDir().mkpath(m_cacheDir);
+}
+
+void WebsiteIconManager::setSettings(AppSettings *settings) {
+    m_settings = settings;
+}
+
+bool WebsiteIconManager::fetchingAllowed() const {
+    return m_settings ? m_settings->fetchFavicons() : AppSettings::Defaults::FetchFavicons;
 }
 
 void WebsiteIconManager::clearCache() {
@@ -89,7 +98,8 @@ QPixmap WebsiteIconManager::getIcon(const QString &website, int size) {
 
 void WebsiteIconManager::requestIcon(const QString &website) {
     QString domain = extractDomain(website);
-    if (domain.isEmpty() || m_pendingDownloads.contains(domain)) {
+    // Privacy (P8): never contact the site or the fallback service unless the user opted in.
+    if (domain.isEmpty() || m_pendingDownloads.contains(domain) || !fetchingAllowed()) {
         return;
     }
 
@@ -100,7 +110,7 @@ void WebsiteIconManager::requestIcon(const QString &website) {
 }
 
 void WebsiteIconManager::startDownload(const QString &domain, const QUrl &url, bool isFallback) {
-    if (!m_netClient) {
+    if (!m_netClient || !fetchingAllowed()) {
         m_pendingDownloads.remove(domain);
         return;
     }
