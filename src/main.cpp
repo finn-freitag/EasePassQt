@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
     app.setApplicationName("EasePass");
     app.setApplicationDisplayName("Ease Pass");
     app.setOrganizationName("EasePass");
-    app.setApplicationVersion("1.4.0");
+    app.setApplicationVersion(QStringLiteral(EASEPASS_VERSION));
     app.setWindowIcon(QIcon(":/assets/appicon.svg"));
 
     // Favicon fetching follows AppSettings::fetchFavicons (T7, default off).

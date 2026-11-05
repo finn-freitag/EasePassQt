@@ -24,6 +24,7 @@ ApplicationWindow {
     property var databaseManagement: null
     property var printer: null
     property var settingsViewModel: null
+    property var about: null
 
     // Values of App::AppController::Page
     readonly property int pageLogin: 0
@@ -54,6 +55,7 @@ ApplicationWindow {
             case window.pagePasswords: return passwordsPage
             case window.pageDatabase: return window.databaseManagement ? databasePage : placeholderPage
             case window.pageSettings: return window.settingsViewModel ? settingsPage : placeholderPage
+            case window.pageAbout: return window.about ? aboutPage : placeholderPage
             default: return placeholderPage
             }
         }
@@ -147,6 +149,14 @@ ApplicationWindow {
             showBack: window.appController.canGoBack
             onBackRequested: window.appController.goBack()
             onManageDatabaseRequested: window.appController.navigate(window.pageDatabase)
+        }
+    }
+    Component {
+        id: aboutPage
+        AboutPage {
+            about: window.about
+            showBack: window.appController.canGoBack
+            onBackRequested: window.appController.goBack()
         }
     }
     Component {

@@ -24,6 +24,7 @@ class WebsiteIconManager;
 
 namespace EasePass::App {
 
+class AboutViewModel;
 class AppController;
 class ClipboardService;
 class DailyTipService;
@@ -86,6 +87,7 @@ public:
     QrImportService *qrImport() const { return m_qrImport; }
     WebcamScanViewModel *webcamScan() const { return m_webcam; }
     DatabaseManagementViewModel *databaseManagement() const { return m_databaseManagement; }
+    AboutViewModel *about() const { return m_about; }
     SettingsViewModel *settingsViewModel() const { return m_settingsViewModel; }
     DialogService *dialogService() const { return m_dialogService; }
     ClipboardService *clipboardService() const { return m_clipboardService; }
@@ -115,6 +117,7 @@ private:
     QrImportService *m_qrImport = nullptr;
     WebcamScanViewModel *m_webcam = nullptr;
     DatabaseManagementViewModel *m_databaseManagement = nullptr;
+    AboutViewModel *m_about = nullptr;
     SettingsViewModel *m_settingsViewModel = nullptr;
     DialogService *m_dialogService = nullptr;
     ClipboardService *m_clipboardService = nullptr;

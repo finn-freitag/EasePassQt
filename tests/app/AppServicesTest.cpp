@@ -1,7 +1,9 @@
 #include "AppTestSupport.h"
 #include "AppTests.h"
 
+#include "AboutViewModel.h"
 #include "AppContext.h"
+#include "BuildInfo.h"
 #include "AppController.h"
 #include "AppSettings.h"
 #include "ClipboardManager.h"
@@ -221,6 +223,71 @@ void AppServicesTest::testSettingsResetPopularity() {
     QTRY_VERIFY(!vm.canResetPopularity());
     QVERIFY(!vm.resetPopularity());
     svc.shutdown();
+}
+
+void AppServicesTest::testAboutChangelogParser() {
+    const QString text = QString::fromUtf8("\xEF\xBB\xBF#Version 2.0 [01.01.2030]\n"
+                                           "\t\u2022 First\r\n"
+                                           "\n"
+                                           "\t\u2022 Second\n"
+                                           "---More\n"
+                                           "#  Version 1.0\n"
+                                           "plain\n\n\n");
+    const QVariantList blocks = AboutViewModel::parseChangelog(text);
+    QCOMPARE(blocks.size(), 2);
+    const QVariantMap first = blocks.at(0).toMap();
+    QCOMPARE(first.value("title").toString(), QStringLiteral("Version 2.0 [01.01.2030]"));
+    QCOMPARE(first.value("lines").toStringList(),
+             QStringList({QString::fromUtf8("\u2022 First"), QString::fromUtf8("\u2022 Second"), QString(), "More"}));
+    QCOMPARE(blocks.at(1).toMap().value("title").toString(), QStringLiteral("Version 1.0"));
+    QCOMPARE(blocks.at(1).toMap().value("lines").toStringList(), QStringList{"plain"});
+    QVERIFY(AboutViewModel::parseChangelog(QString()).isEmpty());
+
+    // The bundled changelog (C#: Assets/changelog.txt) starts with the current version.
+    AboutViewModel vm;
+    QVERIFY(vm.changelog().size() >= 5);
+    QVERIFY(vm.changelog().first().toMap().value("title").toString().startsWith("Version " + vm.version()));
+}
+
+void AppServicesTest::testAboutOpenUrl() {
+    AboutViewModel vm;
+    QStringList opened;
+    bool succeed = true;
+    vm.setUrlOpener([&](const QUrl &url) {
+        opened << url.toString();
+        return succeed;
+    });
+    QSignalSpy spy(&vm, &AboutViewModel::urlOpened);
+    QVERIFY(vm.openUrl(vm.repositoryUrl()));
+    QVERIFY(vm.openUrl("mailto:" + vm.contactEmail()));
+    QVERIFY(vm.openUrl(vm.websiteUrl())); // http, as in C#
+    QVERIFY(!vm.openUrl("file:///etc/passwd"));
+    QVERIFY(!vm.openUrl("javascript:alert(1)"));
+    QVERIFY(!vm.openUrl("ftp://example.org"));
+    QVERIFY(!vm.openUrl("not a url with spaces"));
+    QCOMPARE(opened.size(), 3);
+    QCOMPARE(spy.count(), 3);
+    succeed = false; // opener failure is reported
+    QVERIFY(!vm.openUrl("https://example.org"));
+    QCOMPARE(spy.count(), 3);
+    QVERIFY(vm.issuesUrl().startsWith(vm.repositoryUrl()));
+}
+
+void AppServicesTest::testAboutBuildInfo() {
+    QCOMPARE(BuildInfo::appVersion(), QStringLiteral(EASEPASS_VERSION));
+    QVERIFY(!AboutViewModel::version().isEmpty());
+    const auto deps = BuildInfo::dependencies();
+    QCOMPARE(deps.size(), 4);
+    QCOMPARE(deps.at(0).name, QStringLiteral("Qt"));
+    QCOMPARE(deps.at(0).version, QString::fromLatin1(qVersion()));
+    QVERIFY(deps.at(1).version.at(0).isDigit()); // OpenSSL "3.x.y"
+    QVERIFY(deps.at(3).version.count('.') == 2);  // zxing-cpp
+    for (const auto &d : deps) {
+        QVERIFY(!d.license.isEmpty());
+        QVERIFY(d.url.startsWith("https://"));
+    }
+    QCOMPARE(AboutViewModel::developers().size(), 2);
+    QCOMPARE(AboutViewModel::dependencies().size(), 4);
 }
 
 void AppServicesTest::testPrintViewModelExportPdf() {

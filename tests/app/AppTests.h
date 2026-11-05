@@ -76,6 +76,9 @@ private slots:
     void testSettingsLanguages();
     void testSettingsPasswordLengthText();
     void testSettingsResetPopularity();
+    void testAboutChangelogParser();
+    void testAboutOpenUrl();
+    void testAboutBuildInfo();
     void testPrintViewModelExportPdf();
     void testScreenScanViewModelFound();
     void testScreenScanViewModelFailureAndClear();

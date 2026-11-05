@@ -14,6 +14,7 @@
 #include "WebsiteIconService.h"
 #include "DatabaseController.h"
 #include "DatabaseManagementViewModel.h"
+#include "AboutViewModel.h"
 #include "DatabaseOperations.h"
 #include "DatabaseService.h"
 #include "DialogService.h"
@@ -77,6 +78,7 @@ AppContext::AppContext(Deps deps, QObject *parent)
     m_dialogService = new DialogService(this);
     m_printViewModel = new PrintViewModel(m_service, m_printService, this);
     m_screenScanViewModel = new ScreenScanViewModel(capture, this);
+    m_about = new AboutViewModel(this);
     m_databaseManagement = new DatabaseManagementViewModel(m_service, m_operations, m_settings, m_clipboardService, this);
 
     m_dailyTip = new DailyTipService(m_clock, this);
@@ -121,6 +123,7 @@ void AppContext::registerQml() {
     single("QrImport", m_qrImport);
     single("WebcamScan", m_webcam);
     single("DatabaseManagement", m_databaseManagement);
+    single("About", m_about);
     single("SettingsViewModel", m_settingsViewModel);
     single("DialogService", m_dialogService);
     single("ClipboardService", m_clipboardService);

@@ -132,6 +132,8 @@ set(CORE_HEADERS
     src/core/WebsiteIconManager.h
     src/core/QrCodeScanner.h
     src/core/QrCodeGenerator.h
+    src/core/BuildInfo.cpp
+    src/core/BuildInfo.h
     src/core/IClock.h
     src/core/INetworkClient.h
     src/core/ISettingsStore.h
@@ -184,6 +186,9 @@ target_link_libraries(easepass_core
         easepass_warnings
 )
 
+# App version for BuildInfo / About page / QCoreApplication::applicationVersion (T18)
+target_compile_definitions(easepass_core PUBLIC EASEPASS_VERSION="${PROJECT_VERSION}")
+
 if(EASEPASS_HAVE_PORTAL)
     target_link_libraries(easepass_core PRIVATE Qt6::DBus)
     target_compile_definitions(easepass_core PUBLIC EASEPASS_HAVE_PORTAL)
@@ -231,6 +236,19 @@ add_library(easepass_app STATIC
     src/app/WebcamScanViewModel.h
     src/app/DatabaseManagementViewModel.cpp
     src/app/DatabaseManagementViewModel.h
+    src/app/AboutViewModel.cpp
+    src/app/AboutViewModel.h
+)
+# Changelog for the About page (C#: Assets/changelog.txt; T18)
+qt_add_resources(easepass_app "changelog"
+    PREFIX "/changelog"
+    BASE "resources/changelog"
+    FILES resources/changelog/changelog.txt
+)
+qt_add_resources(easepass_app "abouticon"
+    PREFIX "/about"
+    BASE "assets"
+    FILES assets/appicon.svg
 )
 # Daily tips (C#: resources/DailyTips_*.txt, bundled instead of downloaded; T13)
 qt_add_resources(easepass_app "dailytips"

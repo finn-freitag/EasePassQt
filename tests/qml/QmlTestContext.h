@@ -28,6 +28,8 @@ class QmlTestContext : public QObject {
     Q_PROPERTY(QObject *printer READ printer CONSTANT)
     Q_PROPERTY(QObject *appController READ appController CONSTANT)
     Q_PROPERTY(QObject *settingsViewModel READ settingsViewModel CONSTANT)
+    Q_PROPERTY(QObject *about READ about CONSTANT)
+    Q_PROPERTY(QStringList openedUrls READ openedUrls NOTIFY openedUrlsChanged)
     Q_PROPERTY(QString clipboardText READ clipboardText NOTIFY clipboardChanged)
     Q_PROPERTY(int itemCount READ itemCount NOTIFY itemsChanged)
 public:
@@ -49,6 +51,10 @@ public:
     QObject *printer() const;
     QObject *appController() const;
     QObject *settingsViewModel() const;
+    QObject *about() const;
+    /// URLs the About page asked to open (fake opener; no browser is started).
+    QStringList openedUrls() const { return m_openedUrls; }
+    Q_INVOKABLE void clearOpenedUrls();
     /// Adds a click to every item of the open database (popularity reset tests).
     Q_INVOKABLE void clickAll();
     QString clipboardText() const { return m_clip->content; }
@@ -105,6 +111,7 @@ public:
 signals:
     void clipboardChanged();
     void itemsChanged();
+    void openedUrlsChanged();
 
 private:
     bool openItems(const QList<EasePass::Core::PasswordItem> &items);
@@ -116,4 +123,5 @@ private:
     QTemporaryDir m_tempDir;
     std::shared_ptr<FakeDatabaseSource> m_source;
     std::unique_ptr<EasePass::App::AppContext> m_ctx;
+    QStringList m_openedUrls;
 };

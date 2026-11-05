@@ -10,6 +10,7 @@
 #include "PrintViewModel.h"
 #include "AppController.h"
 #include "SettingsViewModel.h"
+#include "AboutViewModel.h"
 #include <QFileInfo>
 #include "ISettingsStore.h"
 #include "ItemViewModel.h"
@@ -68,6 +69,11 @@ QmlTestContext::QmlTestContext(QObject *parent)
     m_ctx->settings()->setVerifyNotLeaked(false); // no HIBP requests in UI tests
     connect(m_ctx->clipboardService(), &ClipboardService::copied, this, &QmlTestContext::clipboardChanged);
     connect(m_ctx->databaseService(), &DatabaseService::itemsChanged, this, &QmlTestContext::itemsChanged);
+    m_ctx->about()->setUrlOpener([this](const QUrl &url) {
+        m_openedUrls << url.toString();
+        emit openedUrlsChanged();
+        return true;
+    });
 }
 
 QmlTestContext::~QmlTestContext() = default;
@@ -87,6 +93,12 @@ QObject *QmlTestContext::databaseManagement() const { return m_ctx->databaseMana
 QObject *QmlTestContext::printer() const { return m_ctx->printViewModel(); }
 QObject *QmlTestContext::appController() const { return m_ctx->appController(); }
 QObject *QmlTestContext::settingsViewModel() const { return m_ctx->settingsViewModel(); }
+QObject *QmlTestContext::about() const { return m_ctx->about(); }
+
+void QmlTestContext::clearOpenedUrls() {
+    m_openedUrls.clear();
+    emit openedUrlsChanged();
+}
 
 void QmlTestContext::clickAll() {
     DatabaseService *svc = m_ctx->databaseService();

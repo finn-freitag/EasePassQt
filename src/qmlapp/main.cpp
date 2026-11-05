@@ -13,6 +13,7 @@
 #include "DatabaseManagementViewModel.h"
 #include "PrintViewModel.h"
 #include "SettingsViewModel.h"
+#include "AboutViewModel.h"
 #include "DialogService.h"
 #include "ItemViewModel.h"
 #include "PasswordActions.h"
@@ -41,7 +42,7 @@ int main(int argc, char *argv[]) {
     app.setApplicationName("EasePass");
     app.setApplicationDisplayName("Ease Pass");
     app.setOrganizationName("EasePass");
-    app.setApplicationVersion("1.4.0");
+    app.setApplicationVersion(QStringLiteral(EASEPASS_VERSION));
     app.setWindowIcon(QIcon(":/assets/appicon.svg"));
 
     EasePass::App::applyQuickStyle();
@@ -78,6 +79,7 @@ int main(int argc, char *argv[]) {
         {QStringLiteral("databaseManagement"), QVariant::fromValue<QObject *>(context.databaseManagement())},
         {QStringLiteral("printer"), QVariant::fromValue<QObject *>(context.printViewModel())},
         {QStringLiteral("settingsViewModel"), QVariant::fromValue<QObject *>(context.settingsViewModel())},
+        {QStringLiteral("about"), QVariant::fromValue<QObject *>(context.about())},
     });
     engine.loadFromModule("EasePass", "Main");
 

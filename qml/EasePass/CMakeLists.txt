@@ -56,6 +56,8 @@ qt_add_qml_module(easepass_qml_module
         PrintDatabaseDialog.qml
         DatabasePage.qml
         SettingsPage.qml
+        Expander.qml
+        AboutPage.qml
         Main.qml
     RESOURCES
         ${EASEPASS_QML_ICONS}

@@ -1,0 +1,84 @@
+#Version 1.4.0 [05.02.2026]
+	• Added Argon2 encryption for the database
+	• Smoother login experience with progress indicators
+	• Support for remote and external encrypted databases
+	• Faster & Safer Database Handling
+	• Added tagging support for password entries
+	• Async loading and saving for smoother performance
+	• Added full 2FA support with improved dialogs and export handling
+	• Passwords are hidden by default when adding or editing entries
+	• Improved plugin handling and settings storage
+	• Improved search with tag suggestions
+	• Better layout, responsiveness, and scrollbar behavior
+	• Databases can now be opened in readonly mode with clear visual indicators
+	• Improved reliability when closing or logging out
+	• Clearer error messages on export failures
+	• General Stability
+	• Many bug fixes and crash prevention improvements
+
+
+#Version 1.3.0 [06.01.2025]
+	• Introduced the option to export selected passwords via the right-click menu in the password list.
+	• Added a button on the registration page for direct database import.
+	• Updated the font for improved readability, particularly for characters like "I, l, |".
+	• Enabled the deletion of selected passwords through the right-click menu in the password list.
+	• Included a progress bar in the password generation box.
+	• Disabled spell checking in text fields to prevent unwanted capitalization and other auto-corrections.
+	• Resolved an issue where users were logged out, resulting in the loss of data entered in the Edit or Add Item dialog.
+	• Fixed a problem where clipboard items were not being removed correctly.
+	• Made the Notes section in the Add/Edit dialog and password page scrollable.
+	• Added support for drag-and-drop functionality, allowing users to import .epdb files directly into the app.
+	• Improved the out-of-box experience with enhanced usability.
+	• Fixed focus-related issues in dialogs and forms.
+	• Addressed bugs in the password regeneration process.
+	• Resolved issues with database selection during new database creation.
+	• Prevented database creation if no path is specified.
+	• Added or refined translations throughout the application.
+	• Implemented caching for website icons.
+	• Introduced an option to export with a different password.
+	• Added file type associations in Windows to load databases as temporary databases.
+	• Enhanced the Create Database dialog on the registration page.
+	• Added text that shows the amount of selected entries in import/export dialog
+	• Fixed Pwned check and made it offline available.
+	• Made numerous performance improvements.
+	• Fixed various other bugs.
+
+#Version 1.2.1 [24.05.2024]
+	• Fixed a bug where the registration was not working properly
+
+#Version 1.2.0 [15.05.2024]
+	• Added option to create and choose from multiple databases
+	• Added daily tips to the login page
+	• Added dialog to select which passwords to export
+	• Added dialog to select which passwords to import
+	• Added logout shortcut by pressing Ctrl + L
+	• Added plugin support and the following plugins:
+	  - Browser password importer
+	  - Wifi password importer
+	• Added sorting method to sort passwords by popularity
+	• Added sorting method to sort passwords by strength
+	• Added message to show after update of the app
+	• Added print function to print your passwords as pdf or paper
+	• Added generate password button in add dialog
+	• Added password pie chart to show the security of the password
+	• Added auto logout message to automatically disappear after login
+	• Added password popularity counter
+	• Added splitter to freely size the password list from the password display
+	• Added German language support
+	• Added clipboard auto clear support
+	• Unified .eped and .epdb to .epdb files
+	• Moved the infobutton to the statusbar
+	• Removed automatic backups every 4 minutes
+	• Fix urls not working without http
+	• Fix you can now select multiple entries to delete those
+	• Fix can not enter letters by pressing Ctrl + Alt (Alt Gr) in password box
+
+#Version 1.1.0 [28.09.2023]
+	• 2FA token generator
+	• Password generator 
+	• Icons in menubar
+	• QR code scanner using screenshot or webcam for 2FA
+	• Display for number of passwords in search bar
+	• Red border on password box if the password has been used before
+	• Sort and drag drop for the Password items
+	• Overall many bug fixes

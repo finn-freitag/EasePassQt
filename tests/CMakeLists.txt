@@ -412,6 +412,9 @@ set(TEST_APP_UNIT_FUNCTIONS
     testSettingsLanguages
     testSettingsPasswordLengthText
     testSettingsResetPopularity
+    testAboutChangelogParser
+    testAboutOpenUrl
+    testAboutBuildInfo
     testPrintViewModelExportPdf
     testScreenScanViewModelFound
     testScreenScanViewModelFailureAndClear

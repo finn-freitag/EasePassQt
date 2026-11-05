@@ -132,6 +132,7 @@ the real implementations, the webcam scanner defaults to none) and `registerQml(
 | `PasswordGenerator` | `PasswordGeneratorViewModel` | generator dialog / generate button (stored settings, leak check) |
 | `QrImport` | `QrImportService` | 2FA QR from file / clipboard, validates otpauth URIs |
 | `WebcamScan` | `WebcamScanViewModel` | webcam QR scan, preview via `image://webcam/<rev>` |
+| `About` | `AboutViewModel` | About page: version, developers, links (safe opener), dependencies, changelog |
 | `DatabaseManagement` | `DatabaseManagementViewModel` | Database page: known databases, rename/delete, password, second factor, import into, export, backup |
 
 Secrets (passwords, 2FA secrets) are never list-model roles; only `ItemViewModel` exposes them.
@@ -210,3 +211,17 @@ Secrets (passwords, 2FA secrets) are never list-model roles; only `ItemViewModel
   (`applyPasswordLengthText`, `applyPasswordCharsText`) and are not bound, so clearing a field
   stores the default without refilling the field while typing.
 - Tests: `tests/qml/tst_settings.qml`, `AppServicesTest::testSettings*`.
+
+## About page (T18)
+
+- `AboutPage.qml` (C# AboutPage) with the new `Expander.qml`: version, developers, contributor,
+  website / GitHub (this port) / original Windows version, changelog, report bug / request
+  feature, dependencies with licenses, privacy policy, disclaimer.
+- Version: the CMake project version, passed as `EASEPASS_VERSION` (compile definition on
+  `easepass_core`, `Core::BuildInfo::appVersion()`); both executables use it for
+  `QCoreApplication::applicationVersion`. Bump `project(EasePass VERSION ...)` only.
+- Changelog: `resources/changelog/changelog.txt` (copied from the C# `Assets/changelog.txt`, UTF-8
+  without BOM), bundled in qrc and parsed by `AboutViewModel::parseChangelog` ('#' headlines).
+- Links open through `AboutViewModel::openUrl` (http, https, mailto only; QDesktopServices by
+  default). Tests replace the opener (`testContext.openedUrls`), so no browser starts.
+- Dependency versions come from the libraries at runtime/build time (`Core::BuildInfo`).
