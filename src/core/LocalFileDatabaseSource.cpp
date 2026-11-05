@@ -1,4 +1,5 @@
 #include "LocalFileDatabaseSource.h"
+#include "FilePermissions.h"
 
 #include <QDir>
 #include <QFile>
@@ -115,9 +116,15 @@ bool LocalFileDatabaseSource::saveBytes(const QByteArray &bytes) {
     QSaveFile file(m_path);
     // Never fall back to writing the target directly: that would not be atomic.
     file.setDirectWriteFallback(false);
+    const bool isNewFile = !QFile::exists(m_path);
     if (!file.open(QIODevice::WriteOnly)) {
         qCWarning(lcLocalSource) << "Cannot create temporary file for" << m_path << ":" << file.errorString();
         return false;
+    }
+    // Security review (T23): a new database is owner-only. QSaveFile would otherwise create
+    // it with 0666 & ~umask (usually world-readable). Existing files keep their permissions.
+    if (isNewFile) {
+        restrictToOwner(file);
     }
 
     if (!writeContents(file, bytes) || !file.flush() || !syncFileToDisk(file)) {

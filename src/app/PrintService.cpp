@@ -6,7 +6,10 @@
 #include <QPrintDialog>
 #include <QPrintPreviewDialog>
 #include <QPrinter>
+#include <QFile>
 #include <QSaveFile>
+
+#include "FilePermissions.h"
 #include <QStandardPaths>
 
 namespace EasePass::App {
@@ -51,11 +54,15 @@ void PrintService::preview(const QList<Core::PasswordItem> &items, const Options
 bool PrintService::exportPdf(const QList<Core::PasswordItem> &items, const Options &options, const QString &filePath,
                              QString *errorString) {
     QSaveFile file(filePath);
+    const bool isNewFile = !QFile::exists(filePath);
     if (!file.open(QIODevice::WriteOnly)) {
         if (errorString)
             *errorString = file.errorString();
         return false;
     }
+    // T23: the PDF may contain plaintext passwords; a new file is owner-only.
+    if (isNewFile)
+        Core::restrictToOwner(file);
     if (Core::PrintDocumentBuilder::writePdf(items, options, &file) <= 0) {
         file.cancelWriting();
         if (errorString)

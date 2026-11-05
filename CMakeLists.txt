@@ -136,6 +136,7 @@ set(CORE_HEADERS
     src/core/BuildInfo.h
     src/core/FileLogger.cpp
     src/core/FileLogger.h
+    src/core/FilePermissions.h
     src/core/IClock.h
     src/core/INetworkClient.h
     src/core/ISettingsStore.h

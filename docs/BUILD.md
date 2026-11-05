@@ -202,7 +202,7 @@ Secrets (passwords, 2FA secrets) are never list-model roles; only `ItemViewModel
 
 ## Settings page (T17)
 
-- `SettingsPage.qml` (C# SettingsPage): language (restart hint, translations follow in T20),
+- `SettingsPage.qml` (C# SettingsPage): language (applies immediately, T20),
   database (Manage, auto-save delay), security (inactivity logout 1..1000 min, clipboard clear
   1..100000 s), password generator (characters + reset, length, verify not leaked),
   miscellaneous (quick copy, show icons, download website icons, reset popularity). Plugin
@@ -279,3 +279,13 @@ Secrets (passwords, 2FA secrets) are never list-model roles; only `ItemViewModel
 - C++ strings outside `Q_OBJECT` classes must use `QCoreApplication::translate("Context", ...)`
   literally (a custom `tr()` helper hides them from lupdate).
 - Daily tips: `resources/dailytips/DailyTips_<lang>.txt` (en-US, de-DE; other languages use English).
+
+## Security review (T23)
+
+- Findings, fixes and the remaining limits are in [SECURITY.md](SECURITY.md): secret lifetimes,
+  clipboard per platform, crash dumps, mlock/swap, logs, files on disk, network privacy.
+- New files that hold database contents (databases, `.bak`, exports, PDF exports) and log files
+  are created owner-only (`src/core/FilePermissions.h`); existing files keep their permissions.
+- Locking clears a copied secret from the clipboard and the generator's last password.
+- `tests/app/SecurityTest.cpp`: one regression test per finding (Unix permission checks are
+  skipped on Windows).

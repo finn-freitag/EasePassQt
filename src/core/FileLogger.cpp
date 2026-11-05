@@ -1,4 +1,5 @@
 #include "FileLogger.h"
+#include "FilePermissions.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -67,6 +68,9 @@ bool FileLogger::open() {
         return true;
     if (m_options.directory.isEmpty() || !QDir().mkpath(m_options.directory))
         return false;
+    // T23: logs name databases and paths; keep the folder private to the user.
+    QFile::setPermissions(m_options.directory,
+                          QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner);
     m_baseName = kPrefix + QDateTime::currentDateTime().toString(QStringLiteral("yyyy-MM-dd_HH-mm-ss"));
     m_part = 1;
     prune();
@@ -102,9 +106,10 @@ bool FileLogger::startFile() {
         name += QStringLiteral("_%1").arg(m_part);
     m_file.setFileName(QDir(m_options.directory).filePath(name + kSuffix));
     // Log files can contain paths and database names: owner-only where the OS supports it.
-    if (!m_file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text))
+    // Created with these permissions (T23: no window with umask permissions before a chmod).
+    if (!m_file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text, ownerOnlyFilePermissions))
         return false;
-    m_file.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner);
+    restrictToOwner(m_file); // an existing file (same second, part) is tightened as well
     return true;
 }
 

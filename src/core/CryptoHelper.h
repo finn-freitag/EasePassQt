@@ -57,6 +57,8 @@ public:
 
     static bool decryptAes(const QByteArray &cipherWithIv, const SecureBuffer &key, QByteArray &outPlaintext);
     static bool decryptAes(const QByteArray &cipherWithIv, const QByteArray &key, QByteArray &outPlaintext);
+    /// Decrypts into a SecureBuffer (locked, wiped on destruction); for plaintext that holds secrets.
+    static bool decryptAes(const QByteArray &cipherWithIv, const SecureBuffer &key, SecureBuffer &outPlaintext);
 
     static QByteArray addVersionTag(const QByteArray &data, int version = CURRENT_DB_VERSION_TAG);
     static bool extractVersionTag(const QByteArray &fileData, int &outVersion, QByteArray &outData);

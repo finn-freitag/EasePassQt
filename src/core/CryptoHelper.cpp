@@ -214,6 +214,33 @@ bool CryptoHelper::decryptAes(const QByteArray &cipherWithIv, const SecureBuffer
     return true;
 }
 
+bool CryptoHelper::decryptAes(const QByteArray &cipherWithIv, const SecureBuffer &key, SecureBuffer &outPlaintext) {
+    outPlaintext.clear();
+    if (cipherWithIv.size() < 16 || key.size() != 32) {
+        return false;
+    }
+    const uint8_t *iv = reinterpret_cast<const uint8_t *>(cipherWithIv.constData());
+    const uint8_t *cipher = iv + 16;
+    const int cipherLen = int(cipherWithIv.size() - 16);
+
+    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+    if (!ctx)
+        return false;
+    SecureBuffer out(size_t(cipherLen) + 16);
+    int outLen1 = 0;
+    int outLen2 = 0;
+    const bool ok =
+        EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), nullptr, reinterpret_cast<const uint8_t *>(key.constData()), iv) == 1
+        && EVP_DecryptUpdate(ctx, reinterpret_cast<uint8_t *>(out.data()), &outLen1, cipher, cipherLen) == 1
+        && EVP_DecryptFinal_ex(ctx, reinterpret_cast<uint8_t *>(out.data()) + outLen1, &outLen2) == 1;
+    EVP_CIPHER_CTX_free(ctx);
+    if (!ok)
+        return false; // `out` is wiped when it goes out of scope
+    out.resize(size_t(outLen1 + outLen2));
+    outPlaintext = std::move(out);
+    return true;
+}
+
 bool CryptoHelper::decryptAes(const QByteArray &cipherWithIv, const QByteArray &key, QByteArray &outPlaintext) {
     return decryptAes(cipherWithIv, SecureBuffer(key), outPlaintext);
 }

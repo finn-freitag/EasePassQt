@@ -104,6 +104,9 @@ AppContext::AppContext(Deps deps, QObject *parent)
 
     // Locking drops open questions; their answers would act on a closed database.
     connect(m_service, &DatabaseService::closed, m_dialogService, &DialogService::cancelAll);
+    // T23: locking (by hand or by inactivity) also removes a copied password or TOTP code from
+    // the clipboard right away, if it is still ours, instead of waiting for the timer.
+    connect(m_service, &DatabaseService::closed, m_clipboardManager, &ClipboardManager::clearNow);
     connect(m_settings.get(), &AppSettings::databaseDeferredSaveSecondsChanged, m_service,
             [this](int s) { m_service->setSaveDelayMs(s * 1000); });
 }

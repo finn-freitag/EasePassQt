@@ -1,5 +1,6 @@
 #include "DatabaseFile.h"
 #include "CryptoHelper.h"
+#include "FilePermissions.h"
 #include "SortingHelper.h"
 
 #include <QFile>
@@ -9,6 +10,8 @@
 #include <QJsonArray>
 #include <QSaveFile>
 #include <openssl/crypto.h>
+
+#include <cstring>
 
 namespace EasePass::Core {
 
@@ -87,7 +90,9 @@ LoadResult DatabaseFile::loadFromBytes(const QByteArray &fileBytes, const Secret
     QByteArray innerCipher = QByteArray::fromBase64(dataBase64.toUtf8());
 
     SecureBuffer innerKey = CryptoHelper::deriveInnerKey(masterPassword, secondFactor, false, kdf);
-    QByteArray innerPlain;
+    // T23: the decrypted item JSON holds every password. It lives in a SecureBuffer so it is
+    // locked in RAM and wiped on every return path (also on WrongFormat and with a BOM).
+    SecureBuffer innerPlain;
     bool decrypted = CryptoHelper::decryptAes(innerCipher, innerKey, innerPlain);
 
     if (!decrypted) {
@@ -100,11 +105,11 @@ LoadResult DatabaseFile::loadFromBytes(const QByteArray &fileBytes, const Secret
         return LoadResult::WrongPassword;
     }
 
-    if (innerPlain.startsWith("\xEF\xBB\xBF")) {
-        innerPlain = innerPlain.mid(3);
-    }
-
-    QJsonDocument innerDoc = QJsonDocument::fromJson(innerPlain, &parseError);
+    // Skip a UTF-8 BOM without copying the plaintext (fromRawData does not copy).
+    const qsizetype bom = (innerPlain.size() >= 3 && std::memcmp(innerPlain.constData(), "\xEF\xBB\xBF", 3) == 0) ? 3 : 0;
+    const QByteArray innerJson =
+        QByteArray::fromRawData(innerPlain.constData() + bom, qsizetype(innerPlain.size()) - bom);
+    QJsonDocument innerDoc = QJsonDocument::fromJson(innerJson, &parseError);
     if (parseError.error != QJsonParseError::NoError || !innerDoc.isArray()) {
         return LoadResult::WrongFormat;
     }
@@ -116,9 +121,6 @@ LoadResult DatabaseFile::loadFromBytes(const QByteArray &fileBytes, const Secret
             outDb.items.append(PasswordItem::fromJson(val.toObject()));
         }
     }
-
-    // Cleanse sensitive decrypted buffer from memory
-    OPENSSL_cleanse(innerPlain.data(), static_cast<size_t>(innerPlain.size()));
 
     return LoadResult::Success;
 }
@@ -141,8 +143,12 @@ bool DatabaseFile::saveToFile(const QString &path) {
 
     // 6. Write atomically using QSaveFile
     QSaveFile saveFile(targetPath);
+    const bool isNewFile = !QFile::exists(targetPath);
     if (!saveFile.open(QIODevice::WriteOnly)) {
         return false;
+    }
+    if (isNewFile) {
+        restrictToOwner(saveFile); // T23: new database files are owner-only
     }
 
     if (saveFile.write(finalBytes) != finalBytes.size()) {

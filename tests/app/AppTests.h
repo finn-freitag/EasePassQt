@@ -138,3 +138,15 @@ private slots:
     void testCommandLine();
     void testStartupDatabase();
 };
+
+class SecurityTest : public QObject {
+    Q_OBJECT
+private slots:
+    void testNewDatabaseFilesOwnerOnly();
+    void testPdfExportOwnerOnly();
+    void testDecryptedPlaintextWiped();
+    void testLockClearsClipboard();
+    void testLockForgetsGeneratedPassword();
+    void testCoreDumpLimitZero();
+    void testLogFilesOwnerOnly();
+};

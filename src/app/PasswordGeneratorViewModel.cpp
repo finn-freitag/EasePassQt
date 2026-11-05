@@ -14,6 +14,9 @@ using namespace EasePass::Core;
 PasswordGeneratorViewModel::PasswordGeneratorViewModel(AppSettings *settings, DatabaseService *service,
                                                        LeakCheckService *leak, QObject *parent)
     : QObject(parent), m_settings(settings), m_service(service), m_safetyChecks(8, QVariant()) {
+    // T23: the last generated password must not outlive the session.
+    if (m_service)
+        connect(m_service, &DatabaseService::closed, this, [this] { setPassword(QString()); });
     if (leak) {
         QPointer<LeakCheckService> l(leak);
         m_checker = [l](const QString &password, std::function<void(LeakResult)> done) {

@@ -24,6 +24,7 @@ int main(int argc, char *argv[]) {
     tests.push_back(std::make_unique<ItemDialogsTest>());
     tests.push_back(std::make_unique<DatabaseManagementTest>());
     tests.push_back(std::make_unique<AppBehaviourTest>());
+    tests.push_back(std::make_unique<SecurityTest>());
 
     for (int i = 1; i < argc; ++i) {
         if (strcmp(argv[i], "-functions") == 0) {

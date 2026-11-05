@@ -534,6 +534,7 @@ FocusScope {
         primaryButtonEnabled: exportPassword.text.length >= 4
         onAboutToShow: { exportPassword.text = ""; exportPassword.forceActiveFocus() }
         onPrimaryClicked: exportFlow.pickFile(exportPassword.text)
+        onClosed: exportPassword.text = "" // T23: do not keep the password in the hidden field
         EditPasswordBox {
             id: exportPassword
             objectName: "exportPassword"
