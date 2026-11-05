@@ -59,9 +59,22 @@ void InactivityManager::setWarning(bool on) {
     emit warningActiveChanged(on);
 }
 
+void InactivityManager::setLogoutPrevented(bool prevented) {
+    m_preventCount = std::max(0, m_preventCount + (prevented ? 1 : -1));
+    if (m_preventCount > 0) {
+        reportActivity(); // cancels a running warning
+    } else if (m_enabled) {
+        m_lastActivity = m_clock->currentSecsSinceEpoch(); // a full period after the dialog closes
+    }
+}
+
 void InactivityManager::tick() {
     if (!m_enabled)
         return;
+    if (m_preventCount > 0) {
+        m_lastActivity = m_clock->currentSecsSinceEpoch();
+        return;
+    }
     const int left = secondsUntilLogout();
     if (left <= 0) {
         setEnabled(false);

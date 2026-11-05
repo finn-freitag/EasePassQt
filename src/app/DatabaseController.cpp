@@ -63,6 +63,8 @@ QStringList DatabaseController::knownDatabases() const {
     for (const QString &p : m_settings->databasePaths())
         if (QFileInfo::exists(p) && !result.contains(p))
             result << p;
+    if (!m_temporaryPath.isEmpty() && !result.contains(m_temporaryPath) && QFileInfo::exists(m_temporaryPath))
+        result << m_temporaryPath;
     return result;
 }
 
@@ -84,7 +86,32 @@ QString DatabaseController::toLocalPath(const QString &pathOrUrl) {
     return url.isLocalFile() ? url.toLocalFile() : pathOrUrl;
 }
 
-QString DatabaseController::lastDatabase() const { return m_settings ? m_settings->lastDatabase() : QString(); }
+QString DatabaseController::lastDatabase() const {
+    if (!m_temporaryPath.isEmpty())
+        return m_temporaryPath;
+    return m_settings ? m_settings->lastDatabase() : QString();
+}
+
+bool DatabaseController::isTemporaryPath(const QString &path) const {
+    return !m_temporaryPath.isEmpty() && DatabaseOperations::isSamePath(toLocalPath(path), m_temporaryPath);
+}
+
+bool DatabaseController::setStartupDatabase(const QString &pathOrUrl) {
+    const QString path = QFileInfo(toLocalPath(pathOrUrl)).absoluteFilePath();
+    if (pathOrUrl.isEmpty() || !QFileInfo(path).isFile())
+        return false;
+    m_temporaryPath.clear();
+    bool known = false;
+    if (m_settings)
+        for (const QString &p : m_settings->databasePaths())
+            known = known || DatabaseOperations::isSamePath(p, path);
+    if (known)
+        m_settings->setLastDatabase(path);
+    else
+        m_temporaryPath = path;
+    emit knownDatabasesChanged();
+    return true;
+}
 
 bool DatabaseController::open(const QString &pathOrUrl, const QString &password, const QString &secondFactor) {
     const QString path = toLocalPath(pathOrUrl);
@@ -100,8 +127,10 @@ bool DatabaseController::open(const QString &pathOrUrl, const QString &password,
         return false;
     }
     setError(QString());
-    m_openingPath = path;
-    const bool started = m_service->open(source, SecretString(password), SecretString(secondFactor));
+    const bool temporary = isTemporaryPath(path);
+    // Temporary databases are not remembered as last database (they are not in the known list).
+    m_openingPath = temporary ? QString() : path;
+    const bool started = m_service->open(source, SecretString(password), SecretString(secondFactor), temporary);
     if (!started) {
         m_openingPath.clear();
         setError(DatabaseOpResult::describe(DatabaseOpStatus::IoError));
@@ -215,6 +244,7 @@ bool DatabaseController::makePermanent() {
     const QString path = DatabaseOperations::localPath(m_service->source());
     if (!m_service->makePermanent())
         return false;
+    m_temporaryPath.clear();
     if (m_settings && !path.isEmpty()) {
         m_settings->addDatabasePath(QFileInfo(path).absoluteFilePath());
         m_settings->setLastDatabase(QFileInfo(path).absoluteFilePath());

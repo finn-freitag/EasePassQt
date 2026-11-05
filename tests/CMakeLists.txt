@@ -361,6 +361,7 @@ add_executable(test_app
     app/PasswordActionsTest.cpp
     app/ItemDialogsTest.cpp
     app/DatabaseManagementTest.cpp
+    app/AppBehaviourTest.cpp
 )
 target_compile_definitions(test_app PRIVATE EASEPASS_TEST_FIXTURES_DIR="${EASEPASS_TEST_FIXTURES_DIR}")
 target_link_libraries(test_app PRIVATE easepass_app Qt6::Test Qt6::Qml Qt6::Quick easepass_warnings)
@@ -442,6 +443,16 @@ set(TEST_APP_UNIT_FUNCTIONS
     testExportSelectionAndNewPassword
     testImportIntoSelectedItems
     testSwitchToAndMakePermanent
+    testSingleInstanceTwoClients
+    testSingleInstanceHandover
+    testFitToScreens
+    testWindowGeometryRoundTrip
+    testFileLoggerRotation
+    testFileLoggerRedaction
+    testAutoLogoutFlow
+    testActivityEventFilter
+    testCommandLine
+    testStartupDatabase
 )
 easepass_add_qtest(test_app LABELS unit FUNCTIONS ${TEST_APP_UNIT_FUNCTIONS})
 add_test(NAME test_app.all_functions_registered

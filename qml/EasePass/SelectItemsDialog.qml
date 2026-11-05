@@ -16,7 +16,7 @@ ContentDialog {
         for (let i = 0; i < checked.length; ++i) if (checked[i]) ++n
         return n
     }
-    signal accepted(var indexes, bool overrideExisting)
+    signal selectionAccepted(var indexes, bool overrideExisting)
 
     function selectedIndexes() {
         const result = []
@@ -46,7 +46,7 @@ ContentDialog {
         confirmOverride.checked = false
         confirmOverride.visible = false
     }
-    onPrimaryClicked: accepted(selectedIndexes(), false)
+    onPrimaryClicked: selectionAccepted(selectedIndexes(), false)
 
     // Override needs the confirmation check box (C#: ImportPasswordsDialog.Dialog_Closing).
     closeOnSecondary: false
@@ -55,7 +55,7 @@ ContentDialog {
             confirmOverride.visible = true
             return
         }
-        accepted(selectedIndexes(), true)
+        selectionAccepted(selectedIndexes(), true)
         close()
     }
 

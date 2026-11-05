@@ -13,6 +13,7 @@ class ClipboardManager;
 class DatabaseOperations;
 class DatabaseService;
 class IClipboard;
+class InactivityManager;
 class IClock;
 class INetworkClient;
 class IScreenCapture;
@@ -25,6 +26,7 @@ class WebsiteIconManager;
 namespace EasePass::App {
 
 class AboutViewModel;
+class AutoLogoutService;
 class AppController;
 class ClipboardService;
 class DailyTipService;
@@ -88,6 +90,8 @@ public:
     WebcamScanViewModel *webcamScan() const { return m_webcam; }
     DatabaseManagementViewModel *databaseManagement() const { return m_databaseManagement; }
     AboutViewModel *about() const { return m_about; }
+    Core::InactivityManager *inactivityManager() const { return m_inactivity; }
+    AutoLogoutService *autoLogout() const { return m_autoLogout; }
     SettingsViewModel *settingsViewModel() const { return m_settingsViewModel; }
     DialogService *dialogService() const { return m_dialogService; }
     ClipboardService *clipboardService() const { return m_clipboardService; }
@@ -118,6 +122,8 @@ private:
     WebcamScanViewModel *m_webcam = nullptr;
     DatabaseManagementViewModel *m_databaseManagement = nullptr;
     AboutViewModel *m_about = nullptr;
+    Core::InactivityManager *m_inactivity = nullptr;
+    AutoLogoutService *m_autoLogout = nullptr;
     SettingsViewModel *m_settingsViewModel = nullptr;
     DialogService *m_dialogService = nullptr;
     ClipboardService *m_clipboardService = nullptr;

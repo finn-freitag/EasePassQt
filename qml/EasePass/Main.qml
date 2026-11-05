@@ -25,6 +25,7 @@ ApplicationWindow {
     property var printer: null
     property var settingsViewModel: null
     property var about: null
+    property var autoLogout: null
 
     // Values of App::AppController::Page
     readonly property int pageLogin: 0
@@ -39,7 +40,8 @@ ApplicationWindow {
     height: 700
     minimumWidth: 480
     minimumHeight: 400
-    visible: true
+    // Shown by main.cpp after the stored geometry/state was applied (WindowStateController, T19).
+    visible: false
     title: databaseController.isOpen ? databaseController.databaseName + " - " + qsTr("Ease Pass") : qsTr("Ease Pass")
     color: Theme.background
 
@@ -136,6 +138,7 @@ ApplicationWindow {
             manager: window.databaseManagement
             controller: window.databaseController
             printer: window.printer
+            autoLogout: window.autoLogout
             showBack: window.appController.canGoBack
             onBackRequested: window.appController.goBack()
             onCopyRequested: (t) => window.clipboard.copy(t, true)
@@ -166,6 +169,39 @@ ApplicationWindow {
             showBack: window.appController.canGoBack
             onBackRequested: window.appController.goBack()
             onLockRequested: window.databaseController.lock()
+        }
+    }
+
+    // --- Inactivity logout (T19) --------------------------------------------------------
+    Loader {
+        active: window.autoLogout !== null
+        sourceComponent: AutoLogoutDialog {
+            objectName: "autoLogoutDialog"
+            parent: Overlay.overlay
+            autoLogout: window.autoLogout
+            controller: window.databaseController
+        }
+    }
+    Connections {
+        target: window.autoLogout
+        function onLoggedOut() {
+            // C#: InfoMessages.AutomaticallyLoggedOut
+            globalInfo.severity = Theme.Severity.Info
+            globalInfo.title = ""
+            globalInfo.message = qsTr("You were logged out automatically because of inactivity.")
+            globalInfo.show()
+        }
+    }
+    // Locking (manually or automatically) closes the item dialogs; their buffers are gone
+    // (C#: AutoLogoutContentDialog.InactivityStarted hides all dialogs).
+    Connections {
+        target: window.databaseController
+        function onStateChanged() {
+            if (window.databaseController.isOpen)
+                return
+            itemDialog.close()
+            add2FADialog.close()
+            generatorDialog.close()
         }
     }
 

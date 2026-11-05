@@ -80,6 +80,17 @@ public:
     /// database becomes a normal one and is added to the known databases.
     Q_INVOKABLE bool makePermanent();
 
+    /**
+     * Database from the command line / a second launch (T19). A known database is selected on
+     * the login page; another existing file is listed as temporary database and opened with
+     * DatabaseService temporary = true (C#: TemporaryDatabaseHelper.HandleImportTempDatabase).
+     * Returns false for a missing file.
+     */
+    Q_INVOKABLE bool setStartupDatabase(const QString &path);
+    /// The temporary entry offered on the login page (empty if none).
+    Q_INVOKABLE QString temporaryPath() const { return m_temporaryPath; }
+    Q_INVOKABLE bool isTemporaryPath(const QString &path) const;
+
 signals:
     void stateChanged();
     void busyChanged();
@@ -106,6 +117,7 @@ private:
     std::shared_ptr<Core::AppSettings> m_settings;
     SourceFactory m_sourceFactory;
     QString m_openingPath;
+    QString m_temporaryPath;
     QString m_errorMessage;
     bool m_needsSecondFactor = false;
     int m_operationsRunning = 0;

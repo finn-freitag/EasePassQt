@@ -58,6 +58,7 @@ qt_add_qml_module(easepass_qml_module
         SettingsPage.qml
         Expander.qml
         AboutPage.qml
+        AutoLogoutDialog.qml
         Main.qml
     RESOURCES
         ${EASEPASS_QML_ICONS}

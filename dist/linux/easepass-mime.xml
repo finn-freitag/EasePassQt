@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Ease Pass database files (installed to share/mime/packages, T19) -->
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-easepass-database">
+    <comment>Ease Pass database</comment>
+    <comment xml:lang="de">Ease-Pass-Datenbank</comment>
+    <icon name="easepass"/>
+    <glob pattern="*.epdb"/>
+  </mime-type>
+</mime-info>

@@ -1,9 +1,16 @@
 [Desktop Entry]
 Name=Ease Pass
+GenericName=Password Manager
+GenericName[de]=Passwortmanager
 Comment=Secure Password Manager
-Exec=easepass
+Comment[de]=Sicherer Passwortmanager
+Exec=easepass %f
 Icon=easepass
 Terminal=false
 Type=Application
-Categories=Utility;Security;Office;
+Categories=Utility;Security;
+Keywords=password;passwords;2fa;totp;vault;
+Keywords[de]=Passwort;Passwörter;2FA;TOTP;Tresor;
+MimeType=application/x-easepass-database;
 StartupWMClass=easepass
+SingleMainWindow=true

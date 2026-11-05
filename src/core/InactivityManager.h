@@ -43,6 +43,12 @@ public:
     int secondsUntilLogout() const;
     bool isWarningActive() const { return m_warning; }
 
+    /// While prevented (C#: InactivityManager.PreventAutologout, e.g. while the second factor
+    /// dialog shows a new token), the inactivity period keeps restarting and no warning or
+    /// logout happens. Nested calls are counted.
+    void setLogoutPrevented(bool prevented);
+    bool isLogoutPrevented() const { return m_preventCount > 0; }
+
     /// Called by the UI for every user input event. Resets the inactivity period.
     Q_INVOKABLE void reportActivity();
     /// Evaluates the state; called by the internal timer once per second.
@@ -68,6 +74,7 @@ private:
     int m_lastCountdown = -1;
     bool m_enabled = false;
     bool m_warning = false;
+    int m_preventCount = 0;
 };
 
 } // namespace EasePass::Core

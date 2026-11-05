@@ -132,6 +132,7 @@ the real implementations, the webcam scanner defaults to none) and `registerQml(
 | `PasswordGenerator` | `PasswordGeneratorViewModel` | generator dialog / generate button (stored settings, leak check) |
 | `QrImport` | `QrImportService` | 2FA QR from file / clipboard, validates otpauth URIs |
 | `WebcamScan` | `WebcamScanViewModel` | webcam QR scan, preview via `image://webcam/<rev>` |
+| `AutoLogout` | `AutoLogoutService` | inactivity logout: warning countdown, preventLogout(), locks when idle |
 | `About` | `AboutViewModel` | About page: version, developers, links (safe opener), dependencies, changelog |
 | `DatabaseManagement` | `DatabaseManagementViewModel` | Database page: known databases, rename/delete, password, second factor, import into, export, backup |
 
@@ -225,3 +226,31 @@ Secrets (passwords, 2FA secrets) are never list-model roles; only `ItemViewModel
 - Links open through `AboutViewModel::openUrl` (http, https, mailto only; QDesktopServices by
   default). Tests replace the opener (`testContext.openedUrls`), so no browser starts.
 - Dependency versions come from the libraries at runtime/build time (`Core::BuildInfo`).
+
+## App behaviour (T19)
+
+- **Inactivity logout**: `AutoLogoutService` enables `Core::InactivityManager` while a database is
+  open; `ActivityEventFilter` (installed on the application) reports every spontaneous key,
+  mouse, wheel, touch and tablet event. 30 s before the logout `AutoLogoutDialog.qml` shows a
+  countdown ("Stay logged in", Escape or any input keep the session; "Log out now" locks).
+  `ManageSecondFactorDialog` suspends the logout while it is open (C#: PreventAutologout).
+  Locking closes the item dialogs.
+- **Window geometry/state**: `WindowStateController` restores size, position and maximized state
+  from AppSettings (C# state values: 0 maximized, 1 minimized, 2 restored), keeps only the
+  restored geometry (like C#), moves windows that are off every screen back onto the primary
+  screen, and saves on close/quit. `Main.qml` starts hidden; `main.cpp` shows it afterwards.
+- **Single instance**: `SingleInstance` (QLockFile in the runtime dir + QLocalServer, per user and
+  settings profile). A second `easepass_qml` sends its arguments to the first one, which raises
+  its window, and exits.
+- **Command line**: `easepass_qml [--db <path>] [<path>]`, `--help`, `--version`. A known database
+  is preselected on the login page; another file is offered as temporary database
+  ("(Temp)", read-only until "Load temp database"; C# file association behaviour).
+- **Log file**: `Core::FileLogger` writes all Qt messages to
+  `<AppData>/logs/easepass_<date>_<time>.log` (owner-only permissions) with a system header,
+  continues in `..._2.log` after 1 MiB, deletes files older than 28 days and keeps the newest 10.
+  Messages pass `FileLogger::redact()` (otpauth URIs, `password=`/`secret=`/`token=` values) as a
+  safeguard; code must still never log secrets.
+- **Desktop integration**: `easepass.desktop` (`%f`, MIME type), `dist/linux/easepass.metainfo.xml`
+  (AppStream), `dist/linux/easepass-mime.xml` (`application/x-easepass-database`, `*.epdb`),
+  installed to `share/{applications,metainfo,mime/packages}`. The AppStream id becomes reverse-DNS
+  with the Flatpak work (T30).

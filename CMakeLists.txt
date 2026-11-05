@@ -134,6 +134,8 @@ set(CORE_HEADERS
     src/core/QrCodeGenerator.h
     src/core/BuildInfo.cpp
     src/core/BuildInfo.h
+    src/core/FileLogger.cpp
+    src/core/FileLogger.h
     src/core/IClock.h
     src/core/INetworkClient.h
     src/core/ISettingsStore.h
@@ -238,6 +240,16 @@ add_library(easepass_app STATIC
     src/app/DatabaseManagementViewModel.h
     src/app/AboutViewModel.cpp
     src/app/AboutViewModel.h
+    src/app/AutoLogoutService.cpp
+    src/app/AutoLogoutService.h
+    src/app/ActivityEventFilter.cpp
+    src/app/ActivityEventFilter.h
+    src/app/WindowStateController.cpp
+    src/app/WindowStateController.h
+    src/app/SingleInstance.cpp
+    src/app/SingleInstance.h
+    src/app/CommandLine.cpp
+    src/app/CommandLine.h
 )
 # Changelog for the About page (C#: Assets/changelog.txt; T18)
 qt_add_resources(easepass_app "changelog"
@@ -374,6 +386,8 @@ include(GNUInstallDirs)
 install(TARGETS easepass easepass_qml RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 if(UNIX AND NOT APPLE)
     install(FILES easepass.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+    install(FILES dist/linux/easepass.metainfo.xml DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo)
+    install(FILES dist/linux/easepass-mime.xml DESTINATION ${CMAKE_INSTALL_DATADIR}/mime/packages RENAME easepass.xml)
     install(FILES assets/appicon.svg DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps RENAME easepass.svg)
     install(FILES assets/appicon.png DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/256x256/apps RENAME easepass.png)
 endif()

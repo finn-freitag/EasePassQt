@@ -11,6 +11,8 @@
 #include "AppController.h"
 #include "SettingsViewModel.h"
 #include "AboutViewModel.h"
+#include "AutoLogoutService.h"
+#include "InactivityManager.h"
 #include <QFileInfo>
 #include "ISettingsStore.h"
 #include "ItemViewModel.h"
@@ -94,6 +96,8 @@ QObject *QmlTestContext::printer() const { return m_ctx->printViewModel(); }
 QObject *QmlTestContext::appController() const { return m_ctx->appController(); }
 QObject *QmlTestContext::settingsViewModel() const { return m_ctx->settingsViewModel(); }
 QObject *QmlTestContext::about() const { return m_ctx->about(); }
+QObject *QmlTestContext::autoLogout() const { return m_ctx->autoLogout(); }
+void QmlTestContext::tickInactivity() { m_ctx->inactivityManager()->tick(); }
 
 void QmlTestContext::clearOpenedUrls() {
     m_openedUrls.clear();

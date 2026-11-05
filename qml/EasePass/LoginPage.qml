@@ -23,6 +23,14 @@ FocusScope {
                                      && !ctlBusy
                                      && (!ctlNeedsSecondFactor || secondFactorBox.text.length > 0)
 
+    // Name shown in the database box; a database from the command line that is not one of the
+    // known databases is opened temporarily (C#: " (Temp)").
+    function databaseLabel(path) {
+        if (!controller) return path
+        const name = controller.displayNameForPath(path)
+        return controller.isTemporaryPath !== undefined && controller.isTemporaryPath(path)
+               ? name + qsTr(" (Temp)") : name
+    }
     function login() {
         if (!canLogin)
             return false
@@ -91,12 +99,12 @@ FocusScope {
                 id: databaseBox
                 objectName: "databaseBox"
                 model: root.controller ? root.controller.knownDatabases : []
-                displayText: currentIndex >= 0 && root.controller ? root.controller.displayNameForPath(currentText) : qsTr("No database")
+                displayText: currentIndex >= 0 && root.controller ? root.databaseLabel(currentText) : qsTr("No database")
                 delegate: ItemDelegate {
                     required property string modelData
                     required property int index
                     width: ListView.view ? ListView.view.width : implicitWidth
-                    text: root.controller ? root.controller.displayNameForPath(modelData) : modelData
+                    text: root.databaseLabel(modelData)
                     highlighted: databaseBox.highlightedIndex === index
                     ToolTip.visible: hovered
                     ToolTip.text: modelData

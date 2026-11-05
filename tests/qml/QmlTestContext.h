@@ -29,6 +29,7 @@ class QmlTestContext : public QObject {
     Q_PROPERTY(QObject *appController READ appController CONSTANT)
     Q_PROPERTY(QObject *settingsViewModel READ settingsViewModel CONSTANT)
     Q_PROPERTY(QObject *about READ about CONSTANT)
+    Q_PROPERTY(QObject *autoLogout READ autoLogout CONSTANT)
     Q_PROPERTY(QStringList openedUrls READ openedUrls NOTIFY openedUrlsChanged)
     Q_PROPERTY(QString clipboardText READ clipboardText NOTIFY clipboardChanged)
     Q_PROPERTY(int itemCount READ itemCount NOTIFY itemsChanged)
@@ -52,6 +53,9 @@ public:
     QObject *appController() const;
     QObject *settingsViewModel() const;
     QObject *about() const;
+    QObject *autoLogout() const;
+    /// Runs one inactivity check against the fake clock (the real 1 s timer uses wall time).
+    Q_INVOKABLE void tickInactivity();
     /// URLs the About page asked to open (fake opener; no browser is started).
     QStringList openedUrls() const { return m_openedUrls; }
     Q_INVOKABLE void clearOpenedUrls();

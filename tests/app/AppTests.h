@@ -122,3 +122,18 @@ private slots:
     void testImportIntoSelectedItems();
     void testSwitchToAndMakePermanent();
 };
+
+class AppBehaviourTest : public QObject {
+    Q_OBJECT
+private slots:
+    void testSingleInstanceTwoClients();
+    void testSingleInstanceHandover();
+    void testFitToScreens();
+    void testWindowGeometryRoundTrip();
+    void testFileLoggerRotation();
+    void testFileLoggerRedaction();
+    void testAutoLogoutFlow();
+    void testActivityEventFilter();
+    void testCommandLine();
+    void testStartupDatabase();
+};

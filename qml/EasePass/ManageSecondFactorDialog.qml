@@ -8,6 +8,8 @@ import QtQuick.Layouts
 ContentDialog {
     id: root
     required property var manager
+    // C#: ManageSecondFactorDialog sets PreventAutologout while the token is shown.
+    property var autoLogout: null
     property string token: ""
     property string errorText: ""
     readonly property bool working: manager ? manager.busy : false
@@ -38,7 +40,18 @@ ContentDialog {
         else
             apply()
     }
-    onClosed: token = ""
+    property bool _preventing: false
+    function _setPreventing(on) {
+        if (!autoLogout || _preventing === on) return
+        _preventing = on
+        autoLogout.preventLogout(on)
+    }
+    onOpened: _setPreventing(true)
+    onClosed: {
+        token = ""
+        _setPreventing(false)
+    }
+    Component.onDestruction: _setPreventing(false) // page destroyed while open (lock)
 
     Label {
         text: qsTr("Enable second factor")

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- AppStream metadata (T19). Flathub needs a reverse-DNS id; T30 decides on it. -->
+<component type="desktop-application">
+  <id>easepass</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Ease Pass</name>
+  <summary>Secure, local password manager</summary>
+  <summary xml:lang="de">Sicherer, lokaler Passwortmanager</summary>
+  <description>
+    <p>
+      Ease Pass keeps your passwords in an encrypted database file on your own computer
+      (Argon2 key derivation, AES-256). Nothing is sent to a server.
+    </p>
+    <ul>
+      <li>Passwords with tags, notes, websites and two-factor (TOTP) codes</li>
+      <li>Add 2FA codes by scanning QR codes from the screen, a file or the webcam</li>
+      <li>Password generator with optional leak check (only a hash prefix leaves the device)</li>
+      <li>Several databases, optional second factor, export, backup and printing</li>
+      <li>Automatic logout and clipboard clearing</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">easepass.desktop</launchable>
+  <icon type="stock">easepass</icon>
+  <url type="homepage">https://github.com/finn-freitag/EasePassQt</url>
+  <url type="bugtracker">https://github.com/finn-freitag/EasePassQt/issues</url>
+  <developer id="io.github.finn-freitag">
+    <name>Finn Freitag</name>
+  </developer>
+  <provides>
+    <binary>easepass</binary>
+    <mediatype>application/x-easepass-database</mediatype>
+  </provides>
+  <categories>
+    <category>Utility</category>
+    <category>Security</category>
+  </categories>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="1.4.0" date="2026-02-05"/>
+  </releases>
+</component>

@@ -14,6 +14,7 @@ Item {
     required property var manager
     required property var controller
     property var printer: null
+    property var autoLogout: null
     property bool showBack: true
     // Tests: used instead of opening a file dialog when non-empty.
     property string fileOverride: ""
@@ -477,6 +478,7 @@ Item {
         objectName: "secondFactorDialog"
         parent: Overlay.overlay
         manager: root.manager
+        autoLogout: root.autoLogout
         onCopyRequested: (t) => root.copyRequested(t)
     }
     DeleteDatabaseDialog {
@@ -515,7 +517,7 @@ Item {
         title: qsTr("Select items to export")
         primaryButtonText: qsTr("Export")
         names: root.manager ? root.manager.itemNames : []
-        onAccepted: (indexes) => {
+        onSelectionAccepted: (indexes) => {
             root._exportIndexes = indexes
             root.pickFile(true, qsTr("Export database"), root.databaseFilters,
                           root.manager.nameForPath(root.selectedPath) + "_export.epdb",
@@ -537,7 +539,7 @@ Item {
         title: qsTr("Import passwords")
         primaryButtonText: qsTr("Add")
         allowOverride: true
-        onAccepted: (indexes, overrideExisting) => root.manager.importSelected(indexes, overrideExisting)
+        onSelectionAccepted: (indexes, overrideExisting) => root.manager.importSelected(indexes, overrideExisting)
         onCloseClicked: root.manager.cancelImport()
     }
     PrintDatabaseDialog {
