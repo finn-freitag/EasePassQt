@@ -6,6 +6,10 @@
 #include "DatabaseController.h"
 #include "DatabaseOperations.h"
 #include "ISettingsStore.h"
+#include "LocalFileDatabaseSource.h"
+#include "SecondFactor.h"
+
+#include <QUrl>
 
 #include <QDir>
 #include <QTemporaryDir>
@@ -204,4 +208,120 @@ void DatabaseControllerTest::testCreateDatabaseValidationAndSuccess() {
     QVERIFY(f.ctl.errorMessage().isEmpty());
     QVERIFY(QFile::exists(path));
     QVERIFY(f.ctl.knownDatabases().contains(created.at(0).at(0).toString()));
+}
+
+void AppControllerTest::testStartPageFirstRun() {
+    DatabaseService svc(kFastKdf);
+    AppController app(&svc);
+    app.navigate(Page::About);
+    app.start(true);
+    QCOMPARE(app.page(), Page::Register);
+    QVERIFY(!app.canGoBack());
+    app.start(false);
+    QCOMPARE(app.page(), Page::Login);
+    QVERIFY(openItems(svc, {makeItem("A")}));
+    app.start(true); // ignored while a database is open
+    QCOMPARE(app.page(), Page::Passwords);
+    svc.shutdown();
+}
+
+void DatabaseControllerTest::testCreateAndOpen() {
+    ControllerFixture f;
+    f.ctl.setSourceFactory([](const QString &p) { return std::make_shared<LocalFileDatabaseSource>(p); });
+    QTemporaryDir dir;
+    const QString path = QDir(dir.path()).filePath("sub/dir/first.epdb"); // folder does not exist yet
+
+    f.ctl.createAndOpen(path, "ab", "ab"); // too short: nothing created, nothing opened
+    QVERIFY(!f.ctl.errorMessage().isEmpty());
+    QVERIFY(!f.ctl.busy());
+
+    QSignalSpy created(&f.ctl, &DatabaseController::created);
+    f.ctl.createAndOpen(path, "abcd1234", "abcd1234");
+    QVERIFY(created.wait(30000));
+    QTRY_VERIFY_WITH_TIMEOUT(f.ctl.isOpen(), 30000);
+    QVERIFY(QFile::exists(path));
+    QCOMPARE(f.ctl.lastDatabase(), created.at(0).at(0).toString());
+    QVERIFY(!f.ctl.isFirstRun());
+}
+
+void DatabaseControllerTest::testImportDatabase() {
+    ControllerFixture f;
+    QTemporaryDir dir;
+    const QString path = QDir(dir.path()).filePath("other.epdb");
+    {
+        QFile out(path);
+        QVERIFY(out.open(QIODevice::WriteOnly));
+        out.write(makeDbBytes({makeItem("A")}));
+    }
+    QVERIFY(f.ctl.isFirstRun());
+    f.ctl.importDatabase(QString(), kPassword);
+    QCOMPARE(f.ctl.errorMessage(), DatabaseOpResult::describe(DatabaseOpStatus::InvalidPath));
+
+    QSignalSpy imported(&f.ctl, &DatabaseController::imported);
+    QSignalSpy busy(&f.ctl, &DatabaseController::busyChanged);
+    f.ctl.importDatabase(QUrl::fromLocalFile(path).toString(), "wrong");
+    QVERIFY(f.ctl.busy());
+    QTRY_VERIFY_WITH_TIMEOUT(!f.ctl.busy(), 30000);
+    QCOMPARE(imported.count(), 0);
+    QCOMPARE(f.ctl.errorMessage(), DatabaseOpResult::describe(DatabaseOpStatus::WrongPassword));
+    QVERIFY(f.ctl.knownDatabases().isEmpty());
+
+    f.ctl.importDatabase(path, kPassword);
+    QVERIFY(imported.wait(30000));
+    QVERIFY(f.ctl.errorMessage().isEmpty());
+    QCOMPARE(f.ctl.knownDatabases().size(), 1);
+    QCOMPARE(f.ctl.lastDatabase(), imported.at(0).at(0).toString());
+    QVERIFY(!f.ctl.isOpen()); // import only adds it to the list (C#)
+    QVERIFY(busy.count() >= 4);
+}
+
+void DatabaseControllerTest::testOneTimeSecondFactorRotatedAfterLogin() {
+    ControllerFixture f;
+    DatabaseFile db;
+    db.masterPassword = SecretString(kPassword);
+    db.secondFactor = SecretString("111111111111");
+    db.useSecondFactor = true;
+    db.secondFactorType = int(SecondFactorType::OTP);
+    db.items = {makeItem("A")};
+    auto src = std::make_shared<FakeDatabaseSource>(db.serialize(kFastKdf));
+    f.sources.insert("otp", src);
+    QSignalSpy token(&f.ctl, &DatabaseController::oneTimeTokenIssued);
+    QVERIFY(f.ctl.open("otp", kPassword, "111111111111"));
+    QVERIFY(token.wait(30000));
+    const QString newToken = token.at(0).at(0).toString();
+    QCOMPARE(newToken.size(), 12);
+    QVERIFY(newToken != QStringLiteral("111111111111"));
+    QTRY_VERIFY_WITH_TIMEOUT(!f.ctl.busy(), 30000);
+    // The file now needs the new token.
+    DatabaseFile check;
+    QCOMPARE(DatabaseFile::loadFromBytes(src->bytes(), SecretString(kPassword), check, SecretString(newToken), kFastKdf),
+             LoadResult::Success);
+
+    // Token (non-OTP) databases are not rotated.
+    f.ctl.lock();
+    f.sources.insert("tok", std::make_shared<FakeDatabaseSource>(makeDbBytes({makeItem("A")}, SecretString("222222222222"))));
+    QVERIFY(f.ctl.open("tok", kPassword, "222222222222"));
+    QTRY_VERIFY_WITH_TIMEOUT(f.ctl.isOpen(), 30000);
+    QTest::qWait(50);
+    QCOMPARE(token.count(), 1);
+}
+
+void DatabaseControllerTest::testKnownDatabasesAndFirstRun() {
+    ControllerFixture f;
+    QTemporaryDir dir;
+    const QString existing = QDir(dir.path()).filePath("a.epdb");
+    { QFile f(existing); QVERIFY(f.open(QIODevice::WriteOnly)); }
+    f.settings->setDatabasePaths({QDir(dir.path()).filePath("missing.epdb"), existing, existing});
+    QCOMPARE(f.ctl.knownDatabases(), QStringList{existing}); // missing + duplicates dropped
+    QVERIFY(!f.ctl.isFirstRun());
+    f.settings->setDatabasePaths({});
+    QVERIFY(f.ctl.isFirstRun());
+}
+
+void DatabaseControllerTest::testPathHelpers() {
+    QCOMPARE(DatabaseController::toLocalPath("file:///tmp/x.epdb"), QStringLiteral("/tmp/x.epdb"));
+    QCOMPARE(DatabaseController::toLocalPath("/tmp/y.epdb"), QStringLiteral("/tmp/y.epdb"));
+    QCOMPARE(DatabaseController::displayNameForPath("/a/b/My.Vault.epdb"), QStringLiteral("My.Vault"));
+    QVERIFY(DatabaseController::buildDatabasePath("file:///tmp", "Work").endsWith("/tmp/Work.epdb"));
+    QVERIFY(DatabaseController::defaultDatabasePath().endsWith("easepass.epdb"));
 }

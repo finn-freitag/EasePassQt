@@ -13,13 +13,17 @@ Control {
     property bool open: true
     property bool closable: true
     property int autoCloseInterval: 0
+    // managed: `open` is bound by the owner (e.g. to an error message). close() then only
+    // emits closed() and the owner clears its state, so the binding is never overwritten.
+    property bool managed: false
     default property alias actionContent: actionHost.data
     signal closed()
 
     function show() { open = true }
     function close() {
         if (!open) return
-        open = false
+        if (!managed)
+            open = false
         closed()
     }
 

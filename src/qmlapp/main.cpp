@@ -6,6 +6,11 @@
 #include <QtQml/qqmlextensionplugin.h>
 
 #include "AppContext.h"
+#include "AppController.h"
+#include "ClipboardService.h"
+#include "DailyTipService.h"
+#include "DatabaseController.h"
+#include "DialogService.h"
 #include "ICoreDumpControl.h"
 #include "QuickStyle.h"
 
@@ -33,6 +38,13 @@ int main(int argc, char *argv[]) {
     QQmlApplicationEngine engine;
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &app,
                      [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);
+    engine.setInitialProperties({
+        {QStringLiteral("appController"), QVariant::fromValue<QObject *>(context.appController())},
+        {QStringLiteral("databaseController"), QVariant::fromValue<QObject *>(context.databaseController())},
+        {QStringLiteral("dailyTip"), QVariant::fromValue<QObject *>(context.dailyTipService())},
+        {QStringLiteral("dialogService"), QVariant::fromValue<QObject *>(context.dialogService())},
+        {QStringLiteral("clipboard"), QVariant::fromValue<QObject *>(context.clipboardService())},
+    });
     engine.loadFromModule("EasePass", "Main");
 
     return app.exec();

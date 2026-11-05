@@ -215,6 +215,14 @@ add_library(easepass_app STATIC
     src/app/ScreenScanViewModel.h
     src/app/AppContext.cpp
     src/app/AppContext.h
+    src/app/DailyTipService.cpp
+    src/app/DailyTipService.h
+)
+# Daily tips (C#: resources/DailyTips_*.txt, bundled instead of downloaded; T13)
+qt_add_resources(easepass_app "dailytips"
+    PREFIX "/dailytips"
+    BASE "resources/dailytips"
+    FILES resources/dailytips/DailyTips_en-US.txt resources/dailytips/DailyTips_de-DE.txt
 )
 target_include_directories(easepass_app PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/app)
 target_link_libraries(easepass_app

@@ -32,6 +32,8 @@ public:
 
     Q_INVOKABLE bool navigate(EasePass::App::AppController::Page page);
     Q_INVOKABLE bool goBack();
+    /// Start page: Register (OOBE) on first run, else Login. Clears the back stack.
+    Q_INVOKABLE void start(bool firstRun);
 
 signals:
     void pageChanged(EasePass::App::AppController::Page page);

@@ -33,6 +33,13 @@ qt_add_qml_module(easepass_qml_module
         CommandBar.qml
         Splitter.qml
         Gallery.qml
+        DailyTipBox.qml
+        ImportDatabaseFlow.qml
+        CreateDatabaseDialog.qml
+        OneTimeTokenDialog.qml
+        LoginPage.qml
+        RegisterPage.qml
+        PlaceholderPage.qml
         Main.qml
     RESOURCES
         ${EASEPASS_QML_ICONS}

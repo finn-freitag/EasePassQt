@@ -125,5 +125,19 @@ implementations) and `registerQml()` exposes these singletons in the QML module
 | `PrintViewModel` | `PrintViewModel` | print / preview / PDF export |
 | `ScreenScanViewModel` | `ScreenScanViewModel` | QR scan from the screen |
 | `TotpTimer` | `TotpTimerService` | the one shared 1 s TOTP timer |
+| `DailyTip` | `DailyTipService` | tip of the day for the login page |
 
 Secrets (passwords, 2FA secrets) are never list-model roles; only `ItemViewModel` exposes them.
+
+## Login / Register (T13)
+
+- `easepass_qml` starts on the Register (OOBE) page when no known database file exists,
+  else on Login. Register creates `<AppData>/easepass.epdb` and opens it.
+- Pages get their C++ objects as properties (`controller`, ...) instead of using the
+  singletons directly, so QtQuickTests drive them with `tests/qml/FakeDatabaseController.qml`.
+  `Main.qml` receives the real objects as initial properties from `src/qmlapp/main.cpp`.
+- Daily tips: `resources/dailytips/DailyTips_<lang>.txt` (copied from the C# repository's
+  `resources/`, MIT) are bundled in qrc; the C# app downloads them from GitHub at runtime,
+  the Qt app makes no network request for them. To update, copy the files from upstream.
+- One-time (OTP) second factor databases get a new token after every login; it is shown once
+  in `OneTimeTokenDialog`.

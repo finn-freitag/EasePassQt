@@ -353,6 +353,7 @@ add_executable(test_app
     app/PasswordModelsTest.cpp
     app/ItemViewModelTest.cpp
     app/AppServicesTest.cpp
+    app/DailyTipServiceTest.cpp
 )
 target_compile_definitions(test_app PRIVATE EASEPASS_TEST_FIXTURES_DIR="${EASEPASS_TEST_FIXTURES_DIR}")
 target_link_libraries(test_app PRIVATE easepass_app Qt6::Test Qt6::Qml easepass_warnings)
@@ -361,12 +362,22 @@ set(TEST_APP_UNIT_FUNCTIONS
     testNavigationNeedsOpenDatabase
     testOpenAndLockResetNavigation
     testGoBackSkipsUnavailablePages
+    testStartPageFirstRun
     testOpenSuccessBusyFlags
     testOpenWrongPasswordError
     testOpenNeedsSecondFactor
     testOpenEmptyPathError
     testLockAndSaveErrors
     testCreateDatabaseValidationAndSuccess
+    testCreateAndOpen
+    testImportDatabase
+    testOneTimeSecondFactorRotatedAfterLogin
+    testKnownDatabasesAndFirstRun
+    testPathHelpers
+    testParseTips
+    testTipStableForADayAndChanges
+    testLanguageFallbackAndMissingFiles
+    testBundledTipFiles
     testListModelRolesAndNoSecrets
     testListModelResetsOnChanges
     testFilterFreeTextAndTags

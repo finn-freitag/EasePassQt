@@ -24,6 +24,7 @@ namespace EasePass::App {
 
 class AppController;
 class ClipboardService;
+class DailyTipService;
 class DatabaseController;
 class DialogService;
 class ItemViewModel;
@@ -74,6 +75,7 @@ public:
     ClipboardService *clipboardService() const { return m_clipboardService; }
     PrintViewModel *printViewModel() const { return m_printViewModel; }
     ScreenScanViewModel *screenScanViewModel() const { return m_screenScanViewModel; }
+    DailyTipService *dailyTipService() const { return m_dailyTip; }
 
 private:
     const Core::IClock *m_clock;
@@ -95,6 +97,7 @@ private:
     ClipboardService *m_clipboardService = nullptr;
     PrintViewModel *m_printViewModel = nullptr;
     ScreenScanViewModel *m_screenScanViewModel = nullptr;
+    DailyTipService *m_dailyTip = nullptr;
 };
 
 } // namespace EasePass::App

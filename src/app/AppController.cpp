@@ -51,6 +51,12 @@ bool AppController::goBack() {
     return false;
 }
 
+void AppController::start(bool firstRun) {
+    if (databaseOpen())
+        return;
+    resetTo(firstRun ? Page::Register : Page::Login);
+}
+
 void AppController::resetTo(Page page) {
     m_history.clear();
     m_page = page;

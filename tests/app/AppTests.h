@@ -8,6 +8,7 @@ private slots:
     void testNavigationNeedsOpenDatabase();
     void testOpenAndLockResetNavigation();
     void testGoBackSkipsUnavailablePages();
+    void testStartPageFirstRun();
 };
 
 class DatabaseControllerTest : public QObject {
@@ -19,6 +20,20 @@ private slots:
     void testOpenEmptyPathError();
     void testLockAndSaveErrors();
     void testCreateDatabaseValidationAndSuccess();
+    void testCreateAndOpen();
+    void testImportDatabase();
+    void testOneTimeSecondFactorRotatedAfterLogin();
+    void testKnownDatabasesAndFirstRun();
+    void testPathHelpers();
+};
+
+class DailyTipServiceTest : public QObject {
+    Q_OBJECT
+private slots:
+    void testParseTips();
+    void testTipStableForADayAndChanges();
+    void testLanguageFallbackAndMissingFiles();
+    void testBundledTipFiles();
 };
 
 class PasswordModelsTest : public QObject {

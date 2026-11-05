@@ -3,6 +3,11 @@
 #include "AppSettings.h"
 #include "LocalFileDatabaseSource.h"
 
+#include <QDir>
+#include <QFileInfo>
+#include <QStandardPaths>
+#include <QUrl>
+
 namespace EasePass::App {
 
 using namespace EasePass::Core;
@@ -32,6 +37,7 @@ DatabaseController::DatabaseController(DatabaseService *service, DatabaseOperati
                 m_settings->setLastDatabase(m_openingPath);
                 emit knownDatabasesChanged();
             }
+            rotateOneTimeTokenIfNeeded();
         } else {
             setNeedsSecondFactor(result == LoadResult::NeedsSecondFactor);
             const QString msg = DatabaseOpResult::describe(DatabaseOpResult::fromLoadResult(result));
@@ -49,11 +55,39 @@ DatabaseController::DatabaseController(DatabaseService *service, DatabaseOperati
 
 QString DatabaseController::databaseName() const { return m_service->isOpen() ? m_service->displayName() : QString(); }
 
-QStringList DatabaseController::knownDatabases() const { return m_settings ? m_settings->databasePaths() : QStringList(); }
+QStringList DatabaseController::knownDatabases() const {
+    // Only files that still exist (C#: ManageDatabaseHelper.LoadDatabasesToCombobox skips missing ones).
+    QStringList result;
+    if (!m_settings)
+        return result;
+    for (const QString &p : m_settings->databasePaths())
+        if (QFileInfo::exists(p) && !result.contains(p))
+            result << p;
+    return result;
+}
+
+QString DatabaseController::defaultDatabasePath() {
+    return QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
+        .filePath(QStringLiteral("easepass") + DatabaseOperations::databaseExtension());
+}
+
+QString DatabaseController::displayNameForPath(const QString &path) {
+    return QFileInfo(toLocalPath(path)).completeBaseName();
+}
+
+QString DatabaseController::buildDatabasePath(const QString &folderOrUrl, const QString &name) {
+    return DatabaseOperations::buildDatabasePath(toLocalPath(folderOrUrl), name);
+}
+
+QString DatabaseController::toLocalPath(const QString &pathOrUrl) {
+    const QUrl url(pathOrUrl);
+    return url.isLocalFile() ? url.toLocalFile() : pathOrUrl;
+}
 
 QString DatabaseController::lastDatabase() const { return m_settings ? m_settings->lastDatabase() : QString(); }
 
-bool DatabaseController::open(const QString &path, const QString &password, const QString &secondFactor) {
+bool DatabaseController::open(const QString &pathOrUrl, const QString &password, const QString &secondFactor) {
+    const QString path = toLocalPath(pathOrUrl);
     if (busy())
         return false;
     if (path.isEmpty()) {
@@ -89,7 +123,8 @@ void DatabaseController::saveNow() {
     m_service->saveNow();
 }
 
-void DatabaseController::createDatabase(const QString &path, const QString &password, const QString &repeatPassword) {
+void DatabaseController::createDatabase(const QString &pathOrUrl, const QString &password, const QString &repeatPassword) {
+    const QString path = toLocalPath(pathOrUrl);
     if (!m_operations) {
         setError(DatabaseOpResult::describe(DatabaseOpStatus::IoError));
         return;
@@ -104,15 +139,75 @@ void DatabaseController::createDatabase(const QString &path, const QString &pass
         return;
     }
     setError(QString());
+    if (!path.isEmpty())
+        QDir().mkpath(QFileInfo(path).absolutePath()); // e.g. first run: AppData does not exist yet
     beginOperation();
     m_operations->createDatabase(request, [this](const DatabaseOpResult &result) {
         endOperation();
         if (result.ok()) {
+            if (m_settings)
+                m_settings->setLastDatabase(result.path);
             emit knownDatabasesChanged();
             emit created(result.path);
+            if (!m_openAfterCreatePath.isEmpty()) {
+                const QString openPath = result.path.isEmpty() ? m_openAfterCreatePath : result.path;
+                const QString pw = m_openAfterCreatePassword.toQString();
+                m_openAfterCreatePath.clear();
+                m_openAfterCreatePassword.wipe();
+                open(openPath, pw);
+            }
         } else {
+            m_openAfterCreatePath.clear();
+            m_openAfterCreatePassword.wipe();
             setError(result.message());
         }
+    });
+}
+
+void DatabaseController::createAndOpen(const QString &path, const QString &password, const QString &repeatPassword) {
+    m_openAfterCreatePath = toLocalPath(path);
+    m_openAfterCreatePassword = SecretString(password);
+    createDatabase(path, password, repeatPassword);
+    if (m_operationsRunning == 0) { // validation failed synchronously
+        m_openAfterCreatePath.clear();
+        m_openAfterCreatePassword.wipe();
+    }
+}
+
+void DatabaseController::importDatabase(const QString &pathOrUrl, const QString &password, const QString &secondFactor) {
+    const QString path = toLocalPath(pathOrUrl);
+    if (!m_operations || path.isEmpty()) {
+        setError(DatabaseOpResult::describe(DatabaseOpStatus::InvalidPath));
+        return;
+    }
+    setError(QString());
+    beginOperation();
+    m_operations->importDatabaseFile(path, SecretString(password), SecretString(secondFactor),
+                                     [this](const DatabaseOpResult &result) {
+                                         endOperation();
+                                         setNeedsSecondFactor(result.status == DatabaseOpStatus::NeedsSecondFactor);
+                                         if (!result.ok()) {
+                                             setError(result.message());
+                                             return;
+                                         }
+                                         if (m_settings)
+                                             m_settings->setLastDatabase(result.path);
+                                         emit knownDatabasesChanged();
+                                         emit imported(result.path);
+                                     });
+}
+
+void DatabaseController::rotateOneTimeTokenIfNeeded() {
+    // C#: LoginPage.TryLogin - OTP databases get a new 12-digit token after every login.
+    if (m_service->secondFactorType() != SecondFactorType::OTP)
+        return;
+    beginOperation();
+    m_service->rotateOneTimeSecondFactor([this](const DatabaseOpResult &result, const SecretString &token) {
+        endOperation();
+        if (result.ok())
+            emit oneTimeTokenIssued(token.toQString());
+        else
+            setError(result.message());
     });
 }
 

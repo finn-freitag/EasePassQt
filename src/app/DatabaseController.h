@@ -27,6 +27,7 @@ class DatabaseController : public QObject {
     Q_PROPERTY(bool saving READ saving NOTIFY savingChanged)
     Q_PROPERTY(QStringList knownDatabases READ knownDatabases NOTIFY knownDatabasesChanged)
     Q_PROPERTY(QString lastDatabase READ lastDatabase NOTIFY knownDatabasesChanged)
+    Q_PROPERTY(bool isFirstRun READ isFirstRun NOTIFY knownDatabasesChanged)
 public:
     using SourceFactory = std::function<std::shared_ptr<Core::IDatabaseSource>(const QString &path)>;
 
@@ -46,11 +47,28 @@ public:
     bool saving() const { return m_service->isSaving(); }
     QStringList knownDatabases() const;
     QString lastDatabase() const;
+    /// No known database file exists yet -> show the Register (OOBE) page.
+    bool isFirstRun() const { return knownDatabases().isEmpty(); }
+
+    /// C#: DefaultSettingsValues.databasePaths -> <AppData>/easepass.epdb.
+    Q_INVOKABLE static QString defaultDatabasePath();
+    /// File name without extension, for the database picker.
+    Q_INVOKABLE static QString displayNameForPath(const QString &path);
+    /// <folder>/<sanitized name>.epdb (C#: CreateDatabaseDialog).
+    Q_INVOKABLE static QString buildDatabasePath(const QString &folderOrUrl, const QString &name);
+    /// Accepts local paths and file:// URLs (QML FileDialog).
+    Q_INVOKABLE static QString toLocalPath(const QString &pathOrUrl);
 
     Q_INVOKABLE bool open(const QString &path, const QString &password, const QString &secondFactor = QString());
     Q_INVOKABLE void lock();
     Q_INVOKABLE void saveNow();
     Q_INVOKABLE void createDatabase(const QString &path, const QString &password, const QString &repeatPassword);
+    /// Register page / advanced create: create, then open it with the same password.
+    Q_INVOKABLE void createAndOpen(const QString &path, const QString &password, const QString &repeatPassword);
+    /// C#: ManageDatabaseHelper.ImportDatabase - verifies the password, adds the file to the
+    /// known databases and selects it (does not open it).
+    Q_INVOKABLE void importDatabase(const QString &path, const QString &password,
+                                    const QString &secondFactor = QString());
     Q_INVOKABLE void clearError() { setError(QString()); }
 
 signals:
@@ -63,12 +81,16 @@ signals:
     void knownDatabasesChanged();
     void openFailed(const QString &message);
     void created(const QString &path);
+    void imported(const QString &path);
+    /// One-time second factor rotated after login; the UI must show it once (C#: ShowSecondFactorDialog).
+    void oneTimeTokenIssued(const QString &token);
 
 private:
     void setError(const QString &message);
     void setNeedsSecondFactor(bool on);
     void beginOperation();
     void endOperation();
+    void rotateOneTimeTokenIfNeeded();
 
     Core::DatabaseService *m_service;
     Core::DatabaseOperations *m_operations;
@@ -78,6 +100,8 @@ private:
     QString m_errorMessage;
     bool m_needsSecondFactor = false;
     int m_operationsRunning = 0;
+    QString m_openAfterCreatePath;
+    Core::SecretString m_openAfterCreatePassword;
 };
 
 } // namespace EasePass::App

@@ -4,6 +4,7 @@
 #include "AppSettings.h"
 #include "ClipboardManager.h"
 #include "ClipboardService.h"
+#include "DailyTipService.h"
 #include "DatabaseController.h"
 #include "DatabaseOperations.h"
 #include "DatabaseService.h"
@@ -61,6 +62,13 @@ AppContext::AppContext(Deps deps, QObject *parent)
     m_printViewModel = new PrintViewModel(m_service, m_printService, this);
     m_screenScanViewModel = new ScreenScanViewModel(capture, this);
 
+    m_dailyTip = new DailyTipService(m_clock, this);
+    m_dailyTip->setLanguage(m_settings->language());
+    connect(m_settings.get(), &AppSettings::languageChanged, m_dailyTip, &DailyTipService::setLanguage);
+
+    // First run (no database file known yet) starts with the Register/OOBE page.
+    m_appController->start(m_databaseController->isFirstRun());
+
     // Locking drops open questions; their answers would act on a closed database.
     connect(m_service, &DatabaseService::closed, m_dialogService, &DialogService::cancelAll);
     connect(m_settings.get(), &AppSettings::databaseDeferredSaveSecondsChanged, m_service,
@@ -89,6 +97,7 @@ void AppContext::registerQml() {
     single("PrintViewModel", m_printViewModel);
     single("ScreenScanViewModel", m_screenScanViewModel);
     single("TotpTimer", m_totpTimer);
+    single("DailyTip", m_dailyTip);
     qmlRegisterUncreatableType<AppSettings>(uri, 1, 0, "AppSettings", QStringLiteral("use SettingsViewModel.settings"));
     qmlRegisterUncreatableType<PasswordListModel>(uri, 1, 0, "PasswordListModel", QStringLiteral("singleton only"));
 }

@@ -72,6 +72,14 @@ Item {
             verify(b.visible)
             tryCompare(b, "open", false, 2000)
             compare(closed.count, 2)
+            b.autoCloseInterval = 0
+            b.show()
+            // managed: close() leaves `open` to the owner binding
+            b.managed = true
+            b.close()
+            compare(closed.count, 3)
+            verify(b.open)
+            b.managed = false
             b.closable = false
             b.show()
             verify(!findChild(b, "closeButton").visible)
