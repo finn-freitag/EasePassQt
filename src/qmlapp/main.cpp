@@ -12,6 +12,7 @@
 #include "DatabaseController.h"
 #include "DatabaseManagementViewModel.h"
 #include "PrintViewModel.h"
+#include "SettingsViewModel.h"
 #include "DialogService.h"
 #include "ItemViewModel.h"
 #include "PasswordActions.h"
@@ -76,6 +77,7 @@ int main(int argc, char *argv[]) {
         {QStringLiteral("webcamScan"), QVariant::fromValue<QObject *>(context.webcamScan())},
         {QStringLiteral("databaseManagement"), QVariant::fromValue<QObject *>(context.databaseManagement())},
         {QStringLiteral("printer"), QVariant::fromValue<QObject *>(context.printViewModel())},
+        {QStringLiteral("settingsViewModel"), QVariant::fromValue<QObject *>(context.settingsViewModel())},
     });
     engine.loadFromModule("EasePass", "Main");
 

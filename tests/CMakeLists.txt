@@ -409,6 +409,9 @@ set(TEST_APP_UNIT_FUNCTIONS
     testDialogServiceCancelAll
     testClipboardService
     testSettingsViewModel
+    testSettingsLanguages
+    testSettingsPasswordLengthText
+    testSettingsResetPopularity
     testPrintViewModelExportPdf
     testScreenScanViewModelFound
     testScreenScanViewModelFailureAndClear

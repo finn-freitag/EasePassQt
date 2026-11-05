@@ -7,9 +7,7 @@ Item {
     id: root
     property string title: ""
     property bool showBack: false
-    property bool showManageDatabase: false
     signal lockRequested()
-    signal manageDatabaseRequested()
     signal backRequested()
 
     ColumnLayout {
@@ -31,13 +29,6 @@ Item {
             visible: root.showBack
             Layout.alignment: Qt.AlignHCenter
             onClicked: root.backRequested()
-        }
-        Button {
-            objectName: "manageDatabaseButton"
-            text: qsTr("Manage database")
-            visible: root.showManageDatabase
-            Layout.alignment: Qt.AlignHCenter
-            onClicked: root.manageDatabaseRequested()
         }
         Button {
             text: qsTr("Lock")

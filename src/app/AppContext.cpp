@@ -73,6 +73,7 @@ AppContext::AppContext(Deps deps, QObject *parent)
     m_qrImport = new QrImportService(clipboard, this);
     m_webcam = new WebcamScanViewModel(deps.webcamScanner, this);
     m_settingsViewModel = new SettingsViewModel(m_settings.get(), this);
+    m_settingsViewModel->setDatabaseService(m_service);
     m_dialogService = new DialogService(this);
     m_printViewModel = new PrintViewModel(m_service, m_printService, this);
     m_screenScanViewModel = new ScreenScanViewModel(capture, this);

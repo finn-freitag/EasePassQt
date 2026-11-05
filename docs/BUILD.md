@@ -119,7 +119,7 @@ the real implementations, the webcam scanner defaults to none) and `registerQml(
 | `DatabaseController` | `DatabaseController` | open/lock/create/save, busy + error state |
 | `PasswordList` | `PasswordFilterModel` over `PasswordListModel` | search (`/tag` = tag search), sort, suggestions |
 | `ItemViewModel` | `ItemViewModel` | edit buffer, validation, strength + leak checks, TOTP |
-| `SettingsViewModel` | `SettingsViewModel` | `settings` (AppSettings), limits, resets |
+| `SettingsViewModel` | `SettingsViewModel` | `settings` (AppSettings), limits, languages, C# text-field rules, resets, reset popularity |
 | `DialogService` | `DialogService` | C++ -> QML dialog requests (`respond(id, result)`), InfoBar messages |
 | `ClipboardService` | `ClipboardService` | copy with auto-clear (ClipboardManager) |
 | `PrintViewModel` | `PrintViewModel` | print / preview / PDF export |
@@ -193,8 +193,20 @@ Secrets (passwords, 2FA secrets) are never list-model roles; only `ItemViewModel
   selects the file on the login page and locks the open one (`DatabaseController::switchTo`).
 - "Load temp database" (Passwords page and Database page) turns an open temporary database into a
   normal, writable one and adds it to the known list (`DatabaseController::makePermanent`).
-- Reachable from the Passwords page OOBE link and, until the Settings page exists (T17), from the
-  Settings placeholder.
+- Reachable from the Passwords page OOBE link and from Settings > Database > Manage.
 - Tests: `tests/qml/tst_database.qml` works on real `.epdb` files in a temporary directory
   (`testContext.createSampleFile`, cheap KDF); file dialogs are bypassed with
   `DatabasePage.fileOverride`. `tests/app/DatabaseManagementTest.cpp` covers the view model.
+
+## Settings page (T17)
+
+- `SettingsPage.qml` (C# SettingsPage): language (restart hint, translations follow in T20),
+  database (Manage, auto-save delay), security (inactivity logout 1..1000 min, clipboard clear
+  1..100000 s), password generator (characters + reset, length, verify not leaked),
+  miscellaneous (quick copy, show icons, download website icons, reset popularity). Plugin
+  sections come with T26.
+- Controls write AppSettings directly through `SettingsViewModel.settings`; spin boxes re-bind
+  after user edits so resets show up. The two generator text fields follow the C# rules
+  (`applyPasswordLengthText`, `applyPasswordCharsText`) and are not bound, so clearing a field
+  stores the default without refilling the field while typing.
+- Tests: `tests/qml/tst_settings.qml`, `AppServicesTest::testSettings*`.

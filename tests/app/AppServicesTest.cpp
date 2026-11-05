@@ -142,6 +142,87 @@ void AppServicesTest::testSettingsViewModel() {
     QCOMPARE(settings.inactivityLogoutMinutes(), AppSettings::Defaults::InactivityLogoutMinutes);
 }
 
+void AppServicesTest::testSettingsLanguages() {
+    AppSettings settings(std::make_shared<InMemorySettingsStore>());
+    settings.setLanguage("de-DE"); // language the app started with
+    SettingsViewModel vm(&settings);
+    const QVariantList langs = vm.languages();
+    QCOMPARE(langs.size(), 3);
+    QCOMPARE(langs.at(0).toMap().value("tag").toString(), QStringLiteral("en-US"));
+    QCOMPARE(langs.at(2).toMap().value("name").toString(), QStringLiteral("Português (Brasil)"));
+    QCOMPARE(vm.languageIndex(), 1);
+    QVERIFY(!vm.restartRequired());
+    QSignalSpy changed(&vm, &SettingsViewModel::languageChanged);
+    vm.setLanguageIndex(2);
+    QCOMPARE(settings.language(), QStringLiteral("pt-BR"));
+    QVERIFY(vm.restartRequired());
+    QCOMPARE(changed.count(), 1);
+    vm.setLanguageIndex(7); // out of range: ignored
+    vm.setLanguageIndex(-1);
+    QCOMPARE(settings.language(), QStringLiteral("pt-BR"));
+    vm.setLanguageIndex(1);
+    QVERIFY(!vm.restartRequired());
+    settings.setLanguage("fr-FR"); // unknown tag (e.g. edited config)
+    QCOMPARE(vm.languageIndex(), -1);
+}
+
+void AppServicesTest::testSettingsPasswordLengthText() {
+    AppSettings settings(std::make_shared<InMemorySettingsStore>());
+    SettingsViewModel vm(&settings);
+    QCOMPARE(vm.applyPasswordLengthText("2x4"), QStringLiteral("24"));
+    QCOMPARE(settings.passwordLength(), 24);
+    QCOMPARE(vm.applyPasswordLengthText("3"), QStringLiteral("3"));
+    QCOMPARE(settings.passwordLength(), 8);
+    QCOMPARE(vm.applyPasswordLengthText(""), QString());
+    QCOMPARE(settings.passwordLength(), AppSettings::Defaults::PasswordLength);
+    vm.applyPasswordLengthText("40");
+    vm.applyPasswordLengthText("00");
+    QCOMPARE(settings.passwordLength(), AppSettings::Defaults::PasswordLength);
+    vm.applyPasswordLengthText("123456");
+    QCOMPARE(settings.passwordLength(), 999);
+    vm.applyPasswordLengthText("99999999999999999999"); // does not fit in an int
+    QCOMPARE(settings.passwordLength(), 999);
+    QCOMPARE(vm.applyPasswordLengthText(QString::fromUtf8("1\u0663")), QStringLiteral("1")); // ASCII digits only
+    vm.applyPasswordCharsText(QString());
+    QCOMPARE(settings.passwordChars(), AppSettings::Defaults::PasswordChars);
+    vm.applyPasswordCharsText("xy");
+    QCOMPARE(settings.passwordChars(), QStringLiteral("xy"));
+    QCOMPARE(vm.minClipboardSeconds(), 1);
+    QCOMPARE(vm.maxClipboardSeconds(), 100000);
+}
+
+void AppServicesTest::testSettingsResetPopularity() {
+    AppSettings settings(std::make_shared<InMemorySettingsStore>());
+    SettingsViewModel vm(&settings);
+    QSignalSpy msg(&vm, &SettingsViewModel::message);
+    QVERIFY(!vm.canResetPopularity()); // no service
+    QVERIFY(!vm.resetPopularity());
+    QCOMPARE(msg.count(), 1);
+
+    DatabaseService svc(kFastKdf);
+    vm.setDatabaseService(&svc);
+    QVERIFY(!vm.canResetPopularity()); // closed
+    QSignalSpy can(&vm, &SettingsViewModel::canResetPopularityChanged);
+    auto source = makeSource({makeItem("A"), makeItem("B")});
+    QSignalSpy opened(&svc, &DatabaseService::openFinished);
+    QVERIFY(svc.open(source, SecretString(kPassword)));
+    QVERIFY(opened.wait());
+    QVERIFY(can.count() > 0);
+    QVERIFY(vm.canResetPopularity());
+    FakeClock clock;
+    QVERIFY(svc.registerClick(0, &clock));
+    QVERIFY(svc.registerClick(1, &clock));
+    QVERIFY(vm.resetPopularity());
+    QVERIFY(svc.items().at(0).clicks.isEmpty());
+    QVERIFY(svc.items().at(1).clicks.isEmpty());
+    QCOMPARE(msg.last().at(0).toInt(), 1);
+
+    source->setReadOnly(true);
+    QTRY_VERIFY(!vm.canResetPopularity());
+    QVERIFY(!vm.resetPopularity());
+    svc.shutdown();
+}
+
 void AppServicesTest::testPrintViewModelExportPdf() {
     DatabaseService svc(kFastKdf);
     PrintService print;

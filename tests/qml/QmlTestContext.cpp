@@ -9,6 +9,7 @@
 #include "LocalFileDatabaseSource.h"
 #include "PrintViewModel.h"
 #include "AppController.h"
+#include "SettingsViewModel.h"
 #include <QFileInfo>
 #include "ISettingsStore.h"
 #include "ItemViewModel.h"
@@ -85,6 +86,13 @@ QObject *QmlTestContext::webcamScan() const { return m_ctx->webcamScan(); }
 QObject *QmlTestContext::databaseManagement() const { return m_ctx->databaseManagement(); }
 QObject *QmlTestContext::printer() const { return m_ctx->printViewModel(); }
 QObject *QmlTestContext::appController() const { return m_ctx->appController(); }
+QObject *QmlTestContext::settingsViewModel() const { return m_ctx->settingsViewModel(); }
+
+void QmlTestContext::clickAll() {
+    DatabaseService *svc = m_ctx->databaseService();
+    for (int i = 0; svc->isOpen() && i < svc->itemCount(); ++i)
+        svc->registerClick(i, &m_clock);
+}
 int QmlTestContext::itemCount() const {
     return m_ctx->databaseService()->isOpen() ? m_ctx->databaseService()->itemCount() : 0;
 }

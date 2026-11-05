@@ -73,6 +73,9 @@ private slots:
     void testDialogServiceCancelAll();
     void testClipboardService();
     void testSettingsViewModel();
+    void testSettingsLanguages();
+    void testSettingsPasswordLengthText();
+    void testSettingsResetPopularity();
     void testPrintViewModelExportPdf();
     void testScreenScanViewModelFound();
     void testScreenScanViewModelFailureAndClear();

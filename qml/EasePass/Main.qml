@@ -23,6 +23,7 @@ ApplicationWindow {
     property var webcamScan: null
     property var databaseManagement: null
     property var printer: null
+    property var settingsViewModel: null
 
     // Values of App::AppController::Page
     readonly property int pageLogin: 0
@@ -52,6 +53,7 @@ ApplicationWindow {
             case window.pageRegister: return registerPage
             case window.pagePasswords: return passwordsPage
             case window.pageDatabase: return window.databaseManagement ? databasePage : placeholderPage
+            case window.pageSettings: return window.settingsViewModel ? settingsPage : placeholderPage
             default: return placeholderPage
             }
         }
@@ -138,15 +140,22 @@ ApplicationWindow {
         }
     }
     Component {
+        id: settingsPage
+        SettingsPage {
+            viewModel: window.settingsViewModel
+            databaseOpen: window.databaseController.isOpen
+            showBack: window.appController.canGoBack
+            onBackRequested: window.appController.goBack()
+            onManageDatabaseRequested: window.appController.navigate(window.pageDatabase)
+        }
+    }
+    Component {
         id: placeholderPage
         PlaceholderPage {
             title: window.databaseController.databaseName
             showBack: window.appController.canGoBack
-            // Settings is a placeholder until T17; C# opens "Manage database" from there.
-            showManageDatabase: window.appController.page === window.pageSettings
             onBackRequested: window.appController.goBack()
             onLockRequested: window.databaseController.lock()
-            onManageDatabaseRequested: window.appController.navigate(window.pageDatabase)
         }
     }
 

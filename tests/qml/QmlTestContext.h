@@ -27,6 +27,7 @@ class QmlTestContext : public QObject {
     Q_PROPERTY(QObject *databaseManagement READ databaseManagement CONSTANT)
     Q_PROPERTY(QObject *printer READ printer CONSTANT)
     Q_PROPERTY(QObject *appController READ appController CONSTANT)
+    Q_PROPERTY(QObject *settingsViewModel READ settingsViewModel CONSTANT)
     Q_PROPERTY(QString clipboardText READ clipboardText NOTIFY clipboardChanged)
     Q_PROPERTY(int itemCount READ itemCount NOTIFY itemsChanged)
 public:
@@ -47,6 +48,9 @@ public:
     QObject *databaseManagement() const;
     QObject *printer() const;
     QObject *appController() const;
+    QObject *settingsViewModel() const;
+    /// Adds a click to every item of the open database (popularity reset tests).
+    Q_INVOKABLE void clickAll();
     QString clipboardText() const { return m_clip->content; }
     int itemCount() const;
 

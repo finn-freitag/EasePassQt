@@ -55,6 +55,7 @@ qt_add_qml_module(easepass_qml_module
         PasswordPromptDialog.qml
         PrintDatabaseDialog.qml
         DatabasePage.qml
+        SettingsPage.qml
         Main.qml
     RESOURCES
         ${EASEPASS_QML_ICONS}
