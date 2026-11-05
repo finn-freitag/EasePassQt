@@ -16,6 +16,7 @@ class IClipboard;
 class IClock;
 class INetworkClient;
 class IScreenCapture;
+class IWebcamScanner;
 class ISettingsStore;
 class LeakCheckService;
 class WebsiteIconManager;
@@ -27,6 +28,9 @@ class AppController;
 class ClipboardService;
 class DailyTipService;
 class PasswordActions;
+class PasswordGeneratorViewModel;
+class QrImportService;
+class WebcamScanViewModel;
 class WebsiteIconService;
 class DatabaseController;
 class DialogService;
@@ -53,6 +57,7 @@ public:
         std::shared_ptr<Core::IClipboard> clipboard;          ///< default: QtClipboard
         std::shared_ptr<Core::INetworkClient> networkClient;  ///< default: QtNetworkClient
         std::shared_ptr<Core::IScreenCapture> screenCapture;  ///< default: createScreenCapture()
+        std::shared_ptr<Core::IWebcamScanner> webcamScanner;  ///< default: none (no webcam scan)
         QString iconCacheDir;                                 ///< default: WebsiteIconManager default
         const Core::IClock *clock = nullptr;                  ///< default: SystemClock
         Core::KdfParams kdf = Core::KdfParams::production();  ///< tests pass cheap params
@@ -74,6 +79,11 @@ public:
     PasswordListModel *passwordListModel() const { return m_listModel; }
     PasswordFilterModel *passwordFilterModel() const { return m_filterModel; }
     ItemViewModel *itemViewModel() const { return m_itemViewModel; }
+    /// Second edit buffer for the add/edit/2FA dialogs, so the detail pane keeps its item (T15).
+    ItemViewModel *editorViewModel() const { return m_editorViewModel; }
+    PasswordGeneratorViewModel *passwordGenerator() const { return m_generator; }
+    QrImportService *qrImport() const { return m_qrImport; }
+    WebcamScanViewModel *webcamScan() const { return m_webcam; }
     SettingsViewModel *settingsViewModel() const { return m_settingsViewModel; }
     DialogService *dialogService() const { return m_dialogService; }
     ClipboardService *clipboardService() const { return m_clipboardService; }
@@ -98,6 +108,10 @@ private:
     PasswordListModel *m_listModel = nullptr;
     PasswordFilterModel *m_filterModel = nullptr;
     ItemViewModel *m_itemViewModel = nullptr;
+    ItemViewModel *m_editorViewModel = nullptr;
+    PasswordGeneratorViewModel *m_generator = nullptr;
+    QrImportService *m_qrImport = nullptr;
+    WebcamScanViewModel *m_webcam = nullptr;
     SettingsViewModel *m_settingsViewModel = nullptr;
     DialogService *m_dialogService = nullptr;
     ClipboardService *m_clipboardService = nullptr;

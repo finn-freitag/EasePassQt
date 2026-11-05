@@ -90,6 +90,7 @@ set(CORE_SOURCES
     src/core/PasswordGenerator.cpp
     src/core/WebsiteIconManager.cpp
     src/core/QrCodeScanner.cpp
+    src/core/QrCodeGenerator.cpp
     src/core/INetworkClient.cpp
     src/core/ISettingsStore.cpp
     src/core/AppSettings.cpp
@@ -130,6 +131,7 @@ set(CORE_HEADERS
     src/core/PasswordGenerator.h
     src/core/WebsiteIconManager.h
     src/core/QrCodeScanner.h
+    src/core/QrCodeGenerator.h
     src/core/IClock.h
     src/core/INetworkClient.h
     src/core/ISettingsStore.h
@@ -221,6 +223,12 @@ add_library(easepass_app STATIC
     src/app/PasswordActions.h
     src/app/WebsiteIconService.cpp
     src/app/WebsiteIconService.h
+    src/app/PasswordGeneratorViewModel.cpp
+    src/app/PasswordGeneratorViewModel.h
+    src/app/QrImportService.cpp
+    src/app/QrImportService.h
+    src/app/WebcamScanViewModel.cpp
+    src/app/WebcamScanViewModel.h
 )
 # Daily tips (C#: resources/DailyTips_*.txt, bundled instead of downloaded; T13)
 qt_add_resources(easepass_app "dailytips"
@@ -331,6 +339,9 @@ target_link_libraries(easepass_qml PRIVATE
     Qt6::QuickControls2
     easepass_warnings
 )
+if(EASEPASS_WITH_MULTIMEDIA)
+    target_link_libraries(easepass_qml PRIVATE easepass_multimedia)
+endif()
 
 # --- Tests -------------------------------------------------------------------
 if(EASEPASS_BUILD_TESTS)

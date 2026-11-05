@@ -6,6 +6,10 @@
 #include "ClipboardService.h"
 #include "DailyTipService.h"
 #include "PasswordActions.h"
+#include "PasswordGeneratorViewModel.h"
+#include "QrImportService.h"
+#include "WebcamScanViewModel.h"
+#include "IWebcamScanner.h"
 #include "WebsiteIconManager.h"
 #include "WebsiteIconService.h"
 #include "DatabaseController.h"
@@ -60,6 +64,13 @@ AppContext::AppContext(Deps deps, QObject *parent)
     m_itemViewModel->setLeakCheckService(m_leakCheck);
     m_itemViewModel->setClipboardService(m_clipboardService);
     m_itemViewModel->setSettings(m_settings.get());
+    m_editorViewModel = new ItemViewModel(m_service, m_totpTimer, this);
+    m_editorViewModel->setLeakCheckService(m_leakCheck);
+    m_editorViewModel->setClipboardService(m_clipboardService);
+    m_editorViewModel->setSettings(m_settings.get());
+    m_generator = new PasswordGeneratorViewModel(m_settings.get(), m_service, m_leakCheck, this);
+    m_qrImport = new QrImportService(clipboard, this);
+    m_webcam = new WebcamScanViewModel(deps.webcamScanner, this);
     m_settingsViewModel = new SettingsViewModel(m_settings.get(), this);
     m_dialogService = new DialogService(this);
     m_printViewModel = new PrintViewModel(m_service, m_printService, this);
@@ -102,6 +113,10 @@ void AppContext::registerQml() {
     single("DatabaseController", m_databaseController);
     single("PasswordList", m_filterModel);
     single("ItemViewModel", m_itemViewModel);
+    single("EditorViewModel", m_editorViewModel);
+    single("PasswordGenerator", m_generator);
+    single("QrImport", m_qrImport);
+    single("WebcamScan", m_webcam);
     single("SettingsViewModel", m_settingsViewModel);
     single("DialogService", m_dialogService);
     single("ClipboardService", m_clipboardService);

@@ -3,10 +3,15 @@
 #include "AppSettings.h"
 #include "ClipboardService.h"
 #include "DatabaseService.h"
+#include "EmailAddressIndexer.h"
+#include "PasswordItemTagHelper.h"
+#include "QrCodeGenerator.h"
 #include "LeakCheckService.h"
 #include "PasswordStrength.h"
 #include "TotpHelper.h"
 #include "TotpTimerService.h"
+
+#include <QBuffer>
 
 namespace EasePass::App {
 
@@ -43,6 +48,7 @@ ItemViewModel::ItemViewModel(DatabaseService *service, TotpTimerService *totpTim
     : QObject(parent), m_service(service), m_totpTimer(totpTimer), m_safetyChecks(unknownChecks()) {
     connect(m_totpTimer, &TotpTimerService::tick, this, &ItemViewModel::updateTotp);
     connect(m_service, &DatabaseService::closed, this, &ItemViewModel::unload);
+    connect(m_service, &DatabaseService::itemsChanged, this, &ItemViewModel::onItemsChanged);
 }
 
 ItemViewModel::~ItemViewModel() {
@@ -69,15 +75,39 @@ bool ItemViewModel::load(int index) {
 
 void ItemViewModel::newItem() { setLoaded(-1, PasswordItem(), true); }
 
-void ItemViewModel::unload() { setLoaded(-1, PasswordItem(), false); }
+void ItemViewModel::unload() {
+    if (!m_hasItem && m_index < 0)
+        return; // already empty (lock emits itemsChanged and closed)
+    setLoaded(-1, PasswordItem(), false);
+}
 
 void ItemViewModel::setLoaded(int index, const PasswordItem &item, bool hasItem) {
     m_index = index;
     m_hasItem = hasItem;
     m_original = item;
     m_buffer = item;
+    m_emailSuggestions.clear();
+    if (hasItem && m_service->isOpen()) {
+        EmailAddressIndexer indexer;
+        indexer.indexUniqueEmail(m_service->items());
+        m_emailSuggestions = indexer.uniqueEmailAddresses();
+    }
     emit loadedChanged();
     afterBufferChange(true, true);
+}
+
+// Another view model (the edit dialog) or an action changed the database: show the stored
+// item again unless this buffer has unsaved edits.
+void ItemViewModel::onItemsChanged() {
+    if (!m_hasItem || m_index < 0 || !m_service->isOpen() || dirty())
+        return;
+    if (m_index >= m_service->itemCount()) {
+        unload();
+        return;
+    }
+    const PasswordItem &stored = m_service->items().at(m_index);
+    if (stored.toJson() != m_original.toJson())
+        setLoaded(m_index, stored, true);
 }
 
 void ItemViewModel::cancel() {
@@ -100,6 +130,9 @@ void ItemViewModel::setEmail(const QString &v) { setField(&PasswordItem::email, 
 void ItemViewModel::setWebsite(const QString &v) { setField(&PasswordItem::website, v); }
 void ItemViewModel::setNotes(const QString &v) { setField(&PasswordItem::notes, v); }
 void ItemViewModel::setTags(const QStringList &v) { setField(&PasswordItem::tags, v); }
+
+QString ItemViewModel::tagsText() const { return PasswordItemTagHelper::formatTags(m_buffer.tags); }
+void ItemViewModel::setTagsText(const QString &text) { setTags(PasswordItemTagHelper::parseTags(text)); }
 
 void ItemViewModel::setPassword(const QString &v) {
     if (m_buffer.password == v)
@@ -144,6 +177,16 @@ void ItemViewModel::afterBufferChange(bool passwordChanged, bool totpChanged) {
 }
 
 bool ItemViewModel::dirty() const { return m_hasItem && m_buffer.toJson() != m_original.toJson(); }
+
+bool ItemViewModel::passwordReused() const {
+    if (!m_hasItem || m_buffer.password.isEmpty() || !m_service->isOpen())
+        return false;
+    int count = m_service->countOccurrences(m_buffer.password);
+    // The stored version of this item does not count (C#: pe(pw) == 1 allowed in edit mode).
+    if (m_index >= 0 && m_index < m_service->itemCount() && m_service->items().at(m_index).password == m_buffer.password)
+        --count;
+    return count > 0;
+}
 
 QStringList ItemViewModel::validationErrors() const {
     QStringList errors;
@@ -217,6 +260,52 @@ bool ItemViewModel::applyOtpauthUri(const QString &uri) {
     m_buffer.algorithm = params.algorithm;
     afterBufferChange(false, true);
     return true;
+}
+
+void ItemViewModel::prepare2FA() {
+    bool changed = false;
+    auto fill = [&](QString &field, const char *def) {
+        if (field.trimmed().isEmpty()) {
+            field = QString::fromLatin1(def);
+            changed = true;
+        }
+    };
+    fill(m_buffer.digits, "6");
+    fill(m_buffer.interval, "30");
+    fill(m_buffer.algorithm, "SHA1");
+    if (changed)
+        afterBufferChange(false, true);
+}
+
+void ItemViewModel::remove2FA() { setSecret(QString()); }
+
+QString ItemViewModel::otpauthUri() const {
+    if (!m_buffer.has2FA())
+        return {};
+    TotpParameters p;
+    p.secret = m_buffer.secret.trimmed();
+    p.issuer = m_buffer.displayName;
+    p.account = m_buffer.email.isEmpty() ? m_buffer.username : m_buffer.email;
+    p.algorithm = m_buffer.algorithm.trimmed().isEmpty() ? QStringLiteral("SHA1") : m_buffer.algorithm.trimmed().toUpper();
+    bool ok = false;
+    p.digits = m_buffer.digits.toInt(&ok);
+    if (!ok)
+        p.digits = 6; // C#: ConvertHelper.ToInt(digits, 6)
+    p.period = m_buffer.interval.toInt(&ok);
+    if (!ok)
+        p.period = 30;
+    return TotpHelper::generateOtpauthUri(p);
+}
+
+QString ItemViewModel::otpauthQrCode() const {
+    const QImage img = QrCodeGenerator::generate(otpauthUri());
+    if (img.isNull())
+        return {};
+    QByteArray png;
+    QBuffer buffer(&png);
+    buffer.open(QIODevice::WriteOnly);
+    img.save(&buffer, "PNG");
+    return QStringLiteral("data:image/png;base64,") + QString::fromLatin1(png.toBase64());
 }
 
 // --- Strength / leak ----------------------------------------------------------------

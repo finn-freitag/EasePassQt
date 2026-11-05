@@ -15,6 +15,13 @@
 #include "PasswordActions.h"
 #include "PasswordFilterModel.h"
 #include "WebsiteIconService.h"
+#include "PasswordGeneratorViewModel.h"
+#include "QrImportService.h"
+#include "ScreenScanViewModel.h"
+#include "WebcamScanViewModel.h"
+#ifdef EASEPASS_HAVE_MULTIMEDIA
+#include "QtWebcamScanner.h"
+#endif
 #include "AppSettings.h"
 #include "ICoreDumpControl.h"
 #include "QuickStyle.h"
@@ -37,13 +44,18 @@ int main(int argc, char *argv[]) {
     EasePass::App::applyQuickStyle();
 
     // Composition root: Core services + view models, exposed as "EasePass.App" singletons (T12).
-    EasePass::App::AppContext context;
+    EasePass::App::AppContext::Deps deps;
+#ifdef EASEPASS_HAVE_MULTIMEDIA
+    deps.webcamScanner = std::make_shared<EasePass::Multimedia::QtWebcamScanner>();
+#endif
+    EasePass::App::AppContext context(std::move(deps));
     context.registerQml();
 
     QQmlApplicationEngine engine;
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &app,
                      [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);
     engine.addImageProvider(EasePass::App::WebsiteIconService::ProviderId, context.websiteIcons()->createImageProvider());
+    engine.addImageProvider(EasePass::App::WebcamScanViewModel::ProviderId, context.webcamScan()->createImageProvider());
     engine.setInitialProperties({
         {QStringLiteral("appController"), QVariant::fromValue<QObject *>(context.appController())},
         {QStringLiteral("databaseController"), QVariant::fromValue<QObject *>(context.databaseController())},
@@ -55,6 +67,11 @@ int main(int argc, char *argv[]) {
         {QStringLiteral("passwordActions"), QVariant::fromValue<QObject *>(context.passwordActions())},
         {QStringLiteral("websiteIcons"), QVariant::fromValue<QObject *>(context.websiteIcons())},
         {QStringLiteral("settings"), QVariant::fromValue<QObject *>(context.settings())},
+        {QStringLiteral("editor"), QVariant::fromValue<QObject *>(context.editorViewModel())},
+        {QStringLiteral("generator"), QVariant::fromValue<QObject *>(context.passwordGenerator())},
+        {QStringLiteral("qrImport"), QVariant::fromValue<QObject *>(context.qrImport())},
+        {QStringLiteral("screenScan"), QVariant::fromValue<QObject *>(context.screenScanViewModel())},
+        {QStringLiteral("webcamScan"), QVariant::fromValue<QObject *>(context.webcamScan())},
     });
     engine.loadFromModule("EasePass", "Main");
 

@@ -12,4 +12,6 @@ private slots:
     void testEmptyPoolFallback();
     void testCustomSymbolsOnly();
     void testDistributionSanity();
+    void testFromCharsetRespectsLengthAndChars();
+    void testFromCharsetSecureAndTerminates();
 };

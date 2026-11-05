@@ -2,12 +2,14 @@
 // Every tst_*.qml calls failOnWarning() in init(), so any QML warning fails the test.
 #include <QtQuickTest>
 #include <QQmlEngine>
+#include <QQuickImageProvider>
 #include <QtQml/qqmlextensionplugin.h>
 #include <QApplication>
 #include <QStandardPaths>
 
 #include "QuickStyle.h"
 #include "QmlTestContext.h"
+#include "WebcamScanViewModel.h"
 
 #include <QQmlContext>
 
@@ -20,6 +22,8 @@ public slots:
         // Real view models with fakes for the page tests (T14+).
         m_context = std::make_unique<QmlTestContext>();
         engine->rootContext()->setContextProperty(QStringLiteral("testContext"), m_context.get());
+        auto *webcam = qobject_cast<EasePass::App::WebcamScanViewModel *>(m_context->webcamScan());
+        engine->addImageProvider(EasePass::App::WebcamScanViewModel::ProviderId, webcam->createImageProvider());
     }
     void cleanupTestCase() { m_context.reset(); }
 

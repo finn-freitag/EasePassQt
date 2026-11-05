@@ -143,6 +143,8 @@ set(TEST_CORE_UNIT_FUNCTIONS
     testEmptyPoolFallback
     testCustomSymbolsOnly
     testDistributionSanity
+    testFromCharsetRespectsLengthAndChars
+    testFromCharsetSecureAndTerminates
     testDecodeSampleQrNormal
     testDecodeSampleQrRotated
     testDecodeSampleQrInverted
@@ -151,6 +153,8 @@ set(TEST_CORE_UNIT_FUNCTIONS
     testNullImageAndMissingFileReturnsEmpty
     testClipboardOtpauthText
     testClipboardImageScanning
+    testGenerateRoundTrip
+    testGenerateEmptyAndScale
     testKnownDatabasePathsAddRemoveDedupe
     testLastUsedDatabasePath
     testSetAndCloseDatabaseSignals
@@ -355,6 +359,7 @@ add_executable(test_app
     app/AppServicesTest.cpp
     app/DailyTipServiceTest.cpp
     app/PasswordActionsTest.cpp
+    app/ItemDialogsTest.cpp
 )
 target_compile_definitions(test_app PRIVATE EASEPASS_TEST_FIXTURES_DIR="${EASEPASS_TEST_FIXTURES_DIR}")
 target_link_libraries(test_app PRIVATE easepass_app Qt6::Test Qt6::Qml Qt6::Quick easepass_warnings)
@@ -414,6 +419,15 @@ set(TEST_APP_UNIT_FUNCTIONS
     testExportItems
     testExportWithNewPassword
     testWebsiteIconService
+    testEditorTagsTextAndEmailSuggestions
+    testPasswordReused
+    testTwoFactorHelpers
+    testDetailReloadsAfterEditorCommit
+    testGeneratorRespectsSettings
+    testGeneratorLeakRetries
+    testGeneratorAsyncAndTypedPasswordCancels
+    testQrImportFileAndClipboard
+    testWebcamScanViewModel
 )
 easepass_add_qtest(test_app LABELS unit FUNCTIONS ${TEST_APP_UNIT_FUNCTIONS})
 add_test(NAME test_app.all_functions_registered

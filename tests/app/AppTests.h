@@ -90,3 +90,17 @@ private slots:
     void testExportWithNewPassword();
     void testWebsiteIconService();
 };
+
+class ItemDialogsTest : public QObject {
+    Q_OBJECT
+private slots:
+    void testEditorTagsTextAndEmailSuggestions();
+    void testPasswordReused();
+    void testTwoFactorHelpers();
+    void testDetailReloadsAfterEditorCommit();
+    void testGeneratorRespectsSettings();
+    void testGeneratorLeakRetries();
+    void testGeneratorAsyncAndTypedPasswordCancels();
+    void testQrImportFileAndClipboard();
+    void testWebcamScanViewModel();
+};

@@ -5,6 +5,8 @@
 #include "../app/AppTestSupport.h"
 
 #include <QObject>
+#include <QTemporaryDir>
+#include <QVariantMap>
 #include <memory>
 
 namespace EasePass::App { class AppContext; }
@@ -17,6 +19,11 @@ class QmlTestContext : public QObject {
     Q_PROPERTY(QObject *settings READ settings CONSTANT)
     Q_PROPERTY(QObject *controller READ controller CONSTANT)
     Q_PROPERTY(QObject *clipboard READ clipboard CONSTANT)
+    Q_PROPERTY(QObject *editor READ editor CONSTANT)
+    Q_PROPERTY(QObject *generator READ generator CONSTANT)
+    Q_PROPERTY(QObject *qrImport READ qrImport CONSTANT)
+    Q_PROPERTY(QObject *screenScan READ screenScan CONSTANT)
+    Q_PROPERTY(QObject *webcamScan READ webcamScan CONSTANT)
     Q_PROPERTY(QString clipboardText READ clipboardText NOTIFY clipboardChanged)
     Q_PROPERTY(int itemCount READ itemCount NOTIFY itemsChanged)
 public:
@@ -29,6 +36,11 @@ public:
     QObject *settings() const;
     QObject *controller() const;
     QObject *clipboard() const;
+    QObject *editor() const;
+    QObject *generator() const;
+    QObject *qrImport() const;
+    QObject *screenScan() const;
+    QObject *webcamScan() const;
     QString clipboardText() const { return m_clip->content; }
     int itemCount() const;
 
@@ -42,6 +54,20 @@ public:
     Q_INVOKABLE void clearClipboard();
     Q_INVOKABLE int clicksOf(int index) const;
     Q_INVOKABLE QString nameOf(int index) const;
+    /// Stored item fields (PasswordItem JSON keys, e.g. "Username", "Secret") for assertions.
+    Q_INVOKABLE QVariantMap itemAt(int index) const;
+    Q_INVOKABLE void setClipboardText(const QString &text);
+    /// Puts a QR code image with @p text on the fake clipboard (and clears its text).
+    Q_INVOKABLE void setClipboardQr(const QString &text);
+    /// The fake screen shows QR codes with these texts (empty list = no code).
+    Q_INVOKABLE void setScreenQrCodes(const QStringList &texts);
+    /// The fake webcam reports @p text as detected QR code.
+    Q_INVOKABLE void webcamDetect(const QString &text);
+    Q_INVOKABLE bool webcamActive() const;
+    /// Writes a QR code PNG with @p text to a temporary file; returns its file:// URL.
+    Q_INVOKABLE QString writeQrFile(const QString &text);
+    Q_INVOKABLE QString otpauthFor(const QString &secret, const QString &issuer) const;
+    Q_INVOKABLE void setGeneratorSettings(int length, const QString &chars);
 
 signals:
     void clipboardChanged();
@@ -52,6 +78,9 @@ private:
 
     AppTest::FakeClock m_clock;
     std::shared_ptr<AppTest::FakeClipboard> m_clip;
+    std::shared_ptr<AppTest::FakeScreenCapture> m_screen;
+    std::shared_ptr<AppTest::FakeWebcamScanner> m_webcam;
+    QTemporaryDir m_tempDir;
     std::shared_ptr<FakeDatabaseSource> m_source;
     std::unique_ptr<EasePass::App::AppContext> m_ctx;
 };

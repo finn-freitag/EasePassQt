@@ -44,6 +44,7 @@ QtObject {
     readonly property color cardBorder: dark ? "#1D1D1D" : "#E5E5E5"
     readonly property color divider: dark ? "#3A3A3A" : "#E0E0E0"
     readonly property color overlay: dark ? "#99000000" : "#4D000000"
+    readonly property color videoBackground: "#000000"   // camera preview letterbox
 
     // --- Text ------------------------------------------------------------------------
     readonly property color textPrimary: dark ? "#FFFFFF" : "#1B1B1B"

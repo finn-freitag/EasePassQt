@@ -42,6 +42,11 @@ qt_add_qml_module(easepass_qml_module
         PlaceholderPage.qml
         PasswordRow.qml
         PasswordsPage.qml
+        TwoFactorFields.qml
+        ItemEditDialog.qml
+        Add2FADialog.qml
+        WebcamScanDialog.qml
+        PasswordGeneratorDialog.qml
         Main.qml
     RESOURCES
         ${EASEPASS_QML_ICONS}

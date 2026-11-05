@@ -39,6 +39,8 @@ class ItemViewModel : public QObject {
     Q_PROPERTY(QString website READ website WRITE setWebsite NOTIFY bufferChanged)
     Q_PROPERTY(QString notes READ notes WRITE setNotes NOTIFY bufferChanged)
     Q_PROPERTY(QStringList tags READ tags WRITE setTags NOTIFY bufferChanged)
+    /// Tags as typed in the edit dialog, separated by spaces (C#: PasswordItemTagHelper).
+    Q_PROPERTY(QString tagsText READ tagsText WRITE setTagsText NOTIFY bufferChanged)
     Q_PROPERTY(QString secret READ secret WRITE setSecret NOTIFY bufferChanged)
     Q_PROPERTY(QString digits READ digits WRITE setDigits NOTIFY bufferChanged)
     Q_PROPERTY(QString interval READ interval WRITE setInterval NOTIFY bufferChanged)
@@ -46,6 +48,10 @@ class ItemViewModel : public QObject {
     Q_PROPERTY(bool has2FA READ has2FA NOTIFY bufferChanged)
     Q_PROPERTY(QString avatarLetter READ avatarLetter NOTIFY bufferChanged)
     Q_PROPERTY(bool dirty READ dirty NOTIFY bufferChanged)
+    /// The buffer password is already used by another item (C#: AddItemPage red border).
+    Q_PROPERTY(bool passwordReused READ passwordReused NOTIFY bufferChanged)
+    /// Unique e-mail addresses of the open database (C#: EmailAddressIndexer), for suggestions.
+    Q_PROPERTY(QStringList emailSuggestions READ emailSuggestions NOTIFY loadedChanged)
     Q_PROPERTY(bool valid READ valid NOTIFY bufferChanged)
     Q_PROPERTY(QStringList validationErrors READ validationErrors NOTIFY bufferChanged)
     Q_PROPERTY(QVariantList safetyChecks READ safetyChecks NOTIFY safetyChanged)
@@ -76,6 +82,8 @@ public:
     QString website() const { return m_buffer.website; }
     QString notes() const { return m_buffer.notes; }
     QStringList tags() const { return m_buffer.tags; }
+    QString tagsText() const;
+    void setTagsText(const QString &text);
     QString secret() const { return m_buffer.secret; }
     QString digits() const { return m_buffer.digits; }
     QString interval() const { return m_buffer.interval; }
@@ -95,6 +103,8 @@ public:
     bool has2FA() const { return m_buffer.has2FA(); }
     QString avatarLetter() const { return m_buffer.avatarLetter(); }
     bool dirty() const;
+    bool passwordReused() const;
+    QStringList emailSuggestions() const { return m_emailSuggestions; }
     bool valid() const { return validationErrors().isEmpty(); }
     QStringList validationErrors() const;
     QVariantList safetyChecks() const { return m_safetyChecks; }
@@ -113,6 +123,14 @@ public:
     Q_INVOKABLE bool deleteItem();
     /// Fills secret/digits/interval/algorithm from an otpauth:// URI (QR scan result).
     Q_INVOKABLE bool applyOtpauthUri(const QString &uri);
+    /// Fills empty digits/interval/algorithm with the defaults 6/30/SHA1 (C#: Add2FAPage fields).
+    Q_INVOKABLE void prepare2FA();
+    /// Clears the 2FA secret (C#: AddItemPage.Remove2FA_Click); takes effect on commit().
+    Q_INVOKABLE void remove2FA();
+    /// otpauth:// URI of the buffer (C#: TOTP.EncodeUrl(name, username, email, ...)); empty without 2FA.
+    Q_INVOKABLE QString otpauthUri() const;
+    /// The otpauth URI as QR code PNG data URL for an Image (C#: AddItemPage.Export2FA_Click).
+    Q_INVOKABLE QString otpauthQrCode() const;
     Q_INVOKABLE void copyPassword();
     Q_INVOKABLE void copyUsername();
     Q_INVOKABLE void copyEmail();
@@ -134,6 +152,7 @@ private:
     void updateSafety();
     void updateTotp(qint64 now);
     void updateTotpSubscription();
+    void onItemsChanged();
     int minPasswordLength() const;
 
     Core::DatabaseService *m_service;
@@ -146,6 +165,7 @@ private:
     Core::PasswordItem m_buffer;
     int m_index = -1;
     bool m_hasItem = false;
+    QStringList m_emailSuggestions;
 
     QVariantList m_safetyChecks;
     LeakState m_leakState = LeakState::Unknown;

@@ -10,6 +10,7 @@
 #include "IClock.h"
 #include "INetworkClient.h"
 #include "IScreenCapture.h"
+#include "IWebcamScanner.h"
 #include "LeakCheckService.h"
 #include "PasswordItem.h"
 
@@ -31,9 +32,11 @@ public:
 class FakeClipboard : public EasePass::Core::IClipboard {
 public:
     QString content;
+    QImage imageContent;
     bool lastSecret = false;
     int setCount = 0;
     QString text() const override { return content; }
+    QImage image() const override { return imageContent; }
     void setText(const QString &text, bool secret) override {
         content = text;
         lastSecret = secret;
@@ -81,6 +84,34 @@ public:
         auto r = result;
         QTimer::singleShot(0, [cb, r]() { cb(r); });
     }
+};
+
+/// Webcam without hardware: tests drive frames and detected codes by hand.
+class FakeWebcamScanner : public EasePass::Core::IWebcamScanner {
+public:
+    QList<EasePass::Core::WebcamDevice> devices{{"cam0", QStringLiteral("Front"), false},
+                                                 {"cam1", QStringLiteral("USB"), true}};
+    bool activeFlag = false;
+    QByteArray startedWith;
+    int starts = 0;
+    int stops = 0;
+    QList<EasePass::Core::WebcamDevice> availableDevices() const override { return devices; }
+    void start(const QByteArray &deviceId) override {
+        startedWith = deviceId;
+        ++starts;
+        activeFlag = true;
+        emit activeChanged(true);
+    }
+    void stop() override {
+        ++stops;
+        if (activeFlag) {
+            activeFlag = false;
+            emit activeChanged(false);
+        }
+    }
+    bool isActive() const override { return activeFlag; }
+    void detect(const QString &text) { emit codeDetected(text); }
+    void frame(const QImage &img) { emit previewFrame(img); }
 };
 
 inline EasePass::Core::PasswordItem makeItem(const QString &name, const QString &password = QStringLiteral("pw"),

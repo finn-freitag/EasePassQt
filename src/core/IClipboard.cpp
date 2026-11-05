@@ -17,6 +17,11 @@ QString QtClipboard::text() const {
     return cb ? cb->text(QClipboard::Clipboard) : QString();
 }
 
+QImage QtClipboard::image() const {
+    QClipboard *cb = systemClipboard();
+    return cb ? cb->image(QClipboard::Clipboard) : QImage();
+}
+
 void QtClipboard::setText(const QString &text, bool secret) {
     QClipboard *cb = systemClipboard();
     if (!cb)

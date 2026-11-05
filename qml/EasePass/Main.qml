@@ -16,6 +16,11 @@ ApplicationWindow {
     required property var passwordActions
     required property var websiteIcons
     required property var settings
+    required property var editor
+    required property var generator
+    required property var qrImport
+    property var screenScan: null
+    property var webcamScan: null
 
     // Values of App::AppController::Page
     readonly property int pageLogin: 0
@@ -78,18 +83,45 @@ ApplicationWindow {
             onSettingsRequested: window.appController.navigate(window.pageSettings)
             onAboutRequested: window.appController.navigate(window.pageAbout)
             onManageDatabaseRequested: window.appController.navigate(window.pageDatabase)
-            // Item dialogs follow in T15.
-            onAddRequested: window.notYetAvailable()
-            onEditRequested: (index) => window.notYetAvailable()
-            onAdd2FARequested: (index) => window.notYetAvailable()
-            onGenerateRequested: window.notYetAvailable()
+            onAddRequested: itemDialog.openNew()
+            onEditRequested: (index) => itemDialog.openEdit(index)
+            onAdd2FARequested: (index) => add2FADialog.openFor(index)
+            onGenerateRequested: generatorDialog.open()
         }
     }
-    function notYetAvailable() {
-        globalInfo.severity = Theme.Severity.Info
-        globalInfo.title = ""
-        globalInfo.message = qsTr("This function is not available yet.")
-        globalInfo.show()
+    // Shows the saved item in the list after an add/edit dialog.
+    function selectItem(index) {
+        if (pageLoader.item && pageLoader.item.select !== undefined)
+            pageLoader.item.select(index)
+    }
+
+    // --- Item dialogs (T15) -----------------------------------------------------------
+    ItemEditDialog {
+        id: itemDialog
+        objectName: "itemDialog"
+        parent: Overlay.overlay
+        editor: window.editor
+        generator: window.generator
+        onCommitted: (index) => window.selectItem(index)
+        onCopyRequested: (t) => window.clipboard.copy(t, true)
+    }
+    Add2FADialog {
+        id: add2FADialog
+        objectName: "add2FADialog"
+        parent: Overlay.overlay
+        editor: window.editor
+        qrImport: window.qrImport
+        screenScan: window.screenScan
+        webcamScan: window.webcamScan
+        onCommitted: (index) => window.selectItem(index)
+        onCopyRequested: (t) => window.clipboard.copy(t, true)
+    }
+    PasswordGeneratorDialog {
+        id: generatorDialog
+        objectName: "generatorDialog"
+        parent: Overlay.overlay
+        generator: window.generator
+        onCopyRequested: (t) => window.clipboard.copy(t, true)
     }
     Component {
         id: placeholderPage

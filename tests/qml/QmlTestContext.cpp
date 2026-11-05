@@ -8,6 +8,14 @@
 #include "ItemViewModel.h"
 #include "PasswordActions.h"
 #include "PasswordFilterModel.h"
+#include "PasswordGeneratorViewModel.h"
+#include "QrCodeGenerator.h"
+#include "QrImportService.h"
+#include "ScreenScanViewModel.h"
+#include "WebcamScanViewModel.h"
+
+#include <QJsonObject>
+#include <QPainter>
 #include "TotpHelper.h"
 #include "TotpTimerService.h"
 
@@ -37,12 +45,16 @@ QList<PasswordItem> sampleItems() {
 }
 } // namespace
 
-QmlTestContext::QmlTestContext(QObject *parent) : QObject(parent), m_clip(std::make_shared<AppTest::FakeClipboard>()) {
+QmlTestContext::QmlTestContext(QObject *parent)
+    : QObject(parent), m_clip(std::make_shared<AppTest::FakeClipboard>()),
+      m_screen(std::make_shared<AppTest::FakeScreenCapture>()),
+      m_webcam(std::make_shared<AppTest::FakeWebcamScanner>()) {
     AppContext::Deps deps;
     deps.settingsStore = std::make_shared<InMemorySettingsStore>();
     deps.clipboard = m_clip;
     deps.networkClient = std::make_shared<AppTest::FakeRangeClient>();
-    deps.screenCapture = std::make_shared<AppTest::FakeScreenCapture>();
+    deps.screenCapture = m_screen;
+    deps.webcamScanner = m_webcam;
     deps.clock = &m_clock;
     deps.kdf = AppTest::kFastKdf;
     m_ctx = std::make_unique<AppContext>(deps);
@@ -59,6 +71,11 @@ QObject *QmlTestContext::actions() const { return m_ctx->passwordActions(); }
 QObject *QmlTestContext::settings() const { return m_ctx->settings(); }
 QObject *QmlTestContext::controller() const { return m_ctx->databaseController(); }
 QObject *QmlTestContext::clipboard() const { return m_ctx->clipboardService(); }
+QObject *QmlTestContext::editor() const { return m_ctx->editorViewModel(); }
+QObject *QmlTestContext::generator() const { return m_ctx->passwordGenerator(); }
+QObject *QmlTestContext::qrImport() const { return m_ctx->qrImport(); }
+QObject *QmlTestContext::screenScan() const { return m_ctx->screenScanViewModel(); }
+QObject *QmlTestContext::webcamScan() const { return m_ctx->webcamScan(); }
 int QmlTestContext::itemCount() const {
     return m_ctx->databaseService()->isOpen() ? m_ctx->databaseService()->itemCount() : 0;
 }
@@ -106,4 +123,61 @@ int QmlTestContext::clicksOf(int index) const {
 QString QmlTestContext::nameOf(int index) const {
     const auto *svc = m_ctx->databaseService();
     return svc->isOpen() && index >= 0 && index < svc->itemCount() ? svc->items().at(index).displayName : QString();
+}
+
+QVariantMap QmlTestContext::itemAt(int index) const {
+    const auto *svc = m_ctx->databaseService();
+    if (!svc->isOpen() || index < 0 || index >= svc->itemCount())
+        return {};
+    return svc->items().at(index).toJson().toVariantMap();
+}
+
+void QmlTestContext::setClipboardText(const QString &text) {
+    m_clip->content = text;
+    m_clip->imageContent = QImage();
+}
+
+void QmlTestContext::setClipboardQr(const QString &text) {
+    m_clip->content.clear();
+    m_clip->imageContent = QrCodeGenerator::generate(text, 4);
+}
+
+void QmlTestContext::setScreenQrCodes(const QStringList &texts) {
+    // Codes side by side on a white "desktop".
+    QImage desktop(400 * std::max<qsizetype>(1, texts.size()), 400, QImage::Format_RGB32);
+    desktop.fill(Qt::white);
+    QPainter p(&desktop);
+    for (qsizetype i = 0; i < texts.size(); ++i)
+        p.drawImage(QPoint(int(i) * 400 + 20, 20), QrCodeGenerator::generate(texts.at(i), 4));
+    p.end();
+    ScreenCaptureResult r;
+    r.image = desktop;
+    r.logicalGeometry = desktop.rect();
+    m_screen->result = r;
+}
+
+void QmlTestContext::webcamDetect(const QString &text) { m_webcam->detect(text); }
+bool QmlTestContext::webcamActive() const { return m_webcam->isActive(); }
+
+QString QmlTestContext::writeQrFile(const QString &text) {
+    static int counter = 0;
+    const QString path = m_tempDir.filePath(QStringLiteral("qr%1.png").arg(++counter));
+    QrCodeGenerator::generate(text, 4).save(path);
+    return QUrl::fromLocalFile(path).toString();
+}
+
+QString QmlTestContext::otpauthFor(const QString &secret, const QString &issuer) const {
+    TotpParameters p;
+    p.secret = secret;
+    p.issuer = issuer;
+    p.account = QStringLiteral("me@example.com");
+    p.digits = 8;
+    p.period = 60;
+    p.algorithm = QStringLiteral("SHA256");
+    return TotpHelper::generateOtpauthUri(p);
+}
+
+void QmlTestContext::setGeneratorSettings(int length, const QString &chars) {
+    m_ctx->settings()->setPasswordLength(length);
+    m_ctx->settings()->setPasswordChars(chars);
 }

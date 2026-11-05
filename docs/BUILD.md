@@ -109,8 +109,8 @@ job (MSVC, vcpkg manifest, `install-qt-action`, presets, ctest).
 ## View models (T12)
 
 `App::AppContext` builds the whole object graph from `AppContext::Deps` (settings store,
-clipboard, network client, screen capture, clock, KDF params; defaults are the real
-implementations) and `registerQml()` exposes these singletons in the QML module
+clipboard, network client, screen capture, webcam scanner, clock, KDF params; defaults are
+the real implementations, the webcam scanner defaults to none) and `registerQml()` exposes these singletons in the QML module
 `EasePass.App` 1.0:
 
 | QML name | C++ class | Purpose |
@@ -128,6 +128,10 @@ implementations) and `registerQml()` exposes these singletons in the QML module
 | `DailyTip` | `DailyTipService` | tip of the day for the login page |
 | `PasswordActions` | `PasswordActions` | copy/delete/export by row, click tracking |
 | `WebsiteIcons` | `WebsiteIconService` | favicon URLs (`image://favicon/...`) |
+| `EditorViewModel` | `ItemViewModel` (second instance) | edit buffer of the add/edit/2FA dialogs |
+| `PasswordGenerator` | `PasswordGeneratorViewModel` | generator dialog / generate button (stored settings, leak check) |
+| `QrImport` | `QrImportService` | 2FA QR from file / clipboard, validates otpauth URIs |
+| `WebcamScan` | `WebcamScanViewModel` | webcam QR scan, preview via `image://webcam/<rev>` |
 
 Secrets (passwords, 2FA secrets) are never list-model roles; only `ItemViewModel` exposes them.
 
@@ -153,3 +157,24 @@ Secrets (passwords, 2FA secrets) are never list-model roles; only `ItemViewModel
   (`tests/qml/QmlTestContext.*`: AppContext with fakes, fake clock).
 - Theme follows what the Controls style draws (probe control), because some platforms report
   the colour scheme as Unknown while FluentWinUI3 still renders dark.
+
+## Item dialogs (T15)
+
+- `ItemEditDialog.qml` (add + edit, C# AddItemPage), `Add2FADialog.qml`, `TwoFactorFields.qml`,
+  `PasswordGeneratorDialog.qml`, `WebcamScanDialog.qml`; opened from `Main.qml` on the
+  Passwords page's add/edit/2FA/generate requests.
+- The dialogs edit `EditorViewModel`, a second `ItemViewModel`: Cancel discards the buffer and
+  the detail pane keeps its item; after a save the detail pane reloads from the database
+  (`ItemViewModel` follows `DatabaseService::itemsChanged` while it has no unsaved edits).
+- Generator: `PasswordGenerator::generateFromCharset` follows C# `PasswordHelper` (stored
+  length + characters, every available character class, no common sequences); with "verify
+  not leaked" on, leaked candidates are drawn again (at most 20, C# loops forever).
+- Export 2FA renders the otpauth URI as QR code (`Core::QrCodeGenerator`, zxing-cpp writer;
+  2.x and 3.x APIs supported) and shows it as a PNG data URL, so no image cache keeps it.
+- Webcam scanning needs `EASEPASS_WITH_MULTIMEDIA` (`easepass_qml` then passes a
+  `QtWebcamScanner`); without it the webcam button is disabled.
+- Tests: `tests/qml/tst_itemdialogs.qml` (fake clipboard, screen capture and webcam through
+  `testContext`), `tests/app/ItemDialogsTest.cpp`.
+- Headless runs (`QT_QPA_PLATFORM=offscreen`) use Qt's software renderer, which does not clip
+  a `Shape` (the strength chart) inside a scrolled `ScrollView`; GPU backends do. For
+  screenshots set `QT_QUICK_BACKEND=rhi`.

@@ -1,5 +1,6 @@
 #include "QrCodeScannerTest.h"
 #include "QrCodeScanner.h"
+#include "QrCodeGenerator.h"
 #include <QTest>
 #include <QGuiApplication>
 #include <QClipboard>
@@ -91,4 +92,30 @@ void QrCodeScannerTest::testClipboardImageScanning() {
     QCOMPARE(result, EXPECTED_URI);
 
     clipboard->clear();
+}
+
+// Export 2FA (T15): generated codes decode to the same text, incl. non-ASCII issuer names.
+void QrCodeScannerTest::testGenerateRoundTrip() {
+    const QStringList texts{EXPECTED_URI,
+                            QStringLiteral("otpauth://totp/B%C3%A4ckerei:j%C3%BCrgen?secret=GEZDGNBVGY3TQOJQ&issuer=B%C3%A4ckerei"),
+                            QStringLiteral("Grüße äöü"), QString(500, QLatin1Char('x'))};
+    for (const QString &text : texts) {
+        const QImage img = QrCodeGenerator::generate(text, 4);
+        QVERIFY(!img.isNull());
+        QCOMPARE(img.width(), img.height());
+        QCOMPARE(QrCodeScanner::scanImage(img), text);
+    }
+}
+
+void QrCodeScannerTest::testGenerateEmptyAndScale() {
+    QVERIFY(QrCodeGenerator::generate(QString()).isNull());
+    QCOMPARE(QrCodeGenerator::moduleCount(QString()), 0);
+    QVERIFY(QrCodeGenerator::generate(QString(10000, QLatin1Char('x'))).isNull()); // too long
+    const int modules = QrCodeGenerator::moduleCount(EXPECTED_URI);
+    QVERIFY(modules >= 21);
+    QCOMPARE((modules - 21) % 4, 0); // QR versions grow by 4 modules
+    const QImage img = QrCodeGenerator::generate(EXPECTED_URI, 3);
+    QCOMPARE(img.width(), (modules + 8) * 3); // 4-module quiet zone on each side
+    QCOMPARE(img.pixelColor(0, 0), QColor(Qt::white));
+    QCOMPARE(img.pixelColor(4 * 3, 4 * 3), QColor(Qt::black)); // finder pattern corner
 }

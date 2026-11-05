@@ -14,4 +14,6 @@ private slots:
     void testNullImageAndMissingFileReturnsEmpty();
     void testClipboardOtpauthText();
     void testClipboardImageScanning();
+    void testGenerateRoundTrip();
+    void testGenerateEmptyAndScale();
 };
