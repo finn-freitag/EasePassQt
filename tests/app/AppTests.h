@@ -76,6 +76,7 @@ private slots:
     void testSettingsLanguages();
     void testSettingsPasswordLengthText();
     void testSettingsResetPopularity();
+    void testLanguageManager();
     void testAboutChangelogParser();
     void testAboutOpenUrl();
     void testAboutBuildInfo();

@@ -169,20 +169,25 @@ Item {
             verify(!fetch.enabled)                               // favicons need icons
         }
 
-        function test_languageNeedsRestart() {
+        function test_languageSwitchesLive() {
             const page = createPage()
             const box = findChild(page, "languageBox")
+            const card = findChild(page, "languageCard")
             compare(box.count, 3)
-            verify(!vm.restartRequired)
+            compare(card.header, "Language")
             box.currentIndex = 1
             box.activated(1)
             compare(settings.language, "de-DE")
-            verify(vm.restartRequired)
             compare(box.currentText, "Deutsch")
+            tryCompare(card, "header", "Sprache")                 // no restart needed (T20)
+            compare(findChild(page, "resetCharsButton").text, "Zurücksetzen")
+            box.currentIndex = 2
+            box.activated(2)
+            tryCompare(card, "header", "Idioma")
             box.currentIndex = 0
             box.activated(0)
             compare(settings.language, "en-US")
-            verify(!vm.restartRequired)
+            tryCompare(card, "header", "Language")
         }
 
         function test_resetPopularity() {

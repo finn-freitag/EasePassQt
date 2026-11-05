@@ -50,7 +50,7 @@ ctest --preset linux-debug-unit     # fast tests only (no full-cost Argon2)
 
 ## Linux (other distributions)
 
-Install Qt >= 6.11 (Core, Gui, Widgets, Network, Svg, Test), OpenSSL, libargon2,
+Install Qt >= 6.11 (Core, Gui, Widgets, Network, Svg, Test, LinguistTools), OpenSSL, libargon2,
 zxing-cpp (>= 2.0), CMake >= 3.25, Ninja and a C++20 compiler, then use the presets above.
 
 ## Windows (MSVC + vcpkg)
@@ -254,3 +254,28 @@ Secrets (passwords, 2FA secrets) are never list-model roles; only `ItemViewModel
   (AppStream), `dist/linux/easepass-mime.xml` (`application/x-easepass-database`, `*.epdb`),
   installed to `share/{applications,metainfo,mime/packages}`. The AppStream id becomes reverse-DNS
   with the Flatpak work (T30).
+
+## Translations (T20)
+
+- Languages: English (source), German, Portuguese (Brazil). Files: `i18n/easepass_de.ts`,
+  `i18n/easepass_pt_BR.ts`, and `i18n/easepass_en.ts` (plural forms only). They are compiled to
+  `.qm` at build time and embedded in `easepass_app` under `:/i18n/`.
+- `App::LanguageManager` loads the file for `AppSettings::language`, sets the default `QLocale`
+  and retranslates the QML engine: switching the language in the settings applies immediately.
+  Missing translations show the English text; unknown language tags use English.
+- Workflow after changing UI texts:
+  ```bash
+  cmake --build build/<preset> --target update_translations   # lupdate, keeps translations
+  tools/resw2ts.py --resw-dir <C# repo>/EasePass/Strings i18n/easepass_de.ts i18n/easepass_pt_BR.ts
+  ```
+  then translate the remaining entries (Qt Linguist or by editing the `.ts`).
+  `tools/resw2ts.py` copies the de-DE/pt-BR text of the C# `.resw` entry whose en-US value equals
+  our source text (ignoring case and trailing punctuation) and marks it `resw: <Key>` (translator
+  comment), so upstream changes can be pulled in again; manual translations are never touched and
+  running it twice changes nothing.
+- CTest `i18n.translations_up_to_date` runs lupdate on copies and fails when a `qsTr`/`tr` text is
+  missing from the `.ts` files, a stale one is left, or a German/Portuguese entry is unfinished.
+  `i18n.resw2ts` unit-tests the conversion script. Both need Python 3.
+- C++ strings outside `Q_OBJECT` classes must use `QCoreApplication::translate("Context", ...)`
+  literally (a custom `tr()` helper hides them from lupdate).
+- Daily tips: `resources/dailytips/DailyTips_<lang>.txt` (en-US, de-DE; other languages use English).

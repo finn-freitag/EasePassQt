@@ -26,6 +26,7 @@ class WebsiteIconManager;
 namespace EasePass::App {
 
 class AboutViewModel;
+class LanguageManager;
 class AutoLogoutService;
 class AppController;
 class ClipboardService;
@@ -92,6 +93,7 @@ public:
     AboutViewModel *about() const { return m_about; }
     Core::InactivityManager *inactivityManager() const { return m_inactivity; }
     AutoLogoutService *autoLogout() const { return m_autoLogout; }
+    LanguageManager *languageManager() const { return m_language; }
     SettingsViewModel *settingsViewModel() const { return m_settingsViewModel; }
     DialogService *dialogService() const { return m_dialogService; }
     ClipboardService *clipboardService() const { return m_clipboardService; }
@@ -124,6 +126,7 @@ private:
     AboutViewModel *m_about = nullptr;
     Core::InactivityManager *m_inactivity = nullptr;
     AutoLogoutService *m_autoLogout = nullptr;
+    LanguageManager *m_language = nullptr;
     SettingsViewModel *m_settingsViewModel = nullptr;
     DialogService *m_dialogService = nullptr;
     ClipboardService *m_clipboardService = nullptr;

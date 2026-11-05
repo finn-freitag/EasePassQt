@@ -10,10 +10,6 @@
 namespace EasePass::Core {
 
 namespace {
-QString tr(const char *s, int n = -1) {
-    return QCoreApplication::translate("PrintDocumentBuilder", s, nullptr, n);
-}
-
 QString esc(const QString &s) {
     return s.toHtmlEscaped().replace(QLatin1Char('\n'), QStringLiteral("<br/>"));
 }
@@ -27,7 +23,7 @@ void row(QString &html, const QString &label, const QString &value, bool mono = 
 } // namespace
 
 QString PrintDocumentBuilder::plaintextWarning() {
-    return tr("The printout or PDF contains your data in plain text. Anyone who gets hold of it can read it. "
+    return QCoreApplication::translate("PrintDocumentBuilder", "The printout or PDF contains your data in plain text. Anyone who gets hold of it can read it. "
               "Store it securely and destroy it when no longer needed.");
 }
 
@@ -44,22 +40,22 @@ QString PrintDocumentBuilder::buildHtml(const QList<PasswordItem> &items, const 
                            ".mono { font-family: monospace; }"
                            "</style></head><body>");
     html += QStringLiteral("<h1>%1</h1>").arg(esc(title));
-    QString meta = tr("%n entries", int(items.size()));
+    QString meta = QCoreApplication::translate("PrintDocumentBuilder", "%n entries", nullptr, int(items.size()));
     if (options.printedAt.isValid())
         meta += QStringLiteral(" · ") + QLocale().toString(options.printedAt, QLocale::ShortFormat);
     if (!options.includePasswords)
-        meta += QStringLiteral(" · ") + tr("passwords not included");
+        meta += QStringLiteral(" · ") + QCoreApplication::translate("PrintDocumentBuilder", "passwords not included");
     html += QStringLiteral("<p class='meta'>%1</p>").arg(esc(meta));
 
     for (const PasswordItem &item : items) {
-        const QString name = item.displayName.trimmed().isEmpty() ? tr("(no name)") : item.displayName;
+        const QString name = item.displayName.trimmed().isEmpty() ? QCoreApplication::translate("PrintDocumentBuilder", "(no name)") : item.displayName;
         html += QStringLiteral("<h2>%1</h2><table cellspacing='0' cellpadding='2' width='100%'>").arg(esc(name));
-        row(html, tr("Username"), item.username);
-        row(html, tr("Email"), item.email);
-        row(html, tr("Website"), item.website);
+        row(html, QCoreApplication::translate("PrintDocumentBuilder", "Username"), item.username);
+        row(html, QCoreApplication::translate("PrintDocumentBuilder", "Email"), item.email);
+        row(html, QCoreApplication::translate("PrintDocumentBuilder", "Website"), item.website);
         if (options.includePasswords)
-            row(html, tr("Password"), item.password, true);
-        row(html, tr("Notes"), item.notes);
+            row(html, QCoreApplication::translate("PrintDocumentBuilder", "Password"), item.password, true);
+        row(html, QCoreApplication::translate("PrintDocumentBuilder", "Notes"), item.notes);
         html += QStringLiteral("</table>");
     }
     html += QStringLiteral("</body></html>");

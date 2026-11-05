@@ -56,6 +56,9 @@ public:
     QObject *autoLogout() const;
     /// Runs one inactivity check against the fake clock (the real 1 s timer uses wall time).
     Q_INVOKABLE void tickInactivity();
+    /// Lets the LanguageManager retranslate this QML engine (live language switching tests).
+    void attachEngine(class QQmlEngine *engine);
+    Q_INVOKABLE QString translate(const QString &context, const QString &source) const;
     /// URLs the About page asked to open (fake opener; no browser is started).
     QStringList openedUrls() const { return m_openedUrls; }
     Q_INVOKABLE void clearOpenedUrls();

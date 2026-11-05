@@ -32,7 +32,6 @@ class SettingsViewModel : public QObject {
     Q_PROPERTY(bool passwordCharsValid READ passwordCharsValid NOTIFY passwordCharsValidChanged)
     Q_PROPERTY(QVariantList languages READ languages CONSTANT)
     Q_PROPERTY(int languageIndex READ languageIndex WRITE setLanguageIndex NOTIFY languageChanged)
-    Q_PROPERTY(bool restartRequired READ restartRequired NOTIFY languageChanged)
     Q_PROPERTY(bool canResetPopularity READ canResetPopularity NOTIFY canResetPopularityChanged)
 public:
     explicit SettingsViewModel(Core::AppSettings *settings, QObject *parent = nullptr);
@@ -53,11 +52,10 @@ public:
     bool passwordCharsValid() const;
 
     /// {tag, name} per available UI language (C#: Strings/LanguageList.resw; names are native).
+    /// Changing the language applies immediately (LanguageManager, T20).
     static QVariantList languages();
     int languageIndex() const;
     void setLanguageIndex(int index);
-    /// The language differs from the one the app started with (C#: "To apply please restart the app").
-    bool restartRequired() const;
     bool canResetPopularity() const;
 
     /**
@@ -85,7 +83,6 @@ signals:
 private:
     Core::AppSettings *m_settings;
     Core::DatabaseService *m_service = nullptr;
-    QString m_startLanguage;
 };
 
 } // namespace EasePass::App

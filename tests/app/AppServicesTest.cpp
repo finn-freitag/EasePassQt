@@ -4,6 +4,7 @@
 #include "AboutViewModel.h"
 #include "AppContext.h"
 #include "BuildInfo.h"
+#include "LanguageManager.h"
 #include "AppController.h"
 #include "AppSettings.h"
 #include "ClipboardManager.h"
@@ -146,24 +147,21 @@ void AppServicesTest::testSettingsViewModel() {
 
 void AppServicesTest::testSettingsLanguages() {
     AppSettings settings(std::make_shared<InMemorySettingsStore>());
-    settings.setLanguage("de-DE"); // language the app started with
+    settings.setLanguage("de-DE");
     SettingsViewModel vm(&settings);
     const QVariantList langs = vm.languages();
     QCOMPARE(langs.size(), 3);
     QCOMPARE(langs.at(0).toMap().value("tag").toString(), QStringLiteral("en-US"));
     QCOMPARE(langs.at(2).toMap().value("name").toString(), QStringLiteral("Português (Brasil)"));
     QCOMPARE(vm.languageIndex(), 1);
-    QVERIFY(!vm.restartRequired());
     QSignalSpy changed(&vm, &SettingsViewModel::languageChanged);
     vm.setLanguageIndex(2);
     QCOMPARE(settings.language(), QStringLiteral("pt-BR"));
-    QVERIFY(vm.restartRequired());
     QCOMPARE(changed.count(), 1);
     vm.setLanguageIndex(7); // out of range: ignored
     vm.setLanguageIndex(-1);
     QCOMPARE(settings.language(), QStringLiteral("pt-BR"));
     vm.setLanguageIndex(1);
-    QVERIFY(!vm.restartRequired());
     settings.setLanguage("fr-FR"); // unknown tag (e.g. edited config)
     QCOMPARE(vm.languageIndex(), -1);
 }
@@ -223,6 +221,49 @@ void AppServicesTest::testSettingsResetPopularity() {
     QTRY_VERIFY(!vm.canResetPopularity());
     QVERIFY(!vm.resetPopularity());
     svc.shutdown();
+}
+
+void AppServicesTest::testLanguageManager() {
+    auto tr = [](const char *ctx, const char *src, int n = -1) { return QCoreApplication::translate(ctx, src, nullptr, n); };
+    AppSettings settings(std::make_shared<InMemorySettingsStore>());
+    {
+        LanguageManager lm(&settings); // starts with the stored language (en-US)
+        QCOMPARE(lm.language(), QStringLiteral("en-US"));
+        QCOMPARE(tr("SettingsPage", "Language"), QStringLiteral("Language"));
+        // English plural forms come from easepass_en.qm.
+        QCOMPARE(tr("PasswordsPage", "%n second(s) remaining", 1), QStringLiteral("1 second remaining"));
+        QCOMPARE(tr("PasswordsPage", "%n second(s) remaining", 5), QStringLiteral("5 seconds remaining"));
+
+        QSignalSpy changed(&lm, &LanguageManager::languageChanged);
+        settings.setLanguage("de-DE"); // follows the setting
+        QCOMPARE(changed.count(), 1);
+        QCOMPARE(lm.language(), QStringLiteral("de-DE"));
+        QCOMPARE(tr("SettingsPage", "Language"), QStringLiteral("Sprache"));
+        QCOMPARE(tr("PasswordsPage", "%n second(s) remaining", 1), QStringLiteral("Noch 1 Sekunde"));
+        QCOMPARE(tr("PasswordsPage", "%n second(s) remaining", 3), QStringLiteral("Noch 3 Sekunden"));
+        QCOMPARE(QLocale().name(), QStringLiteral("de_DE"));
+        // C++ contexts (Q_OBJECT classes) are translated as well.
+        QCOMPARE(tr("EasePass::App::DatabaseManagementViewModel", "Loaded"), QStringLiteral("Geladen"));
+        QCOMPARE(tr("PrintDocumentBuilder", "%n entries", 2), QStringLiteral("2 Einträge"));
+        // Missing translation -> English source text.
+        QCOMPARE(tr("SettingsPage", "Text that is not in any translation file"),
+                 QStringLiteral("Text that is not in any translation file"));
+
+        settings.setLanguage("pt-BR");
+        QCOMPARE(tr("SettingsPage", "Language"), QStringLiteral("Idioma"));
+        // Unknown language: English.
+        QVERIFY(lm.apply("fr-FR"));
+        QCOMPARE(lm.language(), QStringLiteral("en-US"));
+        QCOMPARE(tr("SettingsPage", "Language"), QStringLiteral("Language"));
+        lm.apply("de-DE");
+    }
+    // Destroying the manager removes its translators.
+    QCOMPARE(tr("SettingsPage", "Language"), QStringLiteral("Language"));
+    QCOMPARE(LanguageManager::qmSuffix("pt_BR"), QStringLiteral("pt_BR"));
+    QCOMPARE(LanguageManager::qmSuffix("DE-de"), QStringLiteral("de"));
+    QCOMPARE(LanguageManager::qmSuffix("xx"), QString());
+    QCOMPARE(LanguageManager::availableLanguages().size(), SettingsViewModel::languages().size());
+    QLocale::setDefault(QLocale(QLocale::English, QLocale::UnitedStates));
 }
 
 void AppServicesTest::testAboutChangelogParser() {

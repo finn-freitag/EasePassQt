@@ -413,6 +413,7 @@ set(TEST_APP_UNIT_FUNCTIONS
     testSettingsLanguages
     testSettingsPasswordLengthText
     testSettingsResetPopularity
+    testLanguageManager
     testAboutChangelogParser
     testAboutOpenUrl
     testAboutBuildInfo
@@ -530,3 +531,21 @@ endforeach()
 foreach(fn IN LISTS TEST_APP_UNIT_FUNCTIONS)
     set_tests_properties(test_app.${fn} PROPERTIES ENVIRONMENT_MODIFICATION "${EASEPASS_QML_TEST_ENV}")
 endforeach()
+
+# --- Translations (T20) ----------------------------------------------------------
+find_package(Python3 COMPONENTS Interpreter)
+if(Python3_FOUND)
+    add_test(NAME i18n.resw2ts COMMAND Python3::Interpreter ${PROJECT_SOURCE_DIR}/tools/test_resw2ts.py)
+    # Every qsTr()/tr() text is in the committed .ts files (lupdate -no-obsolete on copies).
+    add_test(NAME i18n.translations_up_to_date
+        COMMAND Python3::Interpreter ${PROJECT_SOURCE_DIR}/tools/check_translations.py
+            --lupdate $<TARGET_FILE:Qt6::lupdate>
+            --lconvert $<TARGET_FILE:Qt6::lconvert>
+            --cmake ${CMAKE_COMMAND}
+            --generator ${Qt6LinguistTools_DIR}/GenerateLUpdateProject.cmake
+            --project-in ${PROJECT_BINARY_DIR}/.lupdate/${PROJECT_NAME}_lupdate_project.cmake
+            --i18n ${PROJECT_SOURCE_DIR}/i18n)
+    set_tests_properties(i18n.resw2ts i18n.translations_up_to_date PROPERTIES LABELS unit)
+else()
+    message(STATUS "Python 3 not found: translation checks are not registered")
+endif()

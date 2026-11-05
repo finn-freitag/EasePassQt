@@ -59,9 +59,9 @@ Item {
 
             // --- Language --------------------------------------------------------------
             SettingsControl {
+                objectName: "languageCard"
                 iconName: "info"
                 header: qsTr("Language")
-                description: root.viewModel.restartRequired ? qsTr("To apply please restart the app") : ""
                 Layout.fillWidth: true
                 ComboBox {
                     id: languageBox
@@ -86,7 +86,7 @@ Item {
                     objectName: "manageDatabaseButton"
                     text: qsTr("Manage")
                     highlighted: true
-                    width: 100
+                    width: Math.max(100, implicitWidth) // translations can be longer
                     enabled: root.databaseOpen
                     onClicked: root.manageDatabaseRequested()
                 }
@@ -281,7 +281,7 @@ Item {
                     objectName: "resetPopularityButton"
                     text: qsTr("Reset")
                     highlighted: true
-                    width: 100
+                    width: Math.max(100, implicitWidth)
                     enabled: root.viewModel.canResetPopularity
                     onClicked: root.viewModel.resetPopularity()
                 }

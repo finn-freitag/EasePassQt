@@ -11,6 +11,8 @@
 #include "AppController.h"
 #include "SettingsViewModel.h"
 #include "AboutViewModel.h"
+#include "LanguageManager.h"
+#include <QCoreApplication>
 #include "AutoLogoutService.h"
 #include "InactivityManager.h"
 #include <QFileInfo>
@@ -98,6 +100,10 @@ QObject *QmlTestContext::settingsViewModel() const { return m_ctx->settingsViewM
 QObject *QmlTestContext::about() const { return m_ctx->about(); }
 QObject *QmlTestContext::autoLogout() const { return m_ctx->autoLogout(); }
 void QmlTestContext::tickInactivity() { m_ctx->inactivityManager()->tick(); }
+void QmlTestContext::attachEngine(QQmlEngine *engine) { m_ctx->languageManager()->setEngine(engine); }
+QString QmlTestContext::translate(const QString &context, const QString &source) const {
+    return QCoreApplication::translate(context.toUtf8().constData(), source.toUtf8().constData());
+}
 
 void QmlTestContext::clearOpenedUrls() {
     m_openedUrls.clear();

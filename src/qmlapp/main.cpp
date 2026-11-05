@@ -23,6 +23,7 @@
 #include "BuildInfo.h"
 #include "CommandLine.h"
 #include "FileLogger.h"
+#include "LanguageManager.h"
 #include "SingleInstance.h"
 #include "WindowStateController.h"
 #include "DialogService.h"
@@ -113,6 +114,7 @@ int main(int argc, char *argv[]) {
         qWarning("Database file not found: %s", qPrintable(options.databasePath));
 
     QQmlApplicationEngine engine;
+    context.languageManager()->setEngine(&engine); // live language switching (T20)
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &app,
                      [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);
     engine.addImageProvider(EasePass::App::WebsiteIconService::ProviderId, context.websiteIcons()->createImageProvider());

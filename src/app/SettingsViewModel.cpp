@@ -22,7 +22,7 @@ constexpr Language kLanguages[] = {
 } // namespace
 
 SettingsViewModel::SettingsViewModel(Core::AppSettings *settings, QObject *parent)
-    : QObject(parent), m_settings(settings), m_startLanguage(settings->language()) {
+    : QObject(parent), m_settings(settings) {
     connect(m_settings, &Core::AppSettings::passwordCharsChanged, this, &SettingsViewModel::passwordCharsValidChanged);
     connect(m_settings, &Core::AppSettings::languageChanged, this, &SettingsViewModel::languageChanged);
 }
@@ -69,10 +69,6 @@ void SettingsViewModel::setLanguageIndex(int index) {
     if (index < 0 || index >= int(std::size(kLanguages)))
         return;
     m_settings->setLanguage(QString::fromLatin1(kLanguages[index].tag));
-}
-
-bool SettingsViewModel::restartRequired() const {
-    return m_settings->language().compare(m_startLanguage, Qt::CaseInsensitive) != 0;
 }
 
 bool SettingsViewModel::canResetPopularity() const {

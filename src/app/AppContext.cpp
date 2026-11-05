@@ -15,6 +15,7 @@
 #include "DatabaseController.h"
 #include "DatabaseManagementViewModel.h"
 #include "AboutViewModel.h"
+#include "LanguageManager.h"
 #include "AutoLogoutService.h"
 #include "InactivityManager.h"
 #include "DatabaseOperations.h"
@@ -47,6 +48,7 @@ AppContext::AppContext(Deps deps, QObject *parent)
     : QObject(parent), m_clock(deps.clock ? deps.clock : &SystemClock::instance()) {
     m_store = deps.settingsStore ? deps.settingsStore : std::make_shared<QSettingsStore>();
     m_settings = std::make_shared<AppSettings>(m_store);
+    m_language = new LanguageManager(m_settings.get(), this); // translators before any tr() (T20)
     auto clipboard = deps.clipboard ? deps.clipboard : std::make_shared<QtClipboard>();
     auto network = deps.networkClient ? deps.networkClient : std::make_shared<QtNetworkClient>();
     auto capture = deps.screenCapture ? deps.screenCapture : std::shared_ptr<IScreenCapture>(createScreenCapture());

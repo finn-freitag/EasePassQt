@@ -30,6 +30,7 @@
             qt6.qtsvg
             qt6.qtmultimedia
             qt6.qtdeclarative
+            qt6.qttools # Linguist tools (lupdate/lrelease, T20)
             openssl
             libargon2
             zxing-cpp
@@ -76,6 +77,7 @@
             qt6.qtsvg
             qt6.qtmultimedia
             qt6.qtdeclarative
+            qt6.qttools # Linguist tools (lupdate/lrelease, T20)
             openssl
             libargon2
             zxing-cpp

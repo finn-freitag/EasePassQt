@@ -22,6 +22,7 @@ public slots:
         // Real view models with fakes for the page tests (T14+).
         m_context = std::make_unique<QmlTestContext>();
         engine->rootContext()->setContextProperty(QStringLiteral("testContext"), m_context.get());
+        m_context->attachEngine(engine);
         auto *webcam = qobject_cast<EasePass::App::WebcamScanViewModel *>(m_context->webcamScan());
         engine->addImageProvider(EasePass::App::WebcamScanViewModel::ProviderId, webcam->createImageProvider());
     }
