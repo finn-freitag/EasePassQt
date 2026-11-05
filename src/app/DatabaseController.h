@@ -23,6 +23,7 @@ class DatabaseController : public QObject {
     Q_PROPERTY(bool needsSecondFactor READ needsSecondFactor NOTIFY needsSecondFactorChanged)
     Q_PROPERTY(QString databaseName READ databaseName NOTIFY stateChanged)
     Q_PROPERTY(bool readOnly READ readOnly NOTIFY stateChanged)
+    Q_PROPERTY(bool temporary READ temporary NOTIFY stateChanged)
     Q_PROPERTY(bool dirty READ dirty NOTIFY dirtyChanged)
     Q_PROPERTY(bool saving READ saving NOTIFY savingChanged)
     Q_PROPERTY(QStringList knownDatabases READ knownDatabases NOTIFY knownDatabasesChanged)
@@ -43,6 +44,7 @@ public:
     bool needsSecondFactor() const { return m_needsSecondFactor; }
     QString databaseName() const;
     bool readOnly() const { return m_service->isReadOnly(); }
+    bool temporary() const { return m_service->isTemporary(); }
     bool dirty() const { return m_service->isDirty(); }
     bool saving() const { return m_service->isSaving(); }
     QStringList knownDatabases() const;
@@ -70,6 +72,13 @@ public:
     Q_INVOKABLE void importDatabase(const QString &path, const QString &password,
                                     const QString &secondFactor = QString());
     Q_INVOKABLE void clearError() { setError(QString()); }
+    /// Loads another database (C#: ManageDatabasePage.Load_DatabaseItem_Click): selects @p path on
+    /// the login page and locks the open database, so the user enters that database's password
+    /// there. Returns false if @p path is the open database, unknown or missing.
+    Q_INVOKABLE bool switchTo(const QString &path);
+    /// C#: "Load temp database" (TemporaryDatabaseHelper.LoadImportedDatabase): the open temporary
+    /// database becomes a normal one and is added to the known databases.
+    Q_INVOKABLE bool makePermanent();
 
 signals:
     void stateChanged();

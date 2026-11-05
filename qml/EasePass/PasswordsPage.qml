@@ -225,6 +225,15 @@ FocusScope {
                         toolTip: qsTr("Save and lock the database") + " (Ctrl+L)"
                         onClicked: root.controller.lock()
                     }
+                    // C#: loadTempDBButton (TemporaryDatabaseHelper.LoadImportedDatabase)
+                    IconButton {
+                        objectName: "loadTempButton"
+                        iconName: "add"
+                        text: qsTr("Load temp database")
+                        toolTip: qsTr("Add this temporary database to your databases")
+                        visible: root.controller.temporary === true
+                        onClicked: root.controller.makePermanent()
+                    }
                     IconButton {
                         objectName: "aboutButton"
                         iconName: "info"

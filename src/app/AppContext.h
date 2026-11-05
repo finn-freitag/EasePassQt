@@ -33,6 +33,7 @@ class QrImportService;
 class WebcamScanViewModel;
 class WebsiteIconService;
 class DatabaseController;
+class DatabaseManagementViewModel;
 class DialogService;
 class ItemViewModel;
 class PasswordFilterModel;
@@ -84,6 +85,7 @@ public:
     PasswordGeneratorViewModel *passwordGenerator() const { return m_generator; }
     QrImportService *qrImport() const { return m_qrImport; }
     WebcamScanViewModel *webcamScan() const { return m_webcam; }
+    DatabaseManagementViewModel *databaseManagement() const { return m_databaseManagement; }
     SettingsViewModel *settingsViewModel() const { return m_settingsViewModel; }
     DialogService *dialogService() const { return m_dialogService; }
     ClipboardService *clipboardService() const { return m_clipboardService; }
@@ -112,6 +114,7 @@ private:
     PasswordGeneratorViewModel *m_generator = nullptr;
     QrImportService *m_qrImport = nullptr;
     WebcamScanViewModel *m_webcam = nullptr;
+    DatabaseManagementViewModel *m_databaseManagement = nullptr;
     SettingsViewModel *m_settingsViewModel = nullptr;
     DialogService *m_dialogService = nullptr;
     ClipboardService *m_clipboardService = nullptr;

@@ -9,6 +9,7 @@ TextField {
     property string token: ""
     property bool showToken: false
     property real progress: 1.0   // remaining fraction of the TOTP interval
+    property bool showProgress: true // false for tokens without expiry (second factor)
     property string accessibleName: qsTr("Token")
     signal copyRequested(string text)
 
@@ -36,6 +37,7 @@ TextField {
         Canvas {
             id: ring
             objectName: "progressRing"
+            visible: root.showProgress
             Layout.preferredWidth: 18
             Layout.preferredHeight: 18
             Layout.rightMargin: Theme.spacingS

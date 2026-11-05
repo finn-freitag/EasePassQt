@@ -132,6 +132,7 @@ the real implementations, the webcam scanner defaults to none) and `registerQml(
 | `PasswordGenerator` | `PasswordGeneratorViewModel` | generator dialog / generate button (stored settings, leak check) |
 | `QrImport` | `QrImportService` | 2FA QR from file / clipboard, validates otpauth URIs |
 | `WebcamScan` | `WebcamScanViewModel` | webcam QR scan, preview via `image://webcam/<rev>` |
+| `DatabaseManagement` | `DatabaseManagementViewModel` | Database page: known databases, rename/delete, password, second factor, import into, export, backup |
 
 Secrets (passwords, 2FA secrets) are never list-model roles; only `ItemViewModel` exposes them.
 
@@ -178,3 +179,22 @@ Secrets (passwords, 2FA secrets) are never list-model roles; only `ItemViewModel
 - Headless runs (`QT_QPA_PLATFORM=offscreen`) use Qt's software renderer, which does not clip
   a `Shape` (the strength chart) inside a scrolled `ScrollView`; GPU backends do. For
   screenshots set `QT_QUICK_BACKEND=rhi`.
+
+## Database page (T16)
+
+- `DatabasePage.qml` (C# ManageDatabasePage): cards for every known database with its state
+  (loaded, temporary, file not found) and the actions for the selected one. Dialogs:
+  `ChangePasswordDialog`, `ManageSecondFactorDialog` (with the enable confirmation),
+  `DeleteDatabaseDialog` (the database name must be typed), `RenameDatabaseDialog`,
+  `SelectItemsDialog` (export selection; import with Add / Override + confirmation),
+  `PasswordPromptDialog`, `PrintDatabaseDialog` (print / preview / PDF, passwords only after the
+  plaintext warning), plus the existing `CreateDatabaseDialog` and `ImportDatabaseFlow`.
+- Operations that need the decrypted database work on the open database. "Load this database"
+  selects the file on the login page and locks the open one (`DatabaseController::switchTo`).
+- "Load temp database" (Passwords page and Database page) turns an open temporary database into a
+  normal, writable one and adds it to the known list (`DatabaseController::makePermanent`).
+- Reachable from the Passwords page OOBE link and, until the Settings page exists (T17), from the
+  Settings placeholder.
+- Tests: `tests/qml/tst_database.qml` works on real `.epdb` files in a temporary directory
+  (`testContext.createSampleFile`, cheap KDF); file dialogs are bypassed with
+  `DatabasePage.fileOverride`. `tests/app/DatabaseManagementTest.cpp` covers the view model.

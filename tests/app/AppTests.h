@@ -104,3 +104,15 @@ private slots:
     void testQrImportFileAndClipboard();
     void testWebcamScanViewModel();
 };
+
+class DatabaseManagementTest : public QObject {
+    Q_OBJECT
+private slots:
+    void testDatabaseListStates();
+    void testDeleteNeedsTypedName();
+    void testRenameAndCopyPath();
+    void testChangePasswordAndSecondFactor();
+    void testExportSelectionAndNewPassword();
+    void testImportIntoSelectedItems();
+    void testSwitchToAndMakePermanent();
+};

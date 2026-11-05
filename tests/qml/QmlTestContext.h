@@ -24,6 +24,9 @@ class QmlTestContext : public QObject {
     Q_PROPERTY(QObject *qrImport READ qrImport CONSTANT)
     Q_PROPERTY(QObject *screenScan READ screenScan CONSTANT)
     Q_PROPERTY(QObject *webcamScan READ webcamScan CONSTANT)
+    Q_PROPERTY(QObject *databaseManagement READ databaseManagement CONSTANT)
+    Q_PROPERTY(QObject *printer READ printer CONSTANT)
+    Q_PROPERTY(QObject *appController READ appController CONSTANT)
     Q_PROPERTY(QString clipboardText READ clipboardText NOTIFY clipboardChanged)
     Q_PROPERTY(int itemCount READ itemCount NOTIFY itemsChanged)
 public:
@@ -41,6 +44,9 @@ public:
     QObject *qrImport() const;
     QObject *screenScan() const;
     QObject *webcamScan() const;
+    QObject *databaseManagement() const;
+    QObject *printer() const;
+    QObject *appController() const;
     QString clipboardText() const { return m_clip->content; }
     int itemCount() const;
 
@@ -68,6 +74,29 @@ public:
     Q_INVOKABLE QString writeQrFile(const QString &text);
     Q_INVOKABLE QString otpauthFor(const QString &secret, const QString &issuer) const;
     Q_INVOKABLE void setGeneratorSettings(int length, const QString &chars);
+
+    // --- Database files (T16): real .epdb files in a temporary directory, cheap KDF ---------
+    /// Path for @p fileName inside the test's temporary directory (file not created).
+    Q_INVOKABLE QString tempPath(const QString &fileName) const;
+    /// Writes the sample items to "<name>.epdb" (password kPassword, optional second factor
+    /// token), adds it to the known databases and returns its path. Closes any open database.
+    Q_INVOKABLE QString createSampleFile(const QString &name, const QString &secondFactorToken = QString());
+    /// Opens a database file (waits for the unlock).
+    Q_INVOKABLE bool openFile(const QString &path, const QString &password = QString(),
+                              const QString &secondFactor = QString());
+    /// Display names of the items in a database file (empty list if it cannot be decrypted).
+    Q_INVOKABLE QStringList readNames(const QString &path, const QString &password,
+                                      const QString &secondFactor = QString());
+    Q_INVOKABLE bool fileExists(const QString &path) const;
+    Q_INVOKABLE QStringList knownPaths() const;
+    Q_INVOKABLE void setKnownPaths(const QStringList &paths);
+    Q_INVOKABLE QString password() const;
+    Q_INVOKABLE int secondFactorType() const;
+    Q_INVOKABLE QString secondFactorToken() const;
+    /// Waits for background database jobs (saves, exports) and their callbacks.
+    Q_INVOKABLE void waitForBackground();
+    /// Opens a database file as temporary (read-only, not in the known list) database.
+    Q_INVOKABLE bool openTemporary(const QString &path);
 
 signals:
     void clipboardChanged();

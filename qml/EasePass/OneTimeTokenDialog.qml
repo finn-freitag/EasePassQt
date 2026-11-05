@@ -28,6 +28,7 @@ ContentDialog {
         objectName: "tokenBox"
         token: root.token
         showToken: true
+        showProgress: false
         Layout.fillWidth: true
         onCopyRequested: (t) => root.copyRequested(t)
     }

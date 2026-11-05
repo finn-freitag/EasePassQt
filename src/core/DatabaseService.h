@@ -137,6 +137,11 @@ public:
     // --- Management operations (T6) -------------------------------------------------------
 
     bool isTemporary() const { return isOpen() && m_temporary; }
+    /// Turns the open temporary database into a normal one, writable unless the file itself is
+    /// read-only (C#:
+    /// TemporaryDatabaseHelper.LoadImportedDatabase). Adding it to the known list is the caller's
+    /// job. Returns false if no temporary database is open.
+    bool makePermanent();
     /// Database name plus " (Temp)" / " (ReadOnly)" (C#: DatabaseItem.MakeDatabaseName). Empty when closed.
     QString displayName() const;
     bool usesSecondFactor() const { return m_db && m_db->useSecondFactor; }

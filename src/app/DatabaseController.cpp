@@ -197,6 +197,32 @@ void DatabaseController::importDatabase(const QString &pathOrUrl, const QString 
                                      });
 }
 
+bool DatabaseController::switchTo(const QString &pathOrUrl) {
+    const QString path = toLocalPath(pathOrUrl);
+    if (!m_settings || path.isEmpty() || !knownDatabases().contains(path))
+        return false;
+    if (m_service->isOpen() && DatabaseOperations::isSamePath(DatabaseOperations::localPath(m_service->source()), path))
+        return false;
+    m_settings->setLastDatabase(path);
+    emit knownDatabasesChanged();
+    lock();
+    return true;
+}
+
+bool DatabaseController::makePermanent() {
+    if (!m_service->isTemporary())
+        return false;
+    const QString path = DatabaseOperations::localPath(m_service->source());
+    if (!m_service->makePermanent())
+        return false;
+    if (m_settings && !path.isEmpty()) {
+        m_settings->addDatabasePath(QFileInfo(path).absoluteFilePath());
+        m_settings->setLastDatabase(QFileInfo(path).absoluteFilePath());
+    }
+    emit knownDatabasesChanged();
+    return true;
+}
+
 void DatabaseController::rotateOneTimeTokenIfNeeded() {
     // C#: LoginPage.TryLogin - OTP databases get a new 12-digit token after every login.
     if (m_service->secondFactorType() != SecondFactorType::OTP)

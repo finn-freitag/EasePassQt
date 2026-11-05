@@ -21,6 +21,8 @@ ApplicationWindow {
     required property var qrImport
     property var screenScan: null
     property var webcamScan: null
+    property var databaseManagement: null
+    property var printer: null
 
     // Values of App::AppController::Page
     readonly property int pageLogin: 0
@@ -49,6 +51,7 @@ ApplicationWindow {
             case window.pageLogin: return loginPage
             case window.pageRegister: return registerPage
             case window.pagePasswords: return passwordsPage
+            case window.pageDatabase: return window.databaseManagement ? databasePage : placeholderPage
             default: return placeholderPage
             }
         }
@@ -124,12 +127,26 @@ ApplicationWindow {
         onCopyRequested: (t) => window.clipboard.copy(t, true)
     }
     Component {
+        id: databasePage
+        DatabasePage {
+            manager: window.databaseManagement
+            controller: window.databaseController
+            printer: window.printer
+            showBack: window.appController.canGoBack
+            onBackRequested: window.appController.goBack()
+            onCopyRequested: (t) => window.clipboard.copy(t, true)
+        }
+    }
+    Component {
         id: placeholderPage
         PlaceholderPage {
             title: window.databaseController.databaseName
             showBack: window.appController.canGoBack
+            // Settings is a placeholder until T17; C# opens "Manage database" from there.
+            showManageDatabase: window.appController.page === window.pageSettings
             onBackRequested: window.appController.goBack()
             onLockRequested: window.databaseController.lock()
+            onManageDatabaseRequested: window.appController.navigate(window.pageDatabase)
         }
     }
 

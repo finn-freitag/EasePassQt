@@ -10,6 +10,8 @@
 #include "ClipboardService.h"
 #include "DailyTipService.h"
 #include "DatabaseController.h"
+#include "DatabaseManagementViewModel.h"
+#include "PrintViewModel.h"
 #include "DialogService.h"
 #include "ItemViewModel.h"
 #include "PasswordActions.h"
@@ -72,6 +74,8 @@ int main(int argc, char *argv[]) {
         {QStringLiteral("qrImport"), QVariant::fromValue<QObject *>(context.qrImport())},
         {QStringLiteral("screenScan"), QVariant::fromValue<QObject *>(context.screenScanViewModel())},
         {QStringLiteral("webcamScan"), QVariant::fromValue<QObject *>(context.webcamScan())},
+        {QStringLiteral("databaseManagement"), QVariant::fromValue<QObject *>(context.databaseManagement())},
+        {QStringLiteral("printer"), QVariant::fromValue<QObject *>(context.printViewModel())},
     });
     engine.loadFromModule("EasePass", "Main");
 

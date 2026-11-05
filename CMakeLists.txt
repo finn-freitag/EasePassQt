@@ -229,6 +229,8 @@ add_library(easepass_app STATIC
     src/app/QrImportService.h
     src/app/WebcamScanViewModel.cpp
     src/app/WebcamScanViewModel.h
+    src/app/DatabaseManagementViewModel.cpp
+    src/app/DatabaseManagementViewModel.h
 )
 # Daily tips (C#: resources/DailyTips_*.txt, bundled instead of downloaded; T13)
 qt_add_resources(easepass_app "dailytips"

@@ -4,6 +4,12 @@
 #include "AppSettings.h"
 #include "ClipboardService.h"
 #include "DatabaseController.h"
+#include "DatabaseManagementViewModel.h"
+#include "DatabaseOperations.h"
+#include "LocalFileDatabaseSource.h"
+#include "PrintViewModel.h"
+#include "AppController.h"
+#include <QFileInfo>
 #include "ISettingsStore.h"
 #include "ItemViewModel.h"
 #include "PasswordActions.h"
@@ -76,6 +82,9 @@ QObject *QmlTestContext::generator() const { return m_ctx->passwordGenerator(); 
 QObject *QmlTestContext::qrImport() const { return m_ctx->qrImport(); }
 QObject *QmlTestContext::screenScan() const { return m_ctx->screenScanViewModel(); }
 QObject *QmlTestContext::webcamScan() const { return m_ctx->webcamScan(); }
+QObject *QmlTestContext::databaseManagement() const { return m_ctx->databaseManagement(); }
+QObject *QmlTestContext::printer() const { return m_ctx->printViewModel(); }
+QObject *QmlTestContext::appController() const { return m_ctx->appController(); }
 int QmlTestContext::itemCount() const {
     return m_ctx->databaseService()->isOpen() ? m_ctx->databaseService()->itemCount() : 0;
 }
@@ -180,4 +189,88 @@ QString QmlTestContext::otpauthFor(const QString &secret, const QString &issuer)
 void QmlTestContext::setGeneratorSettings(int length, const QString &chars) {
     m_ctx->settings()->setPasswordLength(length);
     m_ctx->settings()->setPasswordChars(chars);
+}
+
+// --- Database files ---------------------------------------------------------------------------
+
+QString QmlTestContext::tempPath(const QString &fileName) const { return m_tempDir.filePath(fileName); }
+
+QString QmlTestContext::createSampleFile(const QString &name, const QString &secondFactorToken) {
+    if (!openSample())
+        return {};
+    DatabaseService *svc = m_ctx->databaseService();
+    const QString path = tempPath(name + DatabaseOperations::databaseExtension());
+    QFile::remove(path);
+    bool ok = false;
+    if (!secondFactorToken.isEmpty()) {
+        svc->setSecondFactor(SecondFactorType::Token, SecretString(secondFactorToken),
+                             [](const DatabaseOpResult &) {});
+        svc->waitForBackgroundWork();
+    }
+    m_ctx->databaseOperations()->backupDatabase(path, [&ok](const DatabaseOpResult &r) { ok = r.ok(); });
+    m_ctx->databaseOperations()->waitForBackgroundWork();
+    svc->close();
+    svc->waitForBackgroundWork();
+    if (!ok)
+        return {};
+    m_ctx->settings()->addDatabasePath(path);
+    return path;
+}
+
+bool QmlTestContext::openFile(const QString &path, const QString &password, const QString &secondFactor) {
+    DatabaseService *svc = m_ctx->databaseService();
+    svc->close();
+    svc->waitForBackgroundWork();
+    QSignalSpy spy(svc, &DatabaseService::openFinished);
+    const QString pw = password.isEmpty() ? QString::fromLatin1(AppTest::kPassword) : password;
+    if (!svc->open(std::make_shared<LocalFileDatabaseSource>(path), SecretString(pw), SecretString(secondFactor)))
+        return false;
+    const bool ok = spy.wait(30000) && svc->isOpen();
+    emit itemsChanged();
+    return ok;
+}
+
+QStringList QmlTestContext::readNames(const QString &path, const QString &password, const QString &secondFactor) {
+    QStringList names;
+    m_ctx->databaseOperations()->readItemsFromFile(
+        path, SecretString(password), SecretString(secondFactor),
+        [&names](const DatabaseOpResult &r, const QList<PasswordItem> &items) {
+            if (r.ok())
+                for (const PasswordItem &i : items)
+                    names << i.displayName;
+        });
+    m_ctx->databaseOperations()->waitForBackgroundWork();
+    return names;
+}
+
+bool QmlTestContext::fileExists(const QString &path) const { return QFileInfo::exists(path); }
+QStringList QmlTestContext::knownPaths() const { return m_ctx->settings()->databasePaths(); }
+void QmlTestContext::setKnownPaths(const QStringList &paths) { m_ctx->settings()->setDatabasePaths(paths); }
+QString QmlTestContext::password() const { return QString::fromLatin1(AppTest::kPassword); }
+
+int QmlTestContext::secondFactorType() const {
+    const auto *svc = m_ctx->databaseService();
+    return svc->isOpen() && svc->usesSecondFactor() ? int(svc->secondFactorType()) : 0;
+}
+
+QString QmlTestContext::secondFactorToken() const {
+    const auto *db = m_ctx->databaseService()->database();
+    return db ? db->secondFactor.toQString() : QString();
+}
+
+void QmlTestContext::waitForBackground() {
+    m_ctx->databaseOperations()->waitForBackgroundWork();
+    m_ctx->databaseService()->waitForBackgroundWork();
+}
+
+bool QmlTestContext::openTemporary(const QString &path) {
+    DatabaseService *svc = m_ctx->databaseService();
+    svc->close();
+    svc->waitForBackgroundWork();
+    QSignalSpy spy(svc, &DatabaseService::openFinished);
+    if (!m_ctx->databaseOperations()->openTemporaryDatabase(path, SecretString(AppTest::kPassword)))
+        return false;
+    const bool ok = spy.wait(30000) && svc->isOpen();
+    emit itemsChanged();
+    return ok;
 }

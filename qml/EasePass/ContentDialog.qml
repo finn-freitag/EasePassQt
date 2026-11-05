@@ -5,7 +5,7 @@ import QtQuick.Layouts
 // WinUI ContentDialog replacement: modal dialog with title, arbitrary content (default
 // property) and up to three buttons. Empty button text hides the button.
 // Result: primaryClicked / secondaryClicked / closeClicked, then the dialog closes
-// (unless closeOnPrimary is false, e.g. for validation). Escape == close button.
+// (unless closeOnPrimary / closeOnSecondary is false, e.g. for validation). Escape == close button.
 Dialog {
     id: root
     enum Result { None, Primary, Secondary }
@@ -16,6 +16,7 @@ Dialog {
     property bool primaryButtonEnabled: true
     property bool secondaryButtonEnabled: true
     property bool closeOnPrimary: true
+    property bool closeOnSecondary: true
     property int dialogResult: ContentDialog.Result.None
     default property alias content: contentColumn.data
     signal primaryClicked()
@@ -32,7 +33,7 @@ Dialog {
         if (!secondaryButtonEnabled || secondaryButtonText.length === 0) return
         dialogResult = ContentDialog.Result.Secondary
         secondaryClicked()
-        close()
+        if (closeOnSecondary) close()
     }
     function clickClose() {
         dialogResult = ContentDialog.Result.None

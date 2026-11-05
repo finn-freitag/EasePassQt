@@ -47,6 +47,14 @@ qt_add_qml_module(easepass_qml_module
         Add2FADialog.qml
         WebcamScanDialog.qml
         PasswordGeneratorDialog.qml
+        ChangePasswordDialog.qml
+        ManageSecondFactorDialog.qml
+        DeleteDatabaseDialog.qml
+        RenameDatabaseDialog.qml
+        SelectItemsDialog.qml
+        PasswordPromptDialog.qml
+        PrintDatabaseDialog.qml
+        DatabasePage.qml
         Main.qml
     RESOURCES
         ${EASEPASS_QML_ICONS}
