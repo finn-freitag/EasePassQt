@@ -303,17 +303,10 @@ void ItemViewModel::updateTotp(qint64 now) {
 
 // --- Clipboard ----------------------------------------------------------------------
 
-void ItemViewModel::registerClick() {
-    // C#: copying counts as a "click" for the popularity sort.
-    if (m_index >= 0 && m_service->isOpen())
-        m_service->registerClick(m_index, m_totpTimer->clock());
-}
-
 void ItemViewModel::copyPassword() {
     if (!m_clipboard || m_buffer.password.isEmpty())
         return;
     m_clipboard->copy(m_buffer.password, true);
-    registerClick();
 }
 void ItemViewModel::copyUsername() {
     if (m_clipboard)

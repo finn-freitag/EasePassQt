@@ -217,6 +217,10 @@ add_library(easepass_app STATIC
     src/app/AppContext.h
     src/app/DailyTipService.cpp
     src/app/DailyTipService.h
+    src/app/PasswordActions.cpp
+    src/app/PasswordActions.h
+    src/app/WebsiteIconService.cpp
+    src/app/WebsiteIconService.h
 )
 # Daily tips (C#: resources/DailyTips_*.txt, bundled instead of downloaded; T13)
 qt_add_resources(easepass_app "dailytips"
@@ -226,7 +230,7 @@ qt_add_resources(easepass_app "dailytips"
 )
 target_include_directories(easepass_app PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/app)
 target_link_libraries(easepass_app
-    PUBLIC easepass_core Qt6::Widgets Qt6::PrintSupport Qt6::Qml
+    PUBLIC easepass_core Qt6::Widgets Qt6::PrintSupport Qt6::Qml Qt6::Quick
     PRIVATE easepass_warnings
 )
 

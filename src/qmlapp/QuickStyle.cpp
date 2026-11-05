@@ -3,7 +3,10 @@
 #include <QLibraryInfo>
 #include <QDir>
 #include <QFileInfo>
+#include <QGuiApplication>
+#include <QPalette>
 #include <QQuickStyle>
+#include <QStyleHints>
 #include <QStringList>
 
 namespace EasePass::App {
@@ -14,7 +17,18 @@ QString chooseQuickStyle(const QString &envOverride, bool fluentAvailable) {
     return fluentAvailable ? QStringLiteral("FluentWinUI3") : QStringLiteral("Basic");
 }
 
+Qt::ColorScheme resolveColorScheme(Qt::ColorScheme reported, const QColor &windowColor) {
+    if (reported != Qt::ColorScheme::Unknown)
+        return reported;
+    return windowColor.lightness() < 128 ? Qt::ColorScheme::Dark : Qt::ColorScheme::Light;
+}
+
 QString applyQuickStyle() {
+    if (auto *hints = QGuiApplication::styleHints()) {
+        const Qt::ColorScheme reported = hints->colorScheme();
+        if (reported == Qt::ColorScheme::Unknown)
+            hints->setColorScheme(resolveColorScheme(reported, QGuiApplication::palette().color(QPalette::Window)));
+    }
     const QString env = qEnvironmentVariable("QT_QUICK_CONTROLS_STYLE");
     // Qt's own QML dir plus the extra import dirs (Nix keeps every Qt module in its own prefix).
     QStringList dirs{QLibraryInfo::path(QLibraryInfo::QmlImportsPath)};

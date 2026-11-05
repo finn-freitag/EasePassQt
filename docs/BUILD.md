@@ -126,6 +126,8 @@ implementations) and `registerQml()` exposes these singletons in the QML module
 | `ScreenScanViewModel` | `ScreenScanViewModel` | QR scan from the screen |
 | `TotpTimer` | `TotpTimerService` | the one shared 1 s TOTP timer |
 | `DailyTip` | `DailyTipService` | tip of the day for the login page |
+| `PasswordActions` | `PasswordActions` | copy/delete/export by row, click tracking |
+| `WebsiteIcons` | `WebsiteIconService` | favicon URLs (`image://favicon/...`) |
 
 Secrets (passwords, 2FA secrets) are never list-model roles; only `ItemViewModel` exposes them.
 
@@ -141,3 +143,13 @@ Secrets (passwords, 2FA secrets) are never list-model roles; only `ItemViewModel
   the Qt app makes no network request for them. To update, copy the files from upstream.
 - One-time (OTP) second factor databases get a new token after every login; it is shown once
   in `OneTimeTokenDialog`.
+
+## Passwords page (T14)
+
+- `PasswordsPage.qml`: list (search, sort menu, context menu) | details (copy controls, TOTP
+  bar, strength chart, leak warning), splitter width stored in `AppSettings::splitterWidth`.
+  Shortcuts as in C#: Ctrl+F, Ctrl+N, Ctrl+E/F2, Ctrl+Up/Down, Ctrl+L, F1, Esc.
+- Page tests (`tests/qml/tst_passwords.qml`) use the real App layer through `testContext`
+  (`tests/qml/QmlTestContext.*`: AppContext with fakes, fake clock).
+- Theme follows what the Controls style draws (probe control), because some platforms report
+  the colour scheme as Unknown while FluentWinUI3 still renders dark.

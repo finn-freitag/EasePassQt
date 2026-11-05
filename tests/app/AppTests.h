@@ -45,6 +45,7 @@ private slots:
     void testTagSuggestions();
     void testSortModesAndOrder();
     void testSourceIndexMapping();
+    void testInPlaceEditKeepsRows();
 };
 
 class ItemViewModelTest : public QObject {
@@ -60,7 +61,7 @@ private slots:
     void testLeakResultForStalePasswordIgnored();
     void testTotpSharedTimerTicks();
     void testApplyOtpauthUri();
-    void testCopyActionsUseClipboardAndRegisterClick();
+    void testCopyActionsUseClipboardAndKeepClicks();
     void testUnloadOnLock();
 };
 
@@ -76,4 +77,16 @@ private slots:
     void testScreenScanViewModelFound();
     void testScreenScanViewModelFailureAndClear();
     void testAppContextQmlRegistration();
+};
+
+class PasswordActionsTest : public QObject {
+    Q_OBJECT
+private slots:
+    void testCopyActions();
+    void testTotpCode();
+    void testRegisterClickAndReadOnly();
+    void testDeleteItems();
+    void testExportItems();
+    void testExportWithNewPassword();
+    void testWebsiteIconService();
 };

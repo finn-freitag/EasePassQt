@@ -134,7 +134,6 @@ private:
     void updateSafety();
     void updateTotp(qint64 now);
     void updateTotpSubscription();
-    void registerClick();
     int minPasswordLength() const;
 
     Core::DatabaseService *m_service;

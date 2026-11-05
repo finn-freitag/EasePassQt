@@ -1,5 +1,6 @@
 pragma Singleton
 import QtQuick
+import QtQuick.Controls
 
 /*
  * Central design tokens for the QML UI (steps.txt T11). Components must take colours,
@@ -15,7 +16,13 @@ QtObject {
     // --- Mode -------------------------------------------------------------------------
     enum Mode { System, Light, Dark }
     property int themeMode: Theme.Mode.System
+    // Follow what the Controls style actually draws: some platforms report the colour scheme
+    // as Unknown while the style still picks dark palettes, which would give white text on
+    // light Theme backgrounds. A probe control's window colour is the source of truth.
+    readonly property Control _probe: Control {}
     readonly property bool systemDark: Qt.styleHints.colorScheme === Qt.ColorScheme.Dark
+                                       || (Qt.styleHints.colorScheme !== Qt.ColorScheme.Light
+                                           && _probe.palette.window.hslLightness < 0.5)
     readonly property bool dark: themeMode === Theme.Mode.Dark
                                  || (themeMode === Theme.Mode.System && systemDark)
 

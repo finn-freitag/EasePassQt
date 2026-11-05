@@ -290,7 +290,7 @@ void ItemViewModelTest::testApplyOtpauthUri() {
     QCOMPARE(f.vm.totpCode().size(), 8);
 }
 
-void ItemViewModelTest::testCopyActionsUseClipboardAndRegisterClick() {
+void ItemViewModelTest::testCopyActionsUseClipboardAndKeepClicks() {
     PasswordItem item = makeItem("A", "secret-pw");
     item.username = "alice";
     item.email = "a@example.com";
@@ -312,13 +312,13 @@ void ItemViewModelTest::testCopyActionsUseClipboardAndRegisterClick() {
     QCOMPARE(clip->content, f.vm.totpCode());
     QVERIFY(clip->lastSecret);
 
-    QCOMPARE(f.svc.items().at(0).clicks.size(), 0);
     f.vm.copyPassword();
     QCOMPARE(clip->content, QStringLiteral("secret-pw"));
     QVERIFY(clip->lastSecret);
-    QCOMPARE(f.svc.items().at(0).clicks.size(), 1); // counts for popularity sort
+    QCOMPARE(f.svc.items().at(0).clicks.size(), 0); // C#: clicks come from selecting (T14), not copying
 
-    // A later commit keeps the registered click.
+    // A commit keeps clicks registered after load() (e.g. by selecting the item).
+    QVERIFY(f.svc.registerClick(0, &f.clock));
     f.vm.setNotes("n");
     QVERIFY(f.vm.commit());
     QCOMPARE(f.svc.items().at(0).clicks.size(), 1);

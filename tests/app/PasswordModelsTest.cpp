@@ -184,3 +184,29 @@ void PasswordModelsTest::testSourceIndexMapping() {
     QCOMPARE(filter.sourceIndex(7), -1);
     svc.shutdown();
 }
+
+void PasswordModelsTest::testInPlaceEditKeepsRows() {
+    DatabaseService svc(kFastKdf);
+    PasswordListModel list(&svc);
+    PasswordFilterModel filter(&list);
+    QAbstractItemModelTester tester(&filter, QAbstractItemModelTester::FailureReportingMode::QtTest);
+    QVERIFY(openItems(svc, sampleItems()));
+    QSignalSpy reset(&list, &QAbstractItemModel::modelReset);
+    QSignalSpy changed(&list, &QAbstractItemModel::dataChanged);
+    QVERIFY(svc.registerClick(1));          // clicks emit no itemsChanged at all (Core design)
+    PasswordItem edited = svc.items().at(0);
+    edited.displayName = "Zzz";
+    QVERIFY(svc.updateItem(0, edited));
+    QCOMPARE(reset.count(), 0);             // same count -> in place, views keep their selection
+    QCOMPARE(changed.count(), 1);
+    QCOMPARE(list.index(0, 0).data(PasswordListModel::DisplayNameRole).toString(), QStringLiteral("Zzz"));
+    QCOMPARE(list.index(1, 0).data(PasswordListModel::HasPasswordRole).toBool(), true);
+    // Proxy re-sorts on dataChanged.
+    filter.setSortMode(SortMode::Name);
+    edited.displayName = "000 first";
+    QVERIFY(svc.updateItem(0, edited));
+    QCOMPARE(names(filter).first(), QStringLiteral("000 first"));
+    QVERIFY(svc.addItem(makeItem("New")));  // count changes -> reset
+    QCOMPARE(reset.count(), 1);
+    svc.shutdown();
+}

@@ -18,6 +18,7 @@ class INetworkClient;
 class IScreenCapture;
 class ISettingsStore;
 class LeakCheckService;
+class WebsiteIconManager;
 } // namespace EasePass::Core
 
 namespace EasePass::App {
@@ -25,6 +26,8 @@ namespace EasePass::App {
 class AppController;
 class ClipboardService;
 class DailyTipService;
+class PasswordActions;
+class WebsiteIconService;
 class DatabaseController;
 class DialogService;
 class ItemViewModel;
@@ -50,6 +53,7 @@ public:
         std::shared_ptr<Core::IClipboard> clipboard;          ///< default: QtClipboard
         std::shared_ptr<Core::INetworkClient> networkClient;  ///< default: QtNetworkClient
         std::shared_ptr<Core::IScreenCapture> screenCapture;  ///< default: createScreenCapture()
+        QString iconCacheDir;                                 ///< default: WebsiteIconManager default
         const Core::IClock *clock = nullptr;                  ///< default: SystemClock
         Core::KdfParams kdf = Core::KdfParams::production();  ///< tests pass cheap params
     };
@@ -76,6 +80,8 @@ public:
     PrintViewModel *printViewModel() const { return m_printViewModel; }
     ScreenScanViewModel *screenScanViewModel() const { return m_screenScanViewModel; }
     DailyTipService *dailyTipService() const { return m_dailyTip; }
+    PasswordActions *passwordActions() const { return m_actions; }
+    WebsiteIconService *websiteIcons() const { return m_icons; }
 
 private:
     const Core::IClock *m_clock;
@@ -98,6 +104,9 @@ private:
     PrintViewModel *m_printViewModel = nullptr;
     ScreenScanViewModel *m_screenScanViewModel = nullptr;
     DailyTipService *m_dailyTip = nullptr;
+    Core::WebsiteIconManager *m_iconManager = nullptr;
+    PasswordActions *m_actions = nullptr;
+    WebsiteIconService *m_icons = nullptr;
 };
 
 } // namespace EasePass::App

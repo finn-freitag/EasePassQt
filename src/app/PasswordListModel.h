@@ -11,7 +11,7 @@ namespace EasePass::App {
 /**
  * Items of the open database as a list model (steps.txt T12). Passwords and 2FA secrets are
  * deliberately NOT exposed as roles; QML gets them through ItemViewModel only.
- * Resets on every DatabaseService::itemsChanged/opened/closed.
+ * Resets on open/close and when the item count changes; in-place edits emit dataChanged.
  */
 class PasswordListModel : public QAbstractListModel {
     Q_OBJECT
@@ -29,6 +29,7 @@ public:
         AvatarColorRole,
         AvatarTextColorRole,
         SourceIndexRole,
+        HasPasswordRole, ///< only whether one is set, never the password itself
     };
     Q_ENUM(Role)
 
@@ -47,7 +48,9 @@ signals:
 
 private:
     void reset();
+    void onItemsChanged();
     Core::DatabaseService *m_service;
+    int m_lastRowCount = 0;
 };
 
 } // namespace EasePass::App

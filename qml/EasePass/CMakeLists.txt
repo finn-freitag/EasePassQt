@@ -40,6 +40,8 @@ qt_add_qml_module(easepass_qml_module
         LoginPage.qml
         RegisterPage.qml
         PlaceholderPage.qml
+        PasswordRow.qml
+        PasswordsPage.qml
         Main.qml
     RESOURCES
         ${EASEPASS_QML_ICONS}

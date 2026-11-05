@@ -37,6 +37,15 @@ Item {
             verify(Theme.radius > 0 && Theme.spacing > 0 && Theme.fontBody > 0)
         }
 
+        function test_themeMatchesStylePalette() {
+            // Theme and the Controls style must agree on light/dark, else text is unreadable.
+            const f = createTemporaryObject(labeledC, top)
+            const textL = f.color.hslLightness
+            const bgL = Theme.background.hslLightness
+            verify(Math.abs(textL - bgL) > 0.4, "text " + f.color + " on background " + Theme.background)
+            compare(Theme.systemDark, f.palette.window.hslLightness < 0.5)
+        }
+
         function test_iconButton() {
             const b = createTemporaryObject(iconButtonC, top)
             verify(b)

@@ -5,6 +5,9 @@
 #include "ClipboardManager.h"
 #include "ClipboardService.h"
 #include "DailyTipService.h"
+#include "PasswordActions.h"
+#include "WebsiteIconManager.h"
+#include "WebsiteIconService.h"
 #include "DatabaseController.h"
 #include "DatabaseOperations.h"
 #include "DatabaseService.h"
@@ -66,6 +69,14 @@ AppContext::AppContext(Deps deps, QObject *parent)
     m_dailyTip->setLanguage(m_settings->language());
     connect(m_settings.get(), &AppSettings::languageChanged, m_dailyTip, &DailyTipService::setLanguage);
 
+    m_actions = new PasswordActions(m_service, m_operations, m_clipboardService, m_totpTimer, this);
+    m_iconManager = new WebsiteIconManager(network);
+    m_iconManager->setParent(this);
+    m_iconManager->setSettings(m_settings.get());
+    if (!deps.iconCacheDir.isEmpty())
+        m_iconManager->setCacheDir(deps.iconCacheDir);
+    m_icons = new WebsiteIconService(m_iconManager, m_settings.get(), this);
+
     // First run (no database file known yet) starts with the Register/OOBE page.
     m_appController->start(m_databaseController->isFirstRun());
 
@@ -98,6 +109,8 @@ void AppContext::registerQml() {
     single("ScreenScanViewModel", m_screenScanViewModel);
     single("TotpTimer", m_totpTimer);
     single("DailyTip", m_dailyTip);
+    single("PasswordActions", m_actions);
+    single("WebsiteIcons", m_icons);
     qmlRegisterUncreatableType<AppSettings>(uri, 1, 0, "AppSettings", QStringLiteral("use SettingsViewModel.settings"));
     qmlRegisterUncreatableType<PasswordListModel>(uri, 1, 0, "PasswordListModel", QStringLiteral("singleton only"));
 }

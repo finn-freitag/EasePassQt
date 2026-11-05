@@ -11,6 +11,11 @@ ApplicationWindow {
     required property var dailyTip
     required property var dialogService
     required property var clipboard
+    required property var passwordList
+    required property var itemViewModel
+    required property var passwordActions
+    required property var websiteIcons
+    required property var settings
 
     // Values of App::AppController::Page
     readonly property int pageLogin: 0
@@ -38,6 +43,7 @@ ApplicationWindow {
             switch (window.appController.page) {
             case window.pageLogin: return loginPage
             case window.pageRegister: return registerPage
+            case window.pagePasswords: return passwordsPage
             default: return placeholderPage
             }
         }
@@ -60,9 +66,37 @@ ApplicationWindow {
         }
     }
     Component {
+        id: passwordsPage
+        PasswordsPage {
+            listModel: window.passwordList
+            item: window.itemViewModel
+            actions: window.passwordActions
+            settings: window.settings
+            controller: window.databaseController
+            clipboard: window.clipboard
+            icons: window.websiteIcons
+            onSettingsRequested: window.appController.navigate(window.pageSettings)
+            onAboutRequested: window.appController.navigate(window.pageAbout)
+            onManageDatabaseRequested: window.appController.navigate(window.pageDatabase)
+            // Item dialogs follow in T15.
+            onAddRequested: window.notYetAvailable()
+            onEditRequested: (index) => window.notYetAvailable()
+            onAdd2FARequested: (index) => window.notYetAvailable()
+            onGenerateRequested: window.notYetAvailable()
+        }
+    }
+    function notYetAvailable() {
+        globalInfo.severity = Theme.Severity.Info
+        globalInfo.title = ""
+        globalInfo.message = qsTr("This function is not available yet.")
+        globalInfo.show()
+    }
+    Component {
         id: placeholderPage
         PlaceholderPage {
             title: window.databaseController.databaseName
+            showBack: window.appController.canGoBack
+            onBackRequested: window.appController.goBack()
             onLockRequested: window.databaseController.lock()
         }
     }

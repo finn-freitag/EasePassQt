@@ -6,7 +6,9 @@ import QtQuick.Layouts
 Item {
     id: root
     property string title: ""
+    property bool showBack: false
     signal lockRequested()
+    signal backRequested()
 
     ColumnLayout {
         anchors.centerIn: parent
@@ -21,6 +23,12 @@ Item {
             text: qsTr("This page is not available yet.")
             color: Theme.textSecondary
             Layout.alignment: Qt.AlignHCenter
+        }
+        Button {
+            text: qsTr("Back")
+            visible: root.showBack
+            Layout.alignment: Qt.AlignHCenter
+            onClicked: root.backRequested()
         }
         Button {
             text: qsTr("Lock")

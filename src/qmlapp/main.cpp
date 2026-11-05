@@ -11,6 +11,11 @@
 #include "DailyTipService.h"
 #include "DatabaseController.h"
 #include "DialogService.h"
+#include "ItemViewModel.h"
+#include "PasswordActions.h"
+#include "PasswordFilterModel.h"
+#include "WebsiteIconService.h"
+#include "AppSettings.h"
 #include "ICoreDumpControl.h"
 #include "QuickStyle.h"
 
@@ -38,12 +43,18 @@ int main(int argc, char *argv[]) {
     QQmlApplicationEngine engine;
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &app,
                      [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);
+    engine.addImageProvider(EasePass::App::WebsiteIconService::ProviderId, context.websiteIcons()->createImageProvider());
     engine.setInitialProperties({
         {QStringLiteral("appController"), QVariant::fromValue<QObject *>(context.appController())},
         {QStringLiteral("databaseController"), QVariant::fromValue<QObject *>(context.databaseController())},
         {QStringLiteral("dailyTip"), QVariant::fromValue<QObject *>(context.dailyTipService())},
         {QStringLiteral("dialogService"), QVariant::fromValue<QObject *>(context.dialogService())},
         {QStringLiteral("clipboard"), QVariant::fromValue<QObject *>(context.clipboardService())},
+        {QStringLiteral("passwordList"), QVariant::fromValue<QObject *>(context.passwordFilterModel())},
+        {QStringLiteral("itemViewModel"), QVariant::fromValue<QObject *>(context.itemViewModel())},
+        {QStringLiteral("passwordActions"), QVariant::fromValue<QObject *>(context.passwordActions())},
+        {QStringLiteral("websiteIcons"), QVariant::fromValue<QObject *>(context.websiteIcons())},
+        {QStringLiteral("settings"), QVariant::fromValue<QObject *>(context.settings())},
     });
     engine.loadFromModule("EasePass", "Main");
 

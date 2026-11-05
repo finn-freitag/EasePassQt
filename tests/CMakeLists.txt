@@ -354,9 +354,10 @@ add_executable(test_app
     app/ItemViewModelTest.cpp
     app/AppServicesTest.cpp
     app/DailyTipServiceTest.cpp
+    app/PasswordActionsTest.cpp
 )
 target_compile_definitions(test_app PRIVATE EASEPASS_TEST_FIXTURES_DIR="${EASEPASS_TEST_FIXTURES_DIR}")
-target_link_libraries(test_app PRIVATE easepass_app Qt6::Test Qt6::Qml easepass_warnings)
+target_link_libraries(test_app PRIVATE easepass_app Qt6::Test Qt6::Qml Qt6::Quick easepass_warnings)
 
 set(TEST_APP_UNIT_FUNCTIONS
     testNavigationNeedsOpenDatabase
@@ -384,6 +385,7 @@ set(TEST_APP_UNIT_FUNCTIONS
     testTagSuggestions
     testSortModesAndOrder
     testSourceIndexMapping
+    testInPlaceEditKeepsRows
     testLoadEditCancel
     testCommitUpdatesService
     testNewItemCommitAndValidation
@@ -394,7 +396,7 @@ set(TEST_APP_UNIT_FUNCTIONS
     testLeakResultForStalePasswordIgnored
     testTotpSharedTimerTicks
     testApplyOtpauthUri
-    testCopyActionsUseClipboardAndRegisterClick
+    testCopyActionsUseClipboardAndKeepClicks
     testUnloadOnLock
     testTotpTimerRefCount
     testDialogServiceRequestResponse
@@ -405,6 +407,13 @@ set(TEST_APP_UNIT_FUNCTIONS
     testScreenScanViewModelFound
     testScreenScanViewModelFailureAndClear
     testAppContextQmlRegistration
+    testCopyActions
+    testTotpCode
+    testRegisterClickAndReadOnly
+    testDeleteItems
+    testExportItems
+    testExportWithNewPassword
+    testWebsiteIconService
 )
 easepass_add_qtest(test_app LABELS unit FUNCTIONS ${TEST_APP_UNIT_FUNCTIONS})
 add_test(NAME test_app.all_functions_registered
@@ -424,14 +433,18 @@ file(GLOB EASEPASS_QML_TESTS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/qml/t
 
 add_executable(test_qml
     qml/main.cpp
+    qml/QmlTestContext.cpp
+    qml/QmlTestContext.h
     ${CMAKE_SOURCE_DIR}/src/qmlapp/QuickStyle.cpp
     ${EASEPASS_QML_TESTS}
 )
 target_include_directories(test_qml PRIVATE ${CMAKE_SOURCE_DIR}/src/qmlapp)
+target_link_libraries(test_qml PRIVATE Qt6::Test)
 target_compile_definitions(test_qml PRIVATE
     EASEPASS_QML_TEST_DIR="${CMAKE_CURRENT_SOURCE_DIR}/qml"
 )
 target_link_libraries(test_qml PRIVATE
+    easepass_app
     easepass_qml_module
     easepass_qml_moduleplugin
     Qt6::QuickTest
