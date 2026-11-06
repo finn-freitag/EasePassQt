@@ -2,8 +2,8 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-// QML application window (D14: second target next to the legacy Widgets app).
-// The C++ objects come in as initial properties from src/qmlapp/main.cpp (AppContext).
+// QML application window. The C++ objects come in as initial properties from
+// App::loadMainWindow (src/app/MainWindowLoader.cpp, AppContext).
 ApplicationWindow {
     id: window
     required property var appController

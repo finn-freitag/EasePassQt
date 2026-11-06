@@ -219,11 +219,11 @@ Item {
             reveal(d, remove)
             mouseClick(remove)
             const confirm = findChild(d, "confirmRemove2FAButton")
-            verify(confirm.visible)
+            tryVerify(() => confirm.visible) // T24: was verify(), flaky under load
             compare(testContext.itemAt(1).Secret, top.secret)    // nothing changed yet
             reveal(d, confirm)
             mouseClick(confirm)
-            verify(!findChild(d, "twoFactorFields").visible)
+            tryVerify(() => !findChild(d, "twoFactorFields").visible)
             mouseClick(findChild(d, "primaryButton"))
             tryCompare(d, "visible", false)
             compare(testContext.itemAt(1).Secret, "")

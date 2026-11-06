@@ -20,8 +20,6 @@ class AppSettings;
 class WebsiteIconManager : public QObject {
     Q_OBJECT
 public:
-    static WebsiteIconManager &instance();
-
     explicit WebsiteIconManager(std::shared_ptr<INetworkClient> client = nullptr);
     ~WebsiteIconManager() override = default;
 

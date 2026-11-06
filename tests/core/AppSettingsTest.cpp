@@ -1,6 +1,5 @@
 #include "AppSettingsTest.h"
 #include "AppSettings.h"
-#include "DatabaseManager.h"
 #include <QTest>
 #include <QSignalSpy>
 #include <QStandardPaths>
@@ -17,11 +16,6 @@ void AppSettingsTest::initTestCase() {
     QStandardPaths::setTestModeEnabled(true);
     s_tempDir = std::make_unique<QTemporaryDir>();
     QVERIFY(s_tempDir->isValid());
-}
-
-void AppSettingsTest::cleanup() {
-    // Reset DatabaseManager to default settings
-    DatabaseManager::instance().setSettings(std::make_shared<AppSettings>());
 }
 
 void AppSettingsTest::testDefaults() {
@@ -538,29 +532,3 @@ void AppSettingsTest::testResetToDefaults() {
     QCOMPARE(settings->passwordLength(), 15);
 }
 
-void AppSettingsTest::testDatabaseManagerUsesAppSettings() {
-    DatabaseManager &mgr = DatabaseManager::instance();
-    QVERIFY(mgr.settings() != nullptr);
-
-    auto customSettings = AppSettings::createInMemory();
-    mgr.setSettings(customSettings);
-    QCOMPARE(mgr.settings(), customSettings.get());
-
-    QString testDb = "/tmp/mgr_test.epdb";
-    mgr.addKnownDatabasePath(testDb);
-    QVERIFY(customSettings->databasePaths().contains(testDb));
-    QVERIFY(mgr.getKnownDatabasePaths().contains(testDb));
-
-    mgr.setLastUsedDatabasePath(testDb);
-    QCOMPARE(customSettings->lastDatabase(), testDb);
-    QCOMPARE(mgr.getLastUsedDatabasePath(), testDb);
-
-    // Modifying AppSettings directly is reflected in DatabaseManager
-    QString otherDb = "/tmp/mgr_other.epdb";
-    customSettings->setLastDatabase(otherDb);
-    QCOMPARE(mgr.getLastUsedDatabasePath(), otherDb);
-
-    mgr.removeKnownDatabasePath(testDb);
-    QVERIFY(!customSettings->databasePaths().contains(testDb));
-    QVERIFY(!mgr.getKnownDatabasePaths().contains(testDb));
-}

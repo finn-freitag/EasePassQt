@@ -10,11 +10,6 @@
 
 namespace EasePass::Core {
 
-WebsiteIconManager &WebsiteIconManager::instance() {
-    static WebsiteIconManager inst;
-    return inst;
-}
-
 WebsiteIconManager::WebsiteIconManager(std::shared_ptr<INetworkClient> client) : m_netClient(std::move(client)) {
     if (!m_netClient) {
         m_netClient = std::make_shared<QtNetworkClient>(this);

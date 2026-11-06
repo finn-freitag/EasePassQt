@@ -2,8 +2,8 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-// Component gallery: instantiates every control of the library. Used as the start page of
-// easepass_qml until the real pages exist (T12+) and by the "gallery" QML test.
+// Component gallery: instantiates every control of the library. Was the start page of
+// the app before the real pages existed; now used by the "gallery" QML test.
 ScrollView {
     id: root
     property string lastCopied: ""

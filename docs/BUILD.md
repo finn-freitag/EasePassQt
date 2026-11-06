@@ -23,13 +23,13 @@ Raise it when every target ships 6.12.
 | Target | What |
 |--------|------|
 | `easepass_core` | static library, `src/core`; links only Qt Core/Gui/Network, OpenSSL, argon2, zxing-cpp |
-| `easepass` | Widgets application (legacy UI, replaced by the QML app in T24) |
 | `easepass_qml_module` (+`plugin`) | static QML module `EasePass` in `qml/EasePass`: `Theme` singleton, control library, icons |
-| `easepass_qml` | Qt Quick application (D14); shows the component gallery until the pages exist (T12+) |
-| `easepass_app` | static library `src/app`: view models + services (T12), `AppContext` composition root |
+| `easepass` | the application (Qt Quick, `src/main`); the Widgets UI was removed in T24 |
+| `easepass_app` | static library `src/app`: view models + services (T12), `AppContext` composition root, `loadMainWindow` |
 | `test_app` | QtTest executable for the view models (fakes only), one CTest test per function |
 | `test_qml` | QtQuickTest runner; one CTest test per `tests/qml/tst_*.qml`, QML warnings fail the test |
-| `test_core` | QtTest executable for core module, registered with CTest (alias: `test_easepass`) |
+| `test_core` | QtTest executable for core module, registered with CTest |
+| `test_smoke` | application smoke test (T24): real `Main.qml` + `AppContext`, unlocks a copy of `test.epdb` |
 
 Dependencies are found via their CMake package config first (vcpkg on Windows,
 `ZXingConfig.cmake` on Linux) and fall back to pkg-config (`libargon2`, `zxing`).
@@ -76,6 +76,12 @@ test (`<executable>.<function>`) in `tests/CMakeLists.txt` with a label:
 - `unit`: fast tests
 - `slow`: tests that run Argon2 with production parameters (250 MB x 10 iterations)
 - `integration`: reserved
+- `smoke`: the application smoke tests (T24): `smoke.unlock_fixture_lists_items` (real main
+  window offscreen: type the password of a copy of `tests/fixtures/test.epdb`, click Login, the
+  four items are listed, log out; label `slow` too) and `smoke.launch_app` (the real `easepass`
+  binary: `--version`, then a 5 s offscreen run with `--db <copy>` and a private XDG profile;
+  fails on QML errors/warnings in its output or when no log file is written;
+  `tests/smoke/RunApp.cmake`)
 
 A guard test (`test_core.all_functions_registered`) fails if a test function exists in
 the executable but is not registered with CTest. Tests run with `QT_QPA_PLATFORM=offscreen`.
@@ -96,7 +102,7 @@ job (MSVC, vcpkg manifest, `install-qt-action`, presets, ctest).
 ## QML module (T11)
 
 - Style: `FluentWinUI3` (ships with Qt >= 6.8 on every platform) if found in Qt's QML dirs,
-  else `Basic`; `QT_QUICK_CONTROLS_STYLE` overrides it (`src/qmlapp/QuickStyle.cpp`).
+  else `Basic`; `QT_QUICK_CONTROLS_STYLE` overrides it (`src/main/QuickStyle.cpp`).
 - `Theme` (singleton): follows the system light/dark scheme; `Theme.themeMode` forces
   light/dark. All component colours, radii, spacing and font sizes come from it.
 - Icons: own monochrome SVGs in `qml/EasePass/icons/` (no Segoe glyphs), tinted at use.
@@ -104,7 +110,7 @@ job (MSVC, vcpkg manifest, `install-qt-action`, presets, ctest).
   view models (T12) route to `ClipboardManager`.
 - On Nix the desktop session can export QML/plugin paths of another Qt version. `test_qml`
   pins `QML_IMPORT_PATH`/`QT_PLUGIN_PATH` to the Qt it was built against; to run
-  `easepass_qml` from a dev shell, use the same approach or the wrapped Nix package.
+  `easepass` from a dev shell, use the same approach or the wrapped Nix package.
 
 ## View models (T12)
 
@@ -140,11 +146,12 @@ Secrets (passwords, 2FA secrets) are never list-model roles; only `ItemViewModel
 
 ## Login / Register (T13)
 
-- `easepass_qml` starts on the Register (OOBE) page when no known database file exists,
+- `easepass` starts on the Register (OOBE) page when no known database file exists,
   else on Login. Register creates `<AppData>/easepass.epdb` and opens it.
 - Pages get their C++ objects as properties (`controller`, ...) instead of using the
   singletons directly, so QtQuickTests drive them with `tests/qml/FakeDatabaseController.qml`.
-  `Main.qml` receives the real objects as initial properties from `src/qmlapp/main.cpp`.
+  `Main.qml` receives the real objects as initial properties from `App::loadMainWindow` (`src/app/MainWindowLoader.cpp`, shared by
+  `src/main/main.cpp` and the smoke test).
 - Daily tips: `resources/dailytips/DailyTips_<lang>.txt` (copied from the C# repository's
   `resources/`, MIT) are bundled in qrc; the C# app downloads them from GitHub at runtime,
   the Qt app makes no network request for them. To update, copy the files from upstream.
@@ -174,7 +181,7 @@ Secrets (passwords, 2FA secrets) are never list-model roles; only `ItemViewModel
   not leaked" on, leaked candidates are drawn again (at most 20, C# loops forever).
 - Export 2FA renders the otpauth URI as QR code (`Core::QrCodeGenerator`, zxing-cpp writer;
   2.x and 3.x APIs supported) and shows it as a PNG data URL, so no image cache keeps it.
-- Webcam scanning needs `EASEPASS_WITH_MULTIMEDIA` (`easepass_qml` then passes a
+- Webcam scanning needs `EASEPASS_WITH_MULTIMEDIA` (`easepass` then passes a
   `QtWebcamScanner`); without it the webcam button is disabled.
 - Tests: `tests/qml/tst_itemdialogs.qml` (fake clipboard, screen capture and webcam through
   `testContext`), `tests/app/ItemDialogsTest.cpp`.
@@ -240,9 +247,10 @@ Secrets (passwords, 2FA secrets) are never list-model roles; only `ItemViewModel
   restored geometry (like C#), moves windows that are off every screen back onto the primary
   screen, and saves on close/quit. `Main.qml` starts hidden; `main.cpp` shows it afterwards.
 - **Single instance**: `SingleInstance` (QLockFile in the runtime dir + QLocalServer, per user and
-  settings profile). A second `easepass_qml` sends its arguments to the first one, which raises
+  settings profile). A second `easepass` sends its arguments to the first one, which raises
   its window, and exits.
-- **Command line**: `easepass_qml [--db <path>] [<path>]`, `--help`, `--version`. A known database
+- **Command line**: `easepass [--db <path>] [<path>]`, `--help`, `--version` (both handled before
+  the GUI starts, so they work without a display). A known database
   is preselected on the login page; another file is offered as temporary database
   ("(Temp)", read-only until "Load temp database"; C# file association behaviour).
 - **Log file**: `Core::FileLogger` writes all Qt messages to
@@ -289,3 +297,13 @@ Secrets (passwords, 2FA secrets) are never list-model roles; only `ItemViewModel
 - Locking clears a copied secret from the clipboard and the generator's last password.
 - `tests/app/SecurityTest.cpp`: one regression test per finding (Unix permission checks are
   skipped on Windows).
+
+## Switch-over (T24)
+
+- `easepass_qml` became `easepass`; its sources moved from `src/qmlapp` to `src/main`.
+- Removed: the Widgets UI (`src/ui`, old `src/main.cpp`), the `DatabaseManager` singleton (its
+  only users were the Widgets UI; `DatabaseService` + `AppSettings` replace it) with its tests,
+  `WebsiteIconManager::instance()`, and the `test_easepass` alias target.
+- Qt Widgets is still linked: `QApplication` is needed for `QPrintDialog` (D7).
+- `--help`/`--version` no longer create the `QApplication` (they aborted without a display,
+  found by the Nix sandbox build).

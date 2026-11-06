@@ -23,4 +23,7 @@ private slots:
     void testSaveEmptyPathFails();
     void testItemAddUpdateDeleteBounds();
     void testCountOccurrences();
+    void testWrongPasswordPassingPaddingCheck();
+    void testWrongSecondFactorPassingPaddingCheck();
+    void testOldAssociatedDataWhenNewKeyPassesPadding();
 };

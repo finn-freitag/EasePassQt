@@ -5,7 +5,6 @@
 #include "ICoreDumpControl.h"
 #include "CryptoHelper.h"
 #include "DatabaseFile.h"
-#include "DatabaseManager.h"
 
 #include <QTest>
 #include <cstring>
@@ -439,22 +438,6 @@ void SecureMemoryTest::testDatabaseFileWipeSecrets() {
     db.wipeSecrets();
     QVERIFY(db.masterPassword.isEmpty());
     QVERIFY(db.secondFactor.isEmpty());
-
-    // Test DatabaseManager closeDatabase wipes current database secrets
-    DatabaseManager &mgr = DatabaseManager::instance();
-    auto newDb = std::make_unique<DatabaseFile>();
-    newDb->filePath = "test_path.epdb";
-    newDb->masterPassword = "LoadedMasterPassword";
-    newDb->secondFactor = "LoadedSecondFactor";
-
-    mgr.setDatabase(std::move(newDb));
-    QVERIFY(mgr.isDatabaseLoaded());
-    QCOMPARE(mgr.currentDatabase()->masterPassword.toQString(), QString("LoadedMasterPassword"));
-
-    // Close database: ensures secrets are wiped and database is released
-    mgr.closeDatabase();
-    QVERIFY(!mgr.isDatabaseLoaded());
-    QVERIFY(mgr.currentDatabase() == nullptr);
 }
 
 void SecureMemoryTest::testPlatformCoreDumpControl() {

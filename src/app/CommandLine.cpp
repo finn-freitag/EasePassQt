@@ -52,7 +52,14 @@ QString commandLineHelp() {
     setup(parser);
     parser.addHelpOption();
     parser.addVersionOption();
-    return parser.helpText();
+    // The usage line names the executable from QCoreApplication (a full store path, or
+    // "<executable_name>" when main() prints the help before the app exists): use the command.
+    QString text = parser.helpText();
+    const qsizetype usage = text.indexOf(QLatin1Char(' '));
+    const qsizetype end = text.indexOf(QStringLiteral(" ["), usage);
+    if (usage > 0 && end > usage)
+        text.replace(usage + 1, end - usage - 1, QStringLiteral("easepass"));
+    return text;
 }
 
 } // namespace EasePass::App

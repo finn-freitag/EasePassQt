@@ -35,7 +35,7 @@ private:
 int main(int argc, char **argv) {
     // QApplication like the real app (D7); quick_test_main creates none if one exists.
     // (applicationAvailable() is not called when the application already exists, so the
-    // style and test mode are set up here, exactly like src/qmlapp/main.cpp.)
+    // style and test mode are set up here, exactly like src/main/main.cpp.)
     QStandardPaths::setTestModeEnabled(true);
     QApplication app(argc, argv);
     EasePass::App::applyQuickStyle();

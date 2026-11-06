@@ -9,11 +9,34 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QSaveFile>
+#include <QUtf8StringView>
 #include <openssl/crypto.h>
 
 #include <cstring>
 
 namespace EasePass::Core {
+
+namespace {
+
+// AES-CBC with a wrong key still passes the PKCS7 padding check about once in 256 tries
+// (T24: made test_core.testImportPasswordsFromFile flaky). Such a plaintext is random bytes;
+// real database content (even a damaged one) is UTF-8 JSON text. Random data of the size
+// of a database practically always contains control bytes or invalid UTF-8.
+bool looksLikeWrongKey(const char *data, qsizetype size) {
+    for (qsizetype i = 0; i < size; ++i) {
+        const unsigned char c = static_cast<unsigned char>(data[i]);
+        if (c < 0x20 && c != '\t' && c != '\n' && c != '\r') {
+            return true;
+        }
+    }
+    return !QUtf8StringView(data, size).isValidUtf8();
+}
+
+qsizetype bomLength(const char *data, qsizetype size) {
+    return (size >= 3 && std::memcmp(data, "\xEF\xBB\xBF", 3) == 0) ? 3 : 0;
+}
+
+} // namespace
 
 DatabaseFile::~DatabaseFile() {
     wipeSecrets();
@@ -68,7 +91,9 @@ LoadResult DatabaseFile::loadFromBytes(const QByteArray &fileBytes, const Secret
     QJsonParseError parseError;
     QJsonDocument outerDoc = QJsonDocument::fromJson(outerPlain, &parseError);
     if (parseError.error != QJsonParseError::NoError || !outerDoc.isObject()) {
-        return LoadResult::WrongFormat;
+        // Random bytes = the padding check passed by chance with a wrong password.
+        return looksLikeWrongKey(outerPlain.constData(), outerPlain.size()) ? LoadResult::WrongPassword
+                                                                             : LoadResult::WrongFormat;
     }
 
     QJsonObject outerObj = outerDoc.object();
@@ -89,27 +114,34 @@ LoadResult DatabaseFile::loadFromBytes(const QByteArray &fileBytes, const Secret
     QString dataBase64 = outerObj.value("Data").toString();
     QByteArray innerCipher = QByteArray::fromBase64(dataBase64.toUtf8());
 
-    SecureBuffer innerKey = CryptoHelper::deriveInnerKey(masterPassword, secondFactor, false, kdf);
     // T23: the decrypted item JSON holds every password. It lives in a SecureBuffer so it is
     // locked in RAM and wiped on every return path (also on WrongFormat and with a BOM).
+    // Keys in order: current associated data, then the "Database_Version_1,4" fallback (D5).
+    // A key whose result is random bytes only passed the padding check by chance, so the
+    // next key is still tried (T24).
     SecureBuffer innerPlain;
-    bool decrypted = CryptoHelper::decryptAes(innerCipher, innerKey, innerPlain);
-
-    if (!decrypted) {
-        // Try backwards-compatibility associated data
-        innerKey = CryptoHelper::deriveInnerKey(masterPassword, secondFactor, true, kdf);
-        decrypted = CryptoHelper::decryptAes(innerCipher, innerKey, innerPlain);
+    QJsonDocument innerDoc;
+    bool decrypted = false;
+    for (const bool oldAssociatedData : {false, true}) {
+        const SecureBuffer innerKey = CryptoHelper::deriveInnerKey(masterPassword, secondFactor, oldAssociatedData, kdf);
+        if (!CryptoHelper::decryptAes(innerCipher, innerKey, innerPlain)) {
+            continue;
+        }
+        // Skip a UTF-8 BOM without copying the plaintext (fromRawData does not copy).
+        const qsizetype bom = bomLength(innerPlain.constData(), qsizetype(innerPlain.size()));
+        const QByteArray innerJson =
+            QByteArray::fromRawData(innerPlain.constData() + bom, qsizetype(innerPlain.size()) - bom);
+        if (looksLikeWrongKey(innerJson.constData(), innerJson.size())) {
+            continue;
+        }
+        decrypted = true;
+        innerDoc = QJsonDocument::fromJson(innerJson, &parseError);
+        break;
     }
 
     if (!decrypted) {
         return LoadResult::WrongPassword;
     }
-
-    // Skip a UTF-8 BOM without copying the plaintext (fromRawData does not copy).
-    const qsizetype bom = (innerPlain.size() >= 3 && std::memcmp(innerPlain.constData(), "\xEF\xBB\xBF", 3) == 0) ? 3 : 0;
-    const QByteArray innerJson =
-        QByteArray::fromRawData(innerPlain.constData() + bom, qsizetype(innerPlain.size()) - bom);
-    QJsonDocument innerDoc = QJsonDocument::fromJson(innerJson, &parseError);
     if (parseError.error != QJsonParseError::NoError || !innerDoc.isArray()) {
         return LoadResult::WrongFormat;
     }

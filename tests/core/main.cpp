@@ -10,7 +10,6 @@
 #include "TotpHelperTest.h"
 #include "PasswordGeneratorTest.h"
 #include "QrCodeScannerTest.h"
-#include "DatabaseManagerTest.h"
 #include "WebsiteIconManagerTest.h"
 #include "AppSettingsTest.h"
 #include "SecureMemoryTest.h"
@@ -34,7 +33,6 @@ int main(int argc, char *argv[]) {
     testObjects.push_back(std::make_unique<TotpHelperTest>());
     testObjects.push_back(std::make_unique<PasswordGeneratorTest>());
     testObjects.push_back(std::make_unique<QrCodeScannerTest>());
-    testObjects.push_back(std::make_unique<DatabaseManagerTest>());
     testObjects.push_back(std::make_unique<WebsiteIconManagerTest>());
     testObjects.push_back(std::make_unique<AppSettingsTest>());
     testObjects.push_back(std::make_unique<SecureMemoryTest>());

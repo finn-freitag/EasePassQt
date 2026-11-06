@@ -1,6 +1,7 @@
 #include "DatabaseFileTest.h"
 #include "DatabaseFile.h"
 #include "CryptoHelper.h"
+#include "SecureBuffer.h"
 #include <QTest>
 #include <QTemporaryDir>
 #include <QFile>
@@ -342,4 +343,98 @@ void DatabaseFileTest::testCountOccurrences() {
     QCOMPARE(db.countOccurrences("SharedPassword123"), 2);
     QCOMPARE(db.countOccurrences("UniquePassword"), 1);
     QCOMPARE(db.countOccurrences("NonExistent"), 0);
+}
+
+// --- Wrong keys that pass the PKCS7 padding check (T24) --------------------------------
+// AES-CBC with a wrong key yields valid padding about once in 256 tries. The load used to
+// report WrongFormat then (and skip the old associated-data key), which made
+// test_core.testImportPasswordsFromFile flaky. The tests search for such a key, so they are
+// deterministic whatever the random IV is.
+namespace {
+const KdfParams kPaddingKdf{1, 64, 1};
+
+QByteArray buildDb(const SecretString &password, const SecretString &secondFactor, bool oldInnerAd,
+                   const QByteArray &innerJson, QByteArray *innerCipherOut = nullptr) {
+    const QByteArray innerCipher = innerCipherOut && !innerCipherOut->isEmpty()
+                                       ? *innerCipherOut
+                                       : CryptoHelper::encryptAes(innerJson, CryptoHelper::deriveInnerKey(
+                                                                                 password, secondFactor, oldInnerAd, kPaddingKdf));
+    if (innerCipherOut)
+        *innerCipherOut = innerCipher;
+    QJsonObject outer;
+    outer["DatabaseFileType"] = 0;
+    outer["Version"] = 1.4;
+    outer["Settings"] = QJsonObject{{"UseSecondFactor", !secondFactor.isEmpty()}, {"SecondFactorType", 0}};
+    outer["Data"] = QString::fromLatin1(innerCipher.toBase64());
+    const QByteArray outerCipher = CryptoHelper::encryptAes(QJsonDocument(outer).toJson(QJsonDocument::Compact),
+                                                            CryptoHelper::deriveOuterKey(password, kPaddingKdf));
+    return CryptoHelper::addVersionTag(outerCipher);
+}
+
+const QByteArray kItemsJson = R"([{"DisplayName":"A","Password":"pw","Username":"","Email":"","Website":"","Notes":"","Secret":"","Digits":"6","Interval":"30","Algorithm":"SHA1","Tags":[],"Clicks":[]}])";
+} // namespace
+
+void DatabaseFileTest::testWrongPasswordPassingPaddingCheck() {
+    const QByteArray file = buildDb(SecretString("right password"), SecretString(), false, kItemsJson);
+    int version = 0;
+    QByteArray outerCipher;
+    QVERIFY(CryptoHelper::extractVersionTag(file, version, outerCipher));
+    QString wrong;
+    for (int i = 0; i < 20000 && wrong.isEmpty(); ++i) {
+        const QString candidate = QStringLiteral("wrong %1").arg(i);
+        QByteArray plain;
+        if (CryptoHelper::decryptAes(outerCipher, CryptoHelper::deriveOuterKey(SecretString(candidate), kPaddingKdf), plain))
+            wrong = candidate;
+    }
+    QVERIFY2(!wrong.isEmpty(), "no wrong password with valid padding found");
+    DatabaseFile db;
+    QCOMPARE(DatabaseFile::loadFromBytes(file, SecretString(wrong), db, SecretString(), kPaddingKdf),
+             LoadResult::WrongPassword);
+    QCOMPARE(DatabaseFile::loadFromBytes(file, SecretString("right password"), db, SecretString(), kPaddingKdf),
+             LoadResult::Success);
+}
+
+void DatabaseFileTest::testWrongSecondFactorPassingPaddingCheck() {
+    const SecretString password("pw");
+    QByteArray innerCipher;
+    const QByteArray file = buildDb(password, SecretString("123456789012"), false, kItemsJson, &innerCipher);
+    QString wrong;
+    for (int i = 0; i < 20000 && wrong.isEmpty(); ++i) {
+        const QString candidate = QString::number(100000000000LL + i);
+        SecureBuffer plain;
+        const bool newKey = CryptoHelper::decryptAes(
+            innerCipher, CryptoHelper::deriveInnerKey(password, SecretString(candidate), false, kPaddingKdf), plain);
+        const bool oldKey = CryptoHelper::decryptAes(
+            innerCipher, CryptoHelper::deriveInnerKey(password, SecretString(candidate), true, kPaddingKdf), plain);
+        if (newKey || oldKey)
+            wrong = candidate;
+    }
+    QVERIFY2(!wrong.isEmpty(), "no wrong second factor with valid padding found");
+    DatabaseFile db;
+    QCOMPARE(DatabaseFile::loadFromBytes(file, password, db, SecretString(wrong), kPaddingKdf), LoadResult::WrongPassword);
+    QCOMPARE(DatabaseFile::loadFromBytes(file, password, db, SecretString("123456789012"), kPaddingKdf),
+             LoadResult::Success);
+}
+
+void DatabaseFileTest::testOldAssociatedDataWhenNewKeyPassesPadding() {
+    // A file written with the old "Database_Version_1,4" associated data (German C# builds)
+    // whose ciphertext also decrypts with valid padding under the current key.
+    const SecretString password("pw");
+    const SecureBuffer newKey = CryptoHelper::deriveInnerKey(password, SecretString(), false, kPaddingKdf);
+    const SecureBuffer oldKey = CryptoHelper::deriveInnerKey(password, SecretString(), true, kPaddingKdf);
+    QByteArray innerCipher;
+    for (int i = 0; i < 20000; ++i) {
+        const QByteArray candidate = CryptoHelper::encryptAes(kItemsJson, oldKey); // random IV each time
+        SecureBuffer plain;
+        if (CryptoHelper::decryptAes(candidate, newKey, plain)) {
+            innerCipher = candidate;
+            break;
+        }
+    }
+    QVERIFY2(!innerCipher.isEmpty(), "no ciphertext with valid padding under the current key found");
+    const QByteArray file = buildDb(password, SecretString(), true, kItemsJson, &innerCipher);
+    DatabaseFile db;
+    QCOMPARE(DatabaseFile::loadFromBytes(file, password, db, SecretString(), kPaddingKdf), LoadResult::Success);
+    QCOMPARE(db.items.size(), 1);
+    QCOMPARE(db.items.at(0).password, QStringLiteral("pw"));
 }

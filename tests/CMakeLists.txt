@@ -30,7 +30,6 @@ set(TEST_CORE_SOURCES
     core/TotpHelperTest.cpp
     core/PasswordGeneratorTest.cpp
     core/QrCodeScannerTest.cpp
-    core/DatabaseManagerTest.cpp
     core/WebsiteIconManagerTest.cpp
     core/AppSettingsTest.cpp
     core/SecureMemoryTest.cpp
@@ -52,7 +51,6 @@ set(TEST_CORE_HEADERS
     core/TotpHelperTest.h
     core/PasswordGeneratorTest.h
     core/QrCodeScannerTest.h
-    core/DatabaseManagerTest.h
     core/WebsiteIconManagerTest.h
     core/AppSettingsTest.h
     core/SecureMemoryTest.h
@@ -80,9 +78,6 @@ target_link_libraries(test_core PRIVATE
     Qt6::Test
     easepass_warnings
 )
-
-# Compatibility alias for legacy target name
-add_custom_target(test_easepass DEPENDS test_core)
 
 set(TEST_CORE_SLOW_FUNCTIONS
     testDeriveOuterKeyKnownVector
@@ -115,6 +110,9 @@ set(TEST_CORE_UNIT_FUNCTIONS
     testSaveEmptyPathFails
     testItemAddUpdateDeleteBounds
     testCountOccurrences
+    testWrongPasswordPassingPaddingCheck
+    testWrongSecondFactorPassingPaddingCheck
+    testOldAssociatedDataWhenNewKeyPassesPadding
     testJsonRoundtripFull
     testJsonMissingFieldsDefaults
     testJsonUnknownFieldsIgnored
@@ -155,9 +153,6 @@ set(TEST_CORE_UNIT_FUNCTIONS
     testClipboardImageScanning
     testGenerateRoundTrip
     testGenerateEmptyAndScale
-    testKnownDatabasePathsAddRemoveDedupe
-    testLastUsedDatabasePath
-    testSetAndCloseDatabaseSignals
     testUrlNormalization
     testCacheMissAndAsyncLoad
     testMemoryCacheHit
@@ -172,7 +167,6 @@ set(TEST_CORE_UNIT_FUNCTIONS
     testPersistenceAcrossInstances
     testLegacyKeysMigration
     testResetToDefaults
-    testDatabaseManagerUsesAppSettings
     testSecureBufferBasicAllocAndSize
     testSecureBufferZeroOnDestructionWithHook
     testSecureBufferZeroWithCustomAllocator
@@ -483,10 +477,10 @@ add_executable(test_qml
     qml/main.cpp
     qml/QmlTestContext.cpp
     qml/QmlTestContext.h
-    ${CMAKE_SOURCE_DIR}/src/qmlapp/QuickStyle.cpp
+    ${CMAKE_SOURCE_DIR}/src/main/QuickStyle.cpp
     ${EASEPASS_QML_TESTS}
 )
-target_include_directories(test_qml PRIVATE ${CMAKE_SOURCE_DIR}/src/qmlapp)
+target_include_directories(test_qml PRIVATE ${CMAKE_SOURCE_DIR}/src/main)
 target_link_libraries(test_qml PRIVATE Qt6::Test)
 target_compile_definitions(test_qml PRIVATE
     EASEPASS_QML_TEST_DIR="${CMAKE_CURRENT_SOURCE_DIR}/qml"
@@ -557,3 +551,41 @@ if(Python3_FOUND)
 else()
     message(STATUS "Python 3 not found: translation checks are not registered")
 endif()
+
+# --- Application smoke tests (steps.txt T24) --------------------------------------
+# test_smoke: real Main.qml + AppContext, unlocks a copy of the C# fixture (production Argon2).
+add_executable(test_smoke
+    smoke/SmokeTest.cpp
+    ${CMAKE_SOURCE_DIR}/src/main/QuickStyle.cpp
+)
+target_include_directories(test_smoke PRIVATE ${CMAKE_SOURCE_DIR}/src/main)
+target_compile_definitions(test_smoke PRIVATE EASEPASS_TEST_FIXTURES_DIR="${EASEPASS_TEST_FIXTURES_DIR}")
+target_link_libraries(test_smoke PRIVATE
+    easepass_app
+    easepass_qml_module
+    easepass_qml_moduleplugin
+    Qt6::Test
+    Qt6::Quick
+    Qt6::QuickControls2
+    Qt6::Widgets
+    easepass_warnings
+)
+add_test(NAME smoke.unlock_fixture_lists_items COMMAND $<TARGET_FILE:test_smoke>)
+set_tests_properties(smoke.unlock_fixture_lists_items PROPERTIES
+    LABELS "slow;smoke"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    ENVIRONMENT_MODIFICATION "${EASEPASS_QML_TEST_ENV}"
+)
+
+# The real executable: --version and a 5 s offscreen run without QML problems.
+add_test(NAME smoke.launch_app
+    COMMAND ${CMAKE_COMMAND}
+        -DAPP=$<TARGET_FILE:easepass>
+        -DFIXTURE=${EASEPASS_TEST_FIXTURES_DIR}/test.epdb
+        -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/smoke_launch
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/smoke/RunApp.cmake
+)
+set_tests_properties(smoke.launch_app PROPERTIES
+    LABELS "unit;smoke"
+    ENVIRONMENT_MODIFICATION "${EASEPASS_QML_TEST_ENV}"
+)

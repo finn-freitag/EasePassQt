@@ -1,5 +1,4 @@
-// easepass_qml: Qt Quick front end (steps.txt T11, D14). The legacy Widgets app (`easepass`)
-// keeps working until parity is reached in T24.
+// easepass: Qt Quick application (steps.txt T11, D14; the Widgets UI was removed in T24).
 #include <QApplication>
 #include <QIcon>
 #include <QCryptographicHash>
@@ -10,35 +9,19 @@
 #include <QtQml/qqmlextensionplugin.h>
 
 #include "AppContext.h"
-#include "AppController.h"
-#include "ClipboardService.h"
-#include "DailyTipService.h"
 #include "DatabaseController.h"
-#include "DatabaseManagementViewModel.h"
-#include "PrintViewModel.h"
-#include "SettingsViewModel.h"
-#include "AboutViewModel.h"
 #include "ActivityEventFilter.h"
 #include "AutoLogoutService.h"
 #include "BuildInfo.h"
 #include "CommandLine.h"
 #include "FileLogger.h"
-#include "LanguageManager.h"
+#include "MainWindowLoader.h"
 #include "SingleInstance.h"
 #include "WindowStateController.h"
 #include "DialogService.h"
-#include "ItemViewModel.h"
-#include "PasswordActions.h"
-#include "PasswordFilterModel.h"
-#include "WebsiteIconService.h"
-#include "PasswordGeneratorViewModel.h"
-#include "QrImportService.h"
-#include "ScreenScanViewModel.h"
-#include "WebcamScanViewModel.h"
 #ifdef EASEPASS_HAVE_MULTIMEDIA
 #include "QtWebcamScanner.h"
 #endif
-#include "AppSettings.h"
 #include "ICoreDumpControl.h"
 #include "QuickStyle.h"
 
@@ -49,6 +32,28 @@ int main(int argc, char *argv[]) {
     EasePass::Core::PlatformCoreDumpControl coreDumpControl;
     coreDumpControl.disableCoreDumps();
 
+    using namespace EasePass;
+
+    // --- Command line (T19): easepass [--db <path>] [<path>] ----------------------------
+    // Parsed before the QApplication exists, so --help/--version also work without a display
+    // (headless terminal, SSH, packaging checks; T24).
+    QStringList rawArguments;
+    for (int i = 0; i < argc; ++i)
+        rawArguments << QString::fromLocal8Bit(argv[i]);
+    const App::CommandLineOptions options = App::parseCommandLine(rawArguments);
+    if (options.helpRequested) {
+        std::fputs(qPrintable(App::commandLineHelp()), stdout);
+        return 0;
+    }
+    if (options.versionRequested) {
+        std::printf("EasePass %s\n", EASEPASS_VERSION);
+        return 0;
+    }
+    if (!options.error.isEmpty()) {
+        std::fprintf(stderr, "%s\n\n%s", qPrintable(options.error), qPrintable(App::commandLineHelp()));
+        return 1;
+    }
+
     // QApplication (not QGuiApplication) so C++ services can open QPrintDialog (D7).
     QApplication app(argc, argv);
     app.setApplicationName("EasePass");
@@ -57,23 +62,6 @@ int main(int argc, char *argv[]) {
     app.setApplicationVersion(QStringLiteral(EASEPASS_VERSION));
     app.setWindowIcon(QIcon(":/assets/appicon.svg"));
     app.setDesktopFileName(QStringLiteral("easepass"));
-
-    using namespace EasePass;
-
-    // --- Command line (T19): easepass [--db <path>] [<path>] ----------------------------
-    const App::CommandLineOptions options = App::parseCommandLine(app.arguments());
-    if (options.helpRequested) {
-        std::fputs(qPrintable(App::commandLineHelp()), stdout);
-        return 0;
-    }
-    if (options.versionRequested) {
-        std::printf("%s %s\n", qPrintable(app.applicationName()), qPrintable(app.applicationVersion()));
-        return 0;
-    }
-    if (!options.error.isEmpty()) {
-        std::fprintf(stderr, "%s\n\n%s", qPrintable(options.error), qPrintable(App::commandLineHelp()));
-        return 1;
-    }
 
     // --- Single instance (T19): a second launch hands its arguments to the first one -------
     // Keyed by the settings location as well, so a separate profile (XDG_CONFIG_HOME, tests)
@@ -114,39 +102,13 @@ int main(int argc, char *argv[]) {
         qWarning("Database file not found: %s", qPrintable(options.databasePath));
 
     QQmlApplicationEngine engine;
-    context.languageManager()->setEngine(&engine); // live language switching (T20)
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &app,
                      [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);
-    engine.addImageProvider(EasePass::App::WebsiteIconService::ProviderId, context.websiteIcons()->createImageProvider());
-    engine.addImageProvider(EasePass::App::WebcamScanViewModel::ProviderId, context.webcamScan()->createImageProvider());
-    engine.setInitialProperties({
-        {QStringLiteral("appController"), QVariant::fromValue<QObject *>(context.appController())},
-        {QStringLiteral("databaseController"), QVariant::fromValue<QObject *>(context.databaseController())},
-        {QStringLiteral("dailyTip"), QVariant::fromValue<QObject *>(context.dailyTipService())},
-        {QStringLiteral("dialogService"), QVariant::fromValue<QObject *>(context.dialogService())},
-        {QStringLiteral("clipboard"), QVariant::fromValue<QObject *>(context.clipboardService())},
-        {QStringLiteral("passwordList"), QVariant::fromValue<QObject *>(context.passwordFilterModel())},
-        {QStringLiteral("itemViewModel"), QVariant::fromValue<QObject *>(context.itemViewModel())},
-        {QStringLiteral("passwordActions"), QVariant::fromValue<QObject *>(context.passwordActions())},
-        {QStringLiteral("websiteIcons"), QVariant::fromValue<QObject *>(context.websiteIcons())},
-        {QStringLiteral("settings"), QVariant::fromValue<QObject *>(context.settings())},
-        {QStringLiteral("editor"), QVariant::fromValue<QObject *>(context.editorViewModel())},
-        {QStringLiteral("generator"), QVariant::fromValue<QObject *>(context.passwordGenerator())},
-        {QStringLiteral("qrImport"), QVariant::fromValue<QObject *>(context.qrImport())},
-        {QStringLiteral("screenScan"), QVariant::fromValue<QObject *>(context.screenScanViewModel())},
-        {QStringLiteral("webcamScan"), QVariant::fromValue<QObject *>(context.webcamScan())},
-        {QStringLiteral("databaseManagement"), QVariant::fromValue<QObject *>(context.databaseManagement())},
-        {QStringLiteral("printer"), QVariant::fromValue<QObject *>(context.printViewModel())},
-        {QStringLiteral("settingsViewModel"), QVariant::fromValue<QObject *>(context.settingsViewModel())},
-        {QStringLiteral("about"), QVariant::fromValue<QObject *>(context.about())},
-        {QStringLiteral("autoLogout"), QVariant::fromValue<QObject *>(context.autoLogout())},
-    });
-    engine.loadFromModule("EasePass", "Main");
+    QQuickWindow *window = App::loadMainWindow(engine, context);
     if (engine.rootObjects().isEmpty())
         return 1;
 
     // --- Window geometry/state (T19; C#: WindowStateManager). Main.qml starts hidden. -------
-    auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().constFirst());
     App::WindowStateController windowState(context.settings());
     if (window) {
         windowState.attach(window);

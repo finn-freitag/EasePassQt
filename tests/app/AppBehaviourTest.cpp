@@ -363,6 +363,7 @@ void AppBehaviourTest::testCommandLine() {
     QVERIFY(parseCommandLine({"easepass", "--help"}).helpRequested);
     QVERIFY(parseCommandLine({"easepass", "--version"}).versionRequested);
     QVERIFY(commandLineHelp().contains("--db"));
+    QVERIFY2(commandLineHelp().startsWith("Usage: easepass [options] [database]"), qPrintable(commandLineHelp()));
 }
 
 void AppBehaviourTest::testStartupDatabase() {

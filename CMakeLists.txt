@@ -85,7 +85,6 @@ set(CORE_SOURCES
     src/core/CryptoHelper.cpp
     src/core/PasswordItem.cpp
     src/core/DatabaseFile.cpp
-    src/core/DatabaseManager.cpp
     src/core/TotpHelper.cpp
     src/core/PasswordGenerator.cpp
     src/core/WebsiteIconManager.cpp
@@ -126,7 +125,6 @@ set(CORE_HEADERS
     src/core/CryptoHelper.h
     src/core/PasswordItem.h
     src/core/DatabaseFile.h
-    src/core/DatabaseManager.h
     src/core/TotpHelper.h
     src/core/PasswordGenerator.h
     src/core/WebsiteIconManager.h
@@ -197,7 +195,7 @@ if(EASEPASS_HAVE_PORTAL)
     target_compile_definitions(easepass_core PUBLIC EASEPASS_HAVE_PORTAL)
 endif()
 
-# --- App services (QML-facing later; Widgets dialogs for now) -----------------
+# --- App services (view models and services exposed to QML; T12) -------------
 add_library(easepass_app STATIC
     src/app/PrintService.cpp
     src/app/PrintService.h
@@ -253,6 +251,8 @@ add_library(easepass_app STATIC
     src/app/CommandLine.h
     src/app/LanguageManager.cpp
     src/app/LanguageManager.h
+    src/app/MainWindowLoader.cpp
+    src/app/MainWindowLoader.h
 )
 # Changelog for the About page (C#: Assets/changelog.txt; T18)
 qt_add_resources(easepass_app "changelog"
@@ -291,80 +291,21 @@ if(EASEPASS_WITH_MULTIMEDIA)
     target_compile_definitions(easepass_multimedia PUBLIC EASEPASS_HAVE_MULTIMEDIA)
 endif()
 
-# --- Widgets application (legacy UI, replaced by the QML app in T24) ----------
-set(UI_SOURCES
-    src/ui/MainWindow.cpp
-    src/ui/LoginWidget.cpp
-    src/ui/PasswordsWidget.cpp
-    src/ui/PasswordViewerWidget.cpp
-    src/ui/EditItemDialog.cpp
-    src/ui/Manage2FADialog.cpp
-    src/ui/PasswordGeneratorDialog.cpp
-    src/ui/CreateDatabaseDialog.cpp
-    src/ui/AboutDialog.cpp
-    src/ui/ScreenCaptureDialog.cpp
-)
-
-set(UI_HEADERS
-    src/ui/MainWindow.h
-    src/ui/LoginWidget.h
-    src/ui/PasswordsWidget.h
-    src/ui/PasswordViewerWidget.h
-    src/ui/EditItemDialog.h
-    src/ui/Manage2FADialog.h
-    src/ui/PasswordGeneratorDialog.h
-    src/ui/CreateDatabaseDialog.h
-    src/ui/AboutDialog.h
-    src/ui/ScreenCaptureDialog.h
-)
-
-set(RESOURCES
-    resources.qrc
-)
-
-add_executable(easepass
-    src/main.cpp
-    ${UI_SOURCES}
-    ${UI_HEADERS}
-    ${RESOURCES}
-)
-
-if(WIN32)
-    set_target_properties(easepass PROPERTIES WIN32_EXECUTABLE ON)
-endif()
-
-target_include_directories(easepass PRIVATE
-    src
-    src/ui
-)
-
-target_link_libraries(easepass PRIVATE
-    easepass_core
-    easepass_app
-    Qt6::Widgets
-    Qt6::Svg
-    easepass_warnings
-)
-if(EASEPASS_WITH_MULTIMEDIA)
-    target_sources(easepass PRIVATE src/ui/WebcamScanDialog.cpp src/ui/WebcamScanDialog.h)
-    target_link_libraries(easepass PRIVATE easepass_multimedia)
-endif()
-
-# --- QML application (T11, D14: second target; becomes `easepass` in T24) ------
+# --- Application (Qt Quick; T11, the Widgets UI was removed in T24) ------------
 qt_policy(SET QTP0001 NEW)   # QML modules under qrc:/qt/qml/
 add_subdirectory(qml/EasePass)
 
-add_executable(easepass_qml
-    src/qmlapp/main.cpp
-    src/qmlapp/QuickStyle.cpp
-    src/qmlapp/QuickStyle.h
-    ${RESOURCES}
+add_executable(easepass
+    src/main/main.cpp
+    src/main/QuickStyle.cpp
+    src/main/QuickStyle.h
+    resources.qrc
 )
-target_include_directories(easepass_qml PRIVATE src/qmlapp)
+target_include_directories(easepass PRIVATE src/main)
 if(WIN32)
-    set_target_properties(easepass_qml PROPERTIES WIN32_EXECUTABLE ON)
+    set_target_properties(easepass PROPERTIES WIN32_EXECUTABLE ON)
 endif()
-target_link_libraries(easepass_qml PRIVATE
+target_link_libraries(easepass PRIVATE
     easepass_core
     easepass_app
     easepass_qml_module
@@ -372,10 +313,11 @@ target_link_libraries(easepass_qml PRIVATE
     Qt6::Widgets
     Qt6::Quick
     Qt6::QuickControls2
+    Qt6::Svg
     easepass_warnings
 )
 if(EASEPASS_WITH_MULTIMEDIA)
-    target_link_libraries(easepass_qml PRIVATE easepass_multimedia)
+    target_link_libraries(easepass PRIVATE easepass_multimedia)
 endif()
 
 # --- Translations (T20) --------------------------------------------------------
@@ -390,7 +332,7 @@ set(EASEPASS_TS_FILES
 # English needs only the plural forms ("%n password(s)").
 set(EASEPASS_PLURALS_TS ${CMAKE_CURRENT_SOURCE_DIR}/i18n/easepass_en.ts)
 qt_add_lupdate(
-    SOURCE_TARGETS easepass_core easepass_app easepass_qml_module easepass_qml
+    SOURCE_TARGETS easepass_core easepass_app easepass_qml_module easepass
     TS_FILES ${EASEPASS_TS_FILES}
     PLURALS_TS_FILE ${EASEPASS_PLURALS_TS}
     OPTIONS -no-obsolete -locations relative
@@ -413,7 +355,7 @@ endif()
 
 # Installation targets
 include(GNUInstallDirs)
-install(TARGETS easepass easepass_qml RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS easepass RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 if(UNIX AND NOT APPLE)
     install(FILES easepass.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
     install(FILES dist/linux/easepass.metainfo.xml DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo)

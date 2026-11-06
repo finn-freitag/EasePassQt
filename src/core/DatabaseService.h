@@ -19,8 +19,8 @@
 namespace EasePass::Core {
 
 /**
- * @brief Owns the currently opened database (replaces the DatabaseManager singleton's
- *        current-database part; known paths stay in AppSettings/DatabaseManager).
+ * @brief Owns the currently opened database (replaces the former DatabaseManager singleton's
+ *        current-database part; known paths live in AppSettings).
  *
  * C#: Core/Database/DatabaseItem.cs (Load/Unlock, SaveAsync, ForceSaveAsync, Dispose).
  *

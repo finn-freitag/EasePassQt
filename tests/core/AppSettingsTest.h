@@ -7,7 +7,6 @@ class AppSettingsTest : public QObject {
 
 private slots:
     void initTestCase();
-    void cleanup();
 
     void testDefaults();
     void testSetGetAndSignals();
@@ -17,5 +16,4 @@ private slots:
     void testPersistenceAcrossInstances();
     void testLegacyKeysMigration();
     void testResetToDefaults();
-    void testDatabaseManagerUsesAppSettings();
 };

@@ -3,7 +3,7 @@
 </p>
 <h1 align="center">Ease Pass (Qt 6 Edition for Linux)</h1>
 
-A native C++ / Qt 6 rewrite of [**Ease Pass**](https://github.com/FrozenAssassine/EasePass/) for Linux (NixOS, KDE Plasma 6, GNOME, etc.), maintaining **100% byte-level file format compatibility** with the latest `.epdb` format from the original C# Windows version.
+A native C++ / Qt 6 (Qt Quick) rewrite of [**Ease Pass**](https://github.com/FrozenAssassine/EasePass/) for Linux (NixOS, KDE Plasma 6, GNOME, etc.), maintaining **100% byte-level file format compatibility** with the latest `.epdb` format from the original C# Windows version. The user interface follows the original app's pages: login/register, passwords, database management, settings and about.
 
 ---
 
@@ -24,16 +24,19 @@ A native C++ / Qt 6 rewrite of [**Ease Pass**](https://github.com/FrozenAssassin
   - **QR Code Scanning**:
     - Scan QR code from an image file.
     - Scan QR code from system clipboard (image or `otpauth://` URI).
-    - Interactive screen capture to scan QR codes directly from any window on screen.
+    - Screen capture to scan QR codes directly from the screen (xdg-desktop-portal on Wayland).
+    - Webcam scanning (with Qt Multimedia).
 - **Password Generator**:
   - Cryptographically secure generator with configurable length (4 to 64 chars).
   - Custom rules for uppercase, lowercase, numbers, and special symbols.
-- **Website Icons**:
-  - Automatically fetches domain favicons asynchronously with local caching in `~/.cache/EasePass/icons`.
+- **Website Icons** (opt-in, off by default):
+  - Fetches domain favicons asynchronously with local caching in `~/.cache/EasePass/icons`.
   - Fallback to Google Favicon service and color-hashed initials avatars.
+- **Security**: clipboard cleared automatically and on lock, auto-logout after inactivity, owner-only files, no secrets in logs. See [docs/SECURITY.md](docs/SECURITY.md).
 - **Desktop Integration**:
-  - Fully native Qt 6 application adhering to KDE Plasma 6 themes, light/dark palettes, and system shortcuts (Ctrl+N, Ctrl+F, Ctrl+E, Ctrl+L, F1).
-  - Includes `.desktop` entry and scalable icons for application menu integration.
+  - Qt Quick application following the system light/dark scheme, with keyboard shortcuts (Ctrl+F search, Ctrl+N new entry, Ctrl+E/F2 edit).
+  - English, German and Portuguese (Brazil), switchable at runtime.
+  - Includes `.desktop` entry, AppStream metadata, `.epdb` MIME type and scalable icons; a single instance receives files opened from the file manager.
 
 ---
 
@@ -106,7 +109,7 @@ nix profile install github:finn-freitag/EasePassQt
 
 ### Using `nix-shell` (Recommended for Local Development)
 
-A `shell.nix` is included with all required dependencies (`qt6`, `openssl`, `libargon2`, `zxing-cpp`, `cmake`, `gcc`, `pkg-config`).
+A `shell.nix` (and the flake's dev shell, `nix develop`) is included with all required dependencies (`qt6`, `openssl`, `libargon2`, `zxing-cpp`, `cmake`, `gcc`, `pkg-config`).
 
 1. Enter the nix shell and build:
    ```bash
@@ -126,11 +129,11 @@ A `shell.nix` is included with all required dependencies (`qt6`, `openssl`, `lib
 ### Building on Other Linux Distributions
 
 Ensure you have the following installed:
-- Qt 6 (Core, Gui, Widgets, Network, Svg, Test)
+- Qt >= 6.11 (Core, Gui, Widgets, Network, Svg, PrintSupport, Qml, Quick, QuickControls2, DBus on Linux, LinguistTools, Test; Multimedia optional for webcam scanning)
 - OpenSSL (libcrypto)
 - `libargon2`
 - `zxing-cpp` (>= 2.0)
-- CMake (>= 3.16) and a C++20 compiler
+- CMake (>= 3.21) and a C++20 compiler
 
 Then build and install:
 ```bash
@@ -139,3 +142,5 @@ cmake ..
 make -j$(nproc)
 sudo make install
 ```
+
+More details (targets, tests, translations, platform notes): [docs/BUILD.md](docs/BUILD.md).
