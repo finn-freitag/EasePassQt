@@ -2,6 +2,7 @@
 
 #include <QPainter>
 #include <cmath>
+#include <algorithm>
 
 namespace EasePass::Core::ScreenGeometry {
 

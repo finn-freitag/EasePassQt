@@ -4,6 +4,7 @@
 #include "PasswordStrength.h"
 #include <QTest>
 #include <QSet>
+#include <algorithm>
 
 using namespace EasePass::Core;
 

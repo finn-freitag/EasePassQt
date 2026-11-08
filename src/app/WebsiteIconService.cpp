@@ -5,6 +5,7 @@
 
 #include <QPointer>
 #include <QUrl>
+#include <algorithm>
 
 namespace EasePass::App {
 

@@ -1,6 +1,7 @@
 #include "InactivityManager.h"
 
 #include "AppSettings.h"
+#include <algorithm>
 
 namespace EasePass::Core {
 

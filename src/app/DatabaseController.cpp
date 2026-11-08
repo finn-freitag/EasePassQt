@@ -7,6 +7,7 @@
 #include <QFileInfo>
 #include <QStandardPaths>
 #include <QUrl>
+#include <algorithm>
 
 namespace EasePass::App {
 

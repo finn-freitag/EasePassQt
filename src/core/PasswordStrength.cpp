@@ -1,4 +1,5 @@
 #include "PasswordStrength.h"
+#include <algorithm>
 
 namespace EasePass::Core {
 

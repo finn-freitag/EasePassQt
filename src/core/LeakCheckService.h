@@ -10,6 +10,7 @@
 #include "IClock.h"
 #include "INetworkClient.h"
 #include "SecretString.h"
+#include <algorithm>
 
 namespace EasePass::Core {
 

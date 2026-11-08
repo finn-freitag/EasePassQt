@@ -5,6 +5,7 @@
 
 #include <QVariantMap>
 #include <algorithm>
+#include <iterator>
 
 namespace EasePass::App {
 

@@ -30,6 +30,7 @@
 #include <QPainter>
 #include "TotpHelper.h"
 #include "TotpTimerService.h"
+#include <algorithm>
 
 using namespace EasePass::Core;
 using namespace EasePass::App;

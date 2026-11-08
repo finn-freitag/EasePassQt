@@ -10,6 +10,9 @@
 #include <sys/mman.h>
 #define EASEPASS_HAS_MLOCK 1
 #elif defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX // windows.h must not define min/max macros (they break std::max)
+#endif
 #include <windows.h>
 #define EASEPASS_HAS_VIRTUALLOCK 1
 #endif

@@ -3,6 +3,7 @@
 #include "AppSettings.h"
 
 #include <QCryptographicHash>
+#include <algorithm>
 
 namespace EasePass::Core {
 

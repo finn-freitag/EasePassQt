@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QString>
 #include <functional>
+#include <algorithm>
 
 namespace EasePass::Core {
 

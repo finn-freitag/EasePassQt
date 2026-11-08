@@ -23,6 +23,7 @@
 #include <QJsonObject>
 #include <QTemporaryDir>
 #include <QTest>
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <map>

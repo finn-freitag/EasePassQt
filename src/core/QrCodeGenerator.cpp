@@ -24,6 +24,7 @@
 
 #include <exception>
 #include <vector>
+#include <algorithm>
 
 namespace EasePass::Core {
 

@@ -66,6 +66,11 @@ else()
     target_link_libraries(easepass_zxing INTERFACE PkgConfig::ZXING)
 endif()
 
+# --- Windows: no min/max macros from <windows.h> (they break std::min/std::max) ---
+if(WIN32)
+    add_compile_definitions(NOMINMAX)
+endif()
+
 # --- Compiler warnings -------------------------------------------------------
 add_library(easepass_warnings INTERFACE)
 if(MSVC)

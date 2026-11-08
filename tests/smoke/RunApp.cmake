@@ -4,7 +4,8 @@
 #    QT_QPA_PLATFORM, DISPLAY or WAYLAND_DISPLAY: it must not need the GUI).
 # 2. `easepass --db <copy of the fixture>` starts and keeps running (killed after 5 s); its output
 #    must not contain QML errors/warnings or a crash. A private XDG profile keeps the real user
-#    settings, logs and single-instance lock out of it.
+#    settings, logs and single-instance lock out of it. Only on Linux/BSD: on Windows and macOS
+#    QStandardPaths ignores the XDG variables, so the run would use the real user profile.
 foreach(var APP FIXTURE WORK_DIR)
     if(NOT DEFINED ${var})
         message(FATAL_ERROR "${var} not set")
@@ -18,6 +19,11 @@ execute_process(COMMAND "${APP}" --version
     OUTPUT_VARIABLE version_out ERROR_VARIABLE version_err RESULT_VARIABLE version_rc)
 if(NOT version_rc EQUAL 0 OR NOT version_out MATCHES "^EasePass [0-9]+\\.[0-9]+\\.[0-9]+")
     message(FATAL_ERROR "--version failed (${version_rc}): ${version_out}${version_err}")
+endif()
+
+if(CMAKE_HOST_WIN32 OR CMAKE_HOST_APPLE)
+    message(STATUS "--version ok; offscreen run skipped (no private profile possible on this OS)")
+    return()
 endif()
 
 file(REMOVE_RECURSE "${WORK_DIR}")

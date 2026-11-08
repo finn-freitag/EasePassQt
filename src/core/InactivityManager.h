@@ -5,6 +5,7 @@
 #include <QTimer>
 
 #include "IClock.h"
+#include <algorithm>
 
 namespace EasePass::Core {
 
