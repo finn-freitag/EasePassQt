@@ -61,12 +61,18 @@ From a "x64 Native Tools" developer prompt:
 ```powershell
 $env:VCPKG_ROOT = "C:\path\to\vcpkg"
 $env:CMAKE_PREFIX_PATH = "C:\Qt\6.11.2\msvc2022_64"
-cmake --preset windows-msvc         # vcpkg installs openssl, argon2, zxing-cpp (vcpkg.json)
+cmake --preset windows-msvc         # vcpkg installs openssl, argon2, nu-book-zxing-cpp (vcpkg.json)
 cmake --build --preset windows-msvc
 ctest --preset windows-msvc
 ```
 
 Qt's `bin` directory must be on `PATH` to run the tests/app (or use `windeployqt`).
+
+- The vcpkg port of zxing-cpp is `nu-book-zxing-cpp`; it builds only the old writer backend
+  (`ZXING_WRITERS=OLD`, no zint). `QrCodeGenerator` therefore picks the writer by
+  `ZXING_USE_ZINT` (from `<ZXing/Version.h>`), not by the major version. Nix builds both.
+- CI installs Qt with `jurplel/install-qt-action`, using an aqtinstall commit that knows the
+  per-compiler repository layout of Qt >= 6.11 (aqtinstall 3.3.0 does not; see `ci.yml`).
 
 ## Tests
 

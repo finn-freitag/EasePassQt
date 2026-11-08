@@ -6,6 +6,6 @@
   "dependencies": [
     "openssl",
     "argon2",
-    "zxing-cpp"
+    "nu-book-zxing-cpp"
   ]
 }

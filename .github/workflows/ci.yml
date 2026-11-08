@@ -71,6 +71,9 @@ jobs:
       - name: Configure
         shell: pwsh
         run: |
+          # The presets use Ninja; the VS developer shell usually provides it.
+          if (-not (Get-Command ninja -ErrorAction SilentlyContinue)) { choco install ninja -y --no-progress }
+          ninja --version
           $env:VCPKG_ROOT = $env:VCPKG_INSTALLATION_ROOT
           cmake --preset windows-msvc
 
