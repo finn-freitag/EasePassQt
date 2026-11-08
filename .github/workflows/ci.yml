@@ -52,11 +52,18 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          # Must stay >= EASEPASS_QT_MIN_VERSION (CMakeLists.txt)
-          version: "6.11.*"
+          # Must stay >= EASEPASS_QT_MIN_VERSION (CMakeLists.txt). Pinned to the version the
+          # Nix build uses (nixos-unstable, flake.lock) so both platforms test the same Qt.
+          version: "6.11.2"
           arch: win64_msvc2022_64
           modules: qtmultimedia  # qtdeclarative (Qt Quick) ships with the base install
           cache: true
+          # Qt >= 6.11 moved the Windows packages into one repository folder per compiler
+          # (qt6_6112/qt6_6112_msvc2022_64/). aqtinstall 3.3.0, the latest release, does not
+          # know that layout ("Failed to locate XML data for Qt version"); the fix
+          # (miurahr/aqtinstall#1000) is merged but unreleased. Pinned to a reviewed master
+          # commit; switch back to `aqtversion: "==3.4.*"` once 3.4.0 is on PyPI.
+          aqtsource: "git+https://github.com/miurahr/aqtinstall.git@5a49f2b391ae8ee1d3c0dd87f8b33c1d49a4deb7"
 
       - name: MSVC developer environment
         uses: ilammy/msvc-dev-cmd@v1
