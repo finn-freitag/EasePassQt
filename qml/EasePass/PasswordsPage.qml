@@ -88,17 +88,21 @@ FocusScope {
     Accessible.name: qsTr("Passwords")
     Component.onCompleted: searchBox.forceActiveFocus()
 
+    // Reactions to model changes run deferred (Qt.callLater, coalesced): the row signals arrive
+    // in the middle of a proxy update, before the ListView has processed them. Changing the
+    // selection/currentIndex there made list rows show other items (bug 2026-11-10).
+    function selectSingleHit() {
+        // C#: a search with exactly one hit selects it.
+        if (listModel.filterText.length > 0 && listModel.count === 1)
+            selectRow(0)
+    }
     Connections {
         target: root.listModel
-        function onModelReset() { root.syncCurrentRow() }
-        function onLayoutChanged() { root.syncCurrentRow() }
-        function onRowsInserted() { root.syncCurrentRow() }
-        function onRowsRemoved() { root.syncCurrentRow() }
-        function onCountChanged() {
-            // C#: a search with exactly one hit selects it.
-            if (root.listModel.filterText.length > 0 && root.listModel.count === 1)
-                root.selectRow(0)
-        }
+        function onModelReset() { Qt.callLater(root.syncCurrentRow) }
+        function onLayoutChanged() { Qt.callLater(root.syncCurrentRow) }
+        function onRowsInserted() { Qt.callLater(root.syncCurrentRow) }
+        function onRowsRemoved() { Qt.callLater(root.syncCurrentRow) }
+        function onCountChanged() { Qt.callLater(root.selectSingleHit) }
     }
     Connections {
         target: root.item

@@ -39,6 +39,7 @@ private slots:
 class PasswordModelsTest : public QObject {
     Q_OBJECT
 private slots:
+    void testFilterSignalsKeepViewsInSync();
     void testListModelRolesAndNoSecrets();
     void testListModelResetsOnChanges();
     void testFilterFreeTextAndTags();

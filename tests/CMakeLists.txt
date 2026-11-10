@@ -384,6 +384,7 @@ set(TEST_APP_UNIT_FUNCTIONS
     testListModelRolesAndNoSecrets
     testListModelResetsOnChanges
     testFilterFreeTextAndTags
+    testFilterSignalsKeepViewsInSync
     testTagSuggestions
     testSortModesAndOrder
     testSourceIndexMapping

@@ -137,6 +137,16 @@ bool QmlTestContext::openItems(const QList<PasswordItem> &items) {
 
 bool QmlTestContext::openSample() { return openItems(sampleItems()); }
 bool QmlTestContext::openEmpty() { return openItems({}); }
+bool QmlTestContext::openNames(const QStringList &names) {
+    QList<PasswordItem> items;
+    for (const QString &n : names) {
+        PasswordItem item;
+        item.displayName = n;
+        item.password = QStringLiteral("pw-") + n;
+        items << item;
+    }
+    return openItems(items);
+}
 
 void QmlTestContext::setReadOnly(bool readOnly) {
     if (m_source)

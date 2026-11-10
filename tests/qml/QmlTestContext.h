@@ -70,6 +70,8 @@ public:
     /// Closes any open database and opens the sample items (waits for the unlock).
     Q_INVOKABLE bool openSample();
     Q_INVOKABLE bool openEmpty();
+    /// Opens a database with one plain item per name (database order = list order).
+    Q_INVOKABLE bool openNames(const QStringList &names);
     Q_INVOKABLE void setReadOnly(bool readOnly);
     Q_INVOKABLE void advanceClock(int seconds);
     Q_INVOKABLE qint64 now() const { return m_clock.now; }

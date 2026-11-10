@@ -91,7 +91,44 @@ Item {
             search.text = "nothing here"
             compare(list().count, 0)
             verify(!findChild(page, "emptyState").visible)         // no OOBE while searching
-            verify(!findChild(page, "details").visible)            // selection was filtered out
+            tryVerify(() => !findChild(page, "details").visible)   // selection was filtered out (deferred)
+        }
+
+        // Regression (2026-11-10): typing "lemon" showed "Vercel/v0" (later "Reddit") in the
+        // list while the details showed the right item. The page reacted to the model's row
+        // signals (single hit -> select, currentIndex) before the ListView had processed them.
+        function test_searchKeepsRowsAndDelegatesInSync() {
+            const all = ["Amazon", "Apple", "Bank", "Cloudflare", "Discord", "eBay", "GitHub", "Google",
+                         "Hetzner", "Lemon Squeezy", "LinkedIn", "Mail", "Netflix", "Nextcloud", "Paypal",
+                         "Reddit", "Slack", "Spotify", "Steam", "Telegram", "Vercel/v0", "Wikipedia", "Zoom"]
+            verify(testContext.openNames(all))
+            waitForRendering(page)
+            const search = findChild(page, "searchBox")
+            const model = testContext.listModel
+            function check(step) {
+                waitForRendering(page)
+                const l = list()
+                compare(l.count, model.count, step + ": count")
+                for (let r = 0; r < l.count; ++r) {
+                    l.positionViewAtIndex(r, ListView.Contain)
+                    const expected = testContext.nameOf(model.sourceIndex(r))
+                    compare(l.itemAtIndex(r).displayName, expected, step + ": row " + r)
+                }
+                if (l.currentIndex >= 0)
+                    compare(l.currentItem.displayName, findChild(page, "detailTitle").text, step + ": current row")
+            }
+            for (let round = 0; round < 2; ++round) {
+                search.forceActiveFocus()
+                for (const ch of "lemon") {
+                    keyClick(ch)
+                    check("typed " + search.text)
+                }
+                compare(findChild(page, "detailTitle").text, "Lemon Squeezy")
+                while (search.text.length > 0) {
+                    keyClick(Qt.Key_Backspace)
+                    check("erased to '" + search.text + "'")
+                }
+            }
         }
 
         function test_searchDownMovesIntoList() {
@@ -144,7 +181,7 @@ Item {
         function test_selectionSurvivesResort() {
             clickRow("Banking")
             findChild(page, "sortMenu").itemAt(0).triggered()   // Name: Banking moves to row 1
-            compare(list().currentIndex, 1)
+            tryCompare(list(), "currentIndex", 1)               // re-synced after the layout change
             compare(page.selectedSource, 0)
             compare(findChild(page, "detailTitle").text, "Banking")
         }

@@ -210,3 +210,59 @@ void PasswordModelsTest::testInPlaceEditKeepsRows() {
     QCOMPARE(reset.count(), 1);
     svc.shutdown();
 }
+
+// Regression (2026-11-10): typing a search one character at a time showed the wrong names in
+// the list while the selection/details were right. A view only sees the change signals, so
+// a shadow list driven by them must always equal the proxy's real rows.
+void PasswordModelsTest::testFilterSignalsKeepViewsInSync() {
+    QList<PasswordItem> items;
+    for (const char *n : {"Amazon", "Apple", "Bank", "Cloudflare", "Discord", "eBay", "GitHub", "Google",
+                          "Hetzner", "Lemon Squeezy", "LinkedIn", "Mail", "Netflix", "Nextcloud", "Paypal",
+                          "Reddit", "Slack", "Spotify", "Steam", "Telegram", "Vercel/v0", "Wikipedia", "Zoom"})
+        items << makeItem(QString::fromLatin1(n));
+    DatabaseService svc(kFastKdf);
+    PasswordListModel list(&svc);
+    PasswordFilterModel filter(&list);
+    QAbstractItemModelTester tester(&filter, QAbstractItemModelTester::FailureReportingMode::QtTest);
+    QVERIFY(openItems(svc, items));
+
+    QStringList shadow;
+    auto rebuild = [&] { shadow = names(filter); };
+    auto nameAt = [&](int row) { return filter.index(row, 0).data(PasswordListModel::DisplayNameRole).toString(); };
+    rebuild();
+    connect(&filter, &QAbstractItemModel::modelReset, this, rebuild);
+    connect(&filter, &QAbstractItemModel::layoutChanged, this, rebuild);
+    connect(&filter, &QAbstractItemModel::rowsRemoved, this,
+            [&](const QModelIndex &, int first, int last) { shadow.remove(first, last - first + 1); });
+    connect(&filter, &QAbstractItemModel::rowsInserted, this, [&](const QModelIndex &, int first, int last) {
+        for (int r = first; r <= last; ++r)
+            shadow.insert(r, nameAt(r));
+    });
+    connect(&filter, &QAbstractItemModel::rowsMoved, this, rebuild);
+    connect(&filter, &QAbstractItemModel::dataChanged, this, [&](const QModelIndex &tl, const QModelIndex &br) {
+        for (int r = tl.row(); r <= br.row(); ++r)
+            shadow[r] = nameAt(r);
+    });
+
+    auto typeAndCheck = [&](const QString &word) {
+        for (int i = 1; i <= word.size(); ++i) {
+            filter.setFilterText(word.left(i));
+            QCOMPARE(shadow, names(filter));
+        }
+        for (int i = word.size() - 1; i >= 0; --i) {
+            filter.setFilterText(word.left(i));
+            QCOMPARE(shadow, names(filter));
+        }
+    };
+    typeAndCheck(QStringLiteral("lemon"));
+    filter.setFilterText(QStringLiteral("lemon"));
+    QCOMPARE(names(filter), QStringList{"Lemon Squeezy"});
+    QCOMPARE(shadow, QStringList{"Lemon Squeezy"});
+    filter.setFilterText(QString());
+    typeAndCheck(QStringLiteral("lemon"));
+    typeAndCheck(QStringLiteral("re"));
+    // Same with a sort order active.
+    filter.setSortMode(PasswordFilterModel::SortMode::Name);
+    QCOMPARE(shadow, names(filter));
+    typeAndCheck(QStringLiteral("lemon"));
+}

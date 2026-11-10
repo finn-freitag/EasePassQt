@@ -10,14 +10,29 @@ PasswordFilterModel::PasswordFilterModel(PasswordListModel *source, const Core::
     : QSortFilterProxyModel(parent), m_list(source), m_clock(clock) {
     setSourceModel(source);
     setDynamicSortFilter(true);
-    connect(this, &QAbstractItemModel::modelReset, this, &PasswordFilterModel::countChanged);
-    connect(this, &QAbstractItemModel::layoutChanged, this, &PasswordFilterModel::countChanged);
-    connect(this, &QAbstractItemModel::rowsInserted, this, &PasswordFilterModel::countChanged);
-    connect(this, &QAbstractItemModel::rowsRemoved, this, &PasswordFilterModel::countChanged);
+    // countChanged after row changes is queued: these signals are emitted in the middle of a
+    // proxy update (one filter change can emit several rowsRemoved/rowsInserted), and views
+    // connected later than this model have not processed them yet. QML reacting to count
+    // synchronously (single search hit -> select it, ListView.currentIndex) then left list
+    // delegates showing other items (bug 2026-11-10).
+    connect(this, &QAbstractItemModel::modelReset, this, &PasswordFilterModel::scheduleCountChanged);
+    connect(this, &QAbstractItemModel::layoutChanged, this, &PasswordFilterModel::scheduleCountChanged);
+    connect(this, &QAbstractItemModel::rowsInserted, this, &PasswordFilterModel::scheduleCountChanged);
+    connect(this, &QAbstractItemModel::rowsRemoved, this, &PasswordFilterModel::scheduleCountChanged);
     // New items -> refresh the tag list used for "/tag" suggestions.
     connect(source, &QAbstractItemModel::modelReset, this, [this] {
         m_search.updateTagList(m_list->service()->isOpen() ? m_list->service()->items() : QList<Core::PasswordItem>());
     });
+}
+
+void PasswordFilterModel::scheduleCountChanged() {
+    if (m_countChangePending)
+        return;
+    m_countChangePending = true;
+    QMetaObject::invokeMethod(this, [this] {
+        m_countChangePending = false;
+        emit countChanged();
+    }, Qt::QueuedConnection);
 }
 
 void PasswordFilterModel::setFilterText(const QString &text) { applyFilterText(text, true); }

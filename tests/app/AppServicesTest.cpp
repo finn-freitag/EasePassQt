@@ -479,5 +479,5 @@ void AppServicesTest::testAppContextQmlRegistration() {
     QVERIFY(cancelled);
     QVERIFY(!ctx.itemViewModel()->hasItem());
     QCOMPARE(obj->property("page").toInt(), int(AppController::Page::Login));
-    QCOMPARE(obj->property("count").toInt(), 0);
+    QTRY_COMPARE(obj->property("count").toInt(), 0); // countChanged after a reset is queued
 }

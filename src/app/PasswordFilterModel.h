@@ -76,6 +76,7 @@ private:
     void applyFilterText(const QString &text, bool isUserChange);
     void applySort();
     void setSuggestions(const QStringList &s);
+    void scheduleCountChanged();
 
     PasswordListModel *m_list;
     const Core::IClock *m_clock;
@@ -84,6 +85,7 @@ private:
     QStringList m_suggestions;
     SortMode m_sortMode = SortMode::None;
     bool m_descending = false;
+    bool m_countChangePending = false;
 };
 
 } // namespace EasePass::App
