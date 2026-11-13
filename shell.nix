@@ -19,5 +19,6 @@ pkgs.mkShell {
     openssl
     libargon2
     zxing-cpp
+    wasmtime # C API for the plugin host (T26)
   ];
 }

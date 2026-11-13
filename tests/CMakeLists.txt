@@ -590,3 +590,44 @@ set_tests_properties(smoke.launch_app PROPERTIES
     LABELS "unit;smoke"
     ENVIRONMENT_MODIFICATION "${EASEPASS_QML_TEST_ENV}"
 )
+
+# --- test_plugin (Wasmtime plugin host; T26 proof of concept, seed for T27) -----
+if(EASEPASS_HAVE_PLUGINS)
+    add_executable(test_plugin
+        plugin/main.cpp
+        plugin/PluginPocTest.h
+        plugin/PluginPocTest.cpp
+    )
+    target_compile_definitions(test_plugin PRIVATE EASEPASS_TEST_FIXTURES_DIR="${EASEPASS_TEST_FIXTURES_DIR}")
+    target_link_libraries(test_plugin PRIVATE easepass_plugin Qt6::Test easepass_warnings)
+
+    set(TEST_PLUGIN_UNIT_FUNCTIONS
+        testInspectConformancePlugins
+        testInspectDoesNotNeedApproval
+        testForbiddenImportsRejected
+        testNotAComponentRejected
+        testUnapprovedImportFailsToInstantiate
+        testSources
+        testImportFixedItems
+        testImportCsvThroughFilePicker
+        testFilePickerCancelled
+        testPluginErrorIsReported
+        testTrapDoesNotCrashHost
+        testInfiniteLoopInterrupted
+        testTimeoutDoesNotAffectOtherPlugin
+        testMemoryCapHit
+        testDialogTimeNotCounted
+    )
+    easepass_add_qtest(test_plugin LABELS unit FUNCTIONS ${TEST_PLUGIN_UNIT_FUNCTIONS})
+
+    add_test(NAME test_plugin.all_functions_registered
+        COMMAND ${CMAKE_COMMAND}
+            -DTEST_EXE=$<TARGET_FILE:test_plugin>
+            "-DREGISTERED=${TEST_PLUGIN_UNIT_FUNCTIONS}"
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/CheckRegisteredTests.cmake
+    )
+    set_tests_properties(test_plugin.all_functions_registered PROPERTIES
+        LABELS unit
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    )
+endif()

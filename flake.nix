@@ -34,6 +34,7 @@
             openssl
             libargon2
             zxing-cpp
+            wasmtime # C API for the plugin host (T26)
           ];
 
           # Only the fast tests; "slow" tests (full-cost Argon2) run in CI/dev builds.
@@ -81,6 +82,7 @@
             openssl
             libargon2
             zxing-cpp
+            wasmtime # C API for the plugin host (T26)
           ];
         };
       });

@@ -4,3 +4,4 @@
 # Encrypted databases / test fixtures: never touch line endings
 *.epdb binary
 *.png binary
+*.wasm binary

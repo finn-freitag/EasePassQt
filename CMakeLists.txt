@@ -282,6 +282,40 @@ target_link_libraries(easepass_app
     PRIVATE easepass_warnings
 )
 
+# --- Plugin host (WebAssembly via Wasmtime; T26 proof of concept, T27 real host) ---
+# AUTO: build it when the Wasmtime C API is found. Not yet linked into the application.
+set(EASEPASS_WITH_PLUGINS "AUTO" CACHE STRING "Build the Wasmtime plugin host (AUTO, ON, OFF)")
+set_property(CACHE EASEPASS_WITH_PLUGINS PROPERTY STRINGS AUTO ON OFF)
+set(EASEPASS_HAVE_PLUGINS OFF)
+if(NOT EASEPASS_WITH_PLUGINS STREQUAL "OFF")
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+    if(EASEPASS_WITH_PLUGINS STREQUAL "AUTO")
+        find_package(Wasmtime 48 QUIET)
+        if(NOT Wasmtime_FOUND)
+            message(STATUS "Wasmtime C API not found: plugin host disabled")
+        endif()
+    else()
+        find_package(Wasmtime 48 REQUIRED)
+    endif()
+    set(EASEPASS_HAVE_PLUGINS ${Wasmtime_FOUND})
+endif()
+if(EASEPASS_HAVE_PLUGINS)
+    message(STATUS "Plugin host: Wasmtime ${Wasmtime_VERSION}")
+    add_library(easepass_plugin STATIC
+        src/plugin/PluginEngine.cpp
+        src/plugin/PluginEngine.h
+        src/plugin/PluginInspector.cpp
+        src/plugin/PluginInspector.h
+        src/plugin/ImporterPlugin.cpp
+        src/plugin/ImporterPlugin.h
+    )
+    target_include_directories(easepass_plugin PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/plugin)
+    target_link_libraries(easepass_plugin
+        PUBLIC Qt6::Core
+        PRIVATE Wasmtime::Wasmtime easepass_warnings
+    )
+endif()
+
 # --- Multimedia (webcam) -----------------------------------------------------
 if(EASEPASS_WITH_MULTIMEDIA)
     add_library(easepass_multimedia STATIC

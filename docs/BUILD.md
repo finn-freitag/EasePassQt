@@ -23,12 +23,14 @@ Raise it when every target ships 6.12.
 | Target | What |
 |--------|------|
 | `easepass_core` | static library, `src/core`; links only Qt Core/Gui/Network, OpenSSL, argon2, zxing-cpp |
+| `easepass_plugin` | static library, `src/plugin`; WebAssembly plugin host (Wasmtime C API). Built only when Wasmtime >= 48 is found (`-DEASEPASS_WITH_PLUGINS=AUTO|ON|OFF`, hint `-DWasmtime_ROOT=<dir>`); see [PLUGIN_DECISION.md](PLUGIN_DECISION.md) |
 | `easepass_qml_module` (+`plugin`) | static QML module `EasePass` in `qml/EasePass`: `Theme` singleton, control library, icons |
 | `easepass` | the application (Qt Quick, `src/main`); the Widgets UI was removed in T24 |
 | `easepass_app` | static library `src/app`: view models + services (T12), `AppContext` composition root, `loadMainWindow` |
 | `test_app` | QtTest executable for the view models (fakes only), one CTest test per function |
 | `test_qml` | QtQuickTest runner; one CTest test per `tests/qml/tst_*.qml`, QML warnings fail the test |
 | `test_core` | QtTest executable for core module, registered with CTest |
+| `test_plugin` | QtTest executable for the plugin host against the conformance plugins in `tests/fixtures/plugins` (only with `easepass_plugin`) |
 | `test_smoke` | application smoke test (T24): real `Main.qml` + `AppContext`, unlocks a copy of `test.epdb` |
 
 Dependencies are found via their CMake package config first (vcpkg on Windows,
