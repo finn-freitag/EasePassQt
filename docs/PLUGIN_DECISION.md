@@ -91,18 +91,8 @@ application.
 
 ## Code
 
-| Path | Content |
-| --- | --- |
-| `src/plugin/PluginInspector.*` | imports to permissions, exports to types, allow-list |
-| `src/plugin/PluginEngine.*` | engine with epoch ticker |
-| `src/plugin/ImporterPlugin.*` | proof-of-concept runtime for the `importer` type: explicit linker, limits, value conversion |
-| `tests/plugin/` | the test suite (seed for T27) |
-| `tests/fixtures/plugins/` | conformance components and components that must be rejected |
-| `tools/plugin-poc-dotnet/` | the .NET comparison host |
-| `cmake/FindWasmtime.cmake` | finds the Wasmtime C API |
-
-The library `easepass_plugin` is built when Wasmtime (>= 48, the tested version) is found
-(`EASEPASS_WITH_PLUGINS=AUTO`). It is not linked into the application yet.
+The proof of concept grew into the plugin host of T27; see [PLUGIN_HOST.md](PLUGIN_HOST.md).
+The .NET comparison host is in `tools/plugin-poc-dotnet/`.
 
 ## Open
 
@@ -111,4 +101,3 @@ The library `easepass_plugin` is built when Wasmtime (>= 48, the tested version)
   GitHub releases works with `-DWasmtime_ROOT=...`; wiring that into CI is left for T27.
 - **Running inside the real Windows application** (WinUI, .NET 8 on Windows) is up to the
   Windows app; only the library was exercised here.
-- A conformance plugin for `network` does not exist yet.

@@ -591,32 +591,101 @@ set_tests_properties(smoke.launch_app PROPERTIES
     ENVIRONMENT_MODIFICATION "${EASEPASS_QML_TEST_ENV}"
 )
 
-# --- test_plugin (Wasmtime plugin host; T26 proof of concept, seed for T27) -----
+# --- test_plugin (plugin host on Wasmtime; steps.txt T26/T27) --------------------
 if(EASEPASS_HAVE_PLUGINS)
     add_executable(test_plugin
         plugin/main.cpp
-        plugin/PluginPocTest.h
-        plugin/PluginPocTest.cpp
+        plugin/PluginTests.h
+        plugin/PluginTestSupport.h
+        plugin/PluginTestSupport.cpp
+        plugin/PluginManagerFixture.h
+        plugin/PluginRuntimeTest.cpp
+        plugin/PluginPackageTest.cpp
+        plugin/PluginStorageTest.cpp
+        plugin/PluginNetworkTest.cpp
+        plugin/PluginManagerTest.cpp
+        plugin/PluginAdaptersTest.cpp
     )
     target_compile_definitions(test_plugin PRIVATE EASEPASS_TEST_FIXTURES_DIR="${EASEPASS_TEST_FIXTURES_DIR}")
-    target_link_libraries(test_plugin PRIVATE easepass_plugin Qt6::Test easepass_warnings)
+    target_link_libraries(test_plugin PRIVATE easepass_plugin Qt6::Test ZLIB::ZLIB easepass_warnings)
 
     set(TEST_PLUGIN_UNIT_FUNCTIONS
         testInspectConformancePlugins
         testInspectDoesNotNeedApproval
         testForbiddenImportsRejected
         testNotAComponentRejected
-        testUnapprovedImportFailsToInstantiate
-        testSources
+        testHostInterfaceOnlyWhenApproved
         testImportFixedItems
         testImportCsvThroughFilePicker
-        testFilePickerCancelled
+        testFilePickerCancelledAndTooLarge
         testPluginErrorIsReported
+        testUnknownExportAndArguments
         testTrapDoesNotCrashHost
         testInfiniteLoopInterrupted
         testTimeoutDoesNotAffectOtherPlugin
         testMemoryCapHit
         testDialogTimeNotCounted
+        testCancelInterruptsCall
+        testLogSanitizedAndThrottled
+        testRandomAndClock
+        testParseConformancePackage
+        testStoredDeflateAndIcon
+        testOtherEntriesIgnored
+        testBrokenArchivesRejected
+        testManifestValidation
+        testManifestFields
+        testCompareVersions
+        testStrings
+        testFiles
+        testInvalidNamesRejected
+        testQuota
+        testIsolationBetweenDirectories
+        testFilesAreOwnerOnly
+        testDamagedSettings
+        testAllowListMatching
+        testAllowListEntries
+        testBlockedAddresses
+        testHttpGetAndPost
+        testHttpBodyFramings
+        testHttpStatusPassedThrough
+        testRedirectOnSameHostFollowed
+        testRedirectToOtherHostBlocked
+        testRedirectLoopStops
+        testHostAndPortNotOnAllowListBlocked
+        testPrivateAddressBlocked
+        testResponseTooLarge
+        testHttpTimeout
+        testInvalidRequestsRejected
+        testTcpEcho
+        testTcpLimitsAndErrors
+        testNetworkPluginEndToEnd
+        testInstallFromStore
+        testHashMismatchAborts
+        testLocalInstallVerificationStates
+        testInstallNeedsApproval
+        testBadPackagesRejected
+        testRecordsPersist
+        testTamperedFileRefusedAtLoad
+        testLoadChecksApprovedPermissions
+        testRevokedAfterInstallRefusedAtLoad
+        testEnableDisable
+        testUninstallCleanup
+        testUpdateKeepsStorage
+        testStorageIsolationBetweenPlugins
+        testNetworkPolicyFromManifest
+        testInitializerRuns
+        testLeakCheckWithService
+        testAbout
+        testImporter
+        testImporterFilePickerGetsPluginIdentity
+        testTrapAndTimeoutAreErrorsAndPluginRecovers
+        testPasswordGenerator
+        testStoreFeed
+        testDatabaseProviderConfig
+        testDatabaseSource
+        testDatabaseSourceReadOnly
+        testDatabaseSourceWithDatabaseService
+        testUntrustedValuesRejected
     )
     easepass_add_qtest(test_plugin LABELS unit FUNCTIONS ${TEST_PLUGIN_UNIT_FUNCTIONS})
 

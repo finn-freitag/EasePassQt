@@ -35,6 +35,7 @@
             libargon2
             zxing-cpp
             wasmtime # C API for the plugin host (T26)
+            zlib # .epplugin packages are ZIP files (T27)
           ];
 
           # Only the fast tests; "slow" tests (full-cost Argon2) run in CI/dev builds.
@@ -83,6 +84,7 @@
             libargon2
             zxing-cpp
             wasmtime # C API for the plugin host (T26)
+            zlib # .epplugin packages are ZIP files (T27)
           ];
         };
       });

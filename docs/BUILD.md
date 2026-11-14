@@ -23,7 +23,7 @@ Raise it when every target ships 6.12.
 | Target | What |
 |--------|------|
 | `easepass_core` | static library, `src/core`; links only Qt Core/Gui/Network, OpenSSL, argon2, zxing-cpp |
-| `easepass_plugin` | static library, `src/plugin`; WebAssembly plugin host (Wasmtime C API). Built only when Wasmtime >= 48 is found (`-DEASEPASS_WITH_PLUGINS=AUTO|ON|OFF`, hint `-DWasmtime_ROOT=<dir>`); see [PLUGIN_DECISION.md](PLUGIN_DECISION.md) |
+| `easepass_plugin` | static library, `src/plugin`; WebAssembly plugin host (Wasmtime C API, zlib). Built only when Wasmtime >= 48 is found (`-DEASEPASS_WITH_PLUGINS=AUTO|ON|OFF`, hint `-DWasmtime_ROOT=<dir>`); see [PLUGIN_HOST.md](PLUGIN_HOST.md) |
 | `easepass_qml_module` (+`plugin`) | static QML module `EasePass` in `qml/EasePass`: `Theme` singleton, control library, icons |
 | `easepass` | the application (Qt Quick, `src/main`); the Widgets UI was removed in T24 |
 | `easepass_app` | static library `src/app`: view models + services (T12), `AppContext` composition root, `loadMainWindow` |

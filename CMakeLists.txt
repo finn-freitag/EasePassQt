@@ -300,19 +300,36 @@ if(NOT EASEPASS_WITH_PLUGINS STREQUAL "OFF")
     set(EASEPASS_HAVE_PLUGINS ${Wasmtime_FOUND})
 endif()
 if(EASEPASS_HAVE_PLUGINS)
+    find_package(ZLIB REQUIRED) # .epplugin packages are ZIP files
     message(STATUS "Plugin host: Wasmtime ${Wasmtime_VERSION}")
     add_library(easepass_plugin STATIC
         src/plugin/PluginEngine.cpp
         src/plugin/PluginEngine.h
         src/plugin/PluginInspector.cpp
         src/plugin/PluginInspector.h
-        src/plugin/ImporterPlugin.cpp
-        src/plugin/ImporterPlugin.h
+        src/plugin/PluginValue.cpp
+        src/plugin/PluginValue.h
+        src/plugin/PluginInstance.cpp
+        src/plugin/PluginInstance.h
+        src/plugin/PluginStorage.cpp
+        src/plugin/PluginStorage.h
+        src/plugin/PluginNetwork.cpp
+        src/plugin/PluginNetwork.h
+        src/plugin/PluginHostFunctions.cpp
+        src/plugin/PluginHostFunctions.h
+        src/plugin/PluginPackage.cpp
+        src/plugin/PluginPackage.h
+        src/plugin/PluginWorker.cpp
+        src/plugin/PluginWorker.h
+        src/plugin/PluginAdapters.cpp
+        src/plugin/PluginAdapters.h
+        src/plugin/PluginManager.cpp
+        src/plugin/PluginManager.h
     )
     target_include_directories(easepass_plugin PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/plugin)
     target_link_libraries(easepass_plugin
-        PUBLIC Qt6::Core
-        PRIVATE Wasmtime::Wasmtime easepass_warnings
+        PUBLIC Qt6::Core Qt6::Network easepass_core
+        PRIVATE Wasmtime::Wasmtime ZLIB::ZLIB easepass_warnings
     )
 endif()
 
