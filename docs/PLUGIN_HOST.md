@@ -112,6 +112,37 @@ loaded when the plugin page opens or a file is installed.
   JSON Schema (`configFieldsFromSchema`: flat object with string, password, choice,
   integer, number and boolean fields).
 
+### Plugins at work in the application
+
+- **Databases of `database-source` plugins.** `PluginsViewModel::remoteDatabases()` holds
+  the databases of all enabled plugins of this type. They are asked at start, after
+  every change of the installed plugins, after a provider's settings were saved, and by
+  the "look again" button of the login page (shown only while such a plugin is
+  installed). `AppContext` hands the list to `DatabaseController` and
+  `DatabaseManagementViewModel` as `RemoteDatabase` values (`src/app/RemoteDatabase.h`).
+  The pages address a database by a string: a file path, or for these the key
+  `plugin://<plugin id>/<database id>`. That key is also what is stored as last
+  database, so a plugin's database is preselected at the next start.
+  - The name in lists is "<database name> (<plugin name>)", shortened to one line; the
+    plugin cannot make its database look like a local file.
+  - Opening, saving, read-only and "locked by another user" go through
+    `Core::DatabaseService` like for a local file; the plugin only sees encrypted bytes.
+  - On the database page such a database can be loaded, but not renamed, deleted or
+    copied as a path.
+  - A plugin whose database is open cannot be uninstalled, disabled or updated (the open
+    database would keep running the old code). If the plugin is disabled from outside
+    (revocation), the database is closed.
+  - Only local files decide whether the Register page is shown at the first start.
+- **`password-generator` plugins.** `PluginsViewModel::passwordGenerators()` feeds
+  `PasswordGeneratorViewModel::setExternalGenerators`. The generator dialog shows a box
+  to choose the generator while at least one such plugin is enabled; the choice is
+  stored in `AppSettings::passwordGeneratorPlugin` and also applies to the generate
+  button of the item dialog. Installing a plugin does not select it. The plugin gets
+  length, characters and "verify not leaked"; what it returns is refused if it is empty,
+  longer than 4096 characters or contains control characters, and is otherwise checked
+  for leaks and rated by the host like any password. A failing plugin is shown as an
+  error; the built-in generator never silently takes over.
+
 **QML:** `PluginsPage.qml`, `PluginDialogs.qml` (the two install dialogs and the file
 dialogs), `PluginImportDialog.qml`, `PluginConfigDialog.qml`, and the section "Plugins"
 of `SettingsPage.qml`.
@@ -131,9 +162,12 @@ of `SettingsPage.qml`.
   (a network read, an open file dialog) finishes first.
 - **Windows:** the Windows CI job builds without the plugin host (no vcpkg port of
   Wasmtime). Nothing in `src/plugin` was compiled or run on Windows.
-- **Not connected yet:** databases of `database-source` plugins cannot be opened from the
-  login and database pages (only their settings form exists), and `password-generator`
-  plugins are not used by the password generator dialog.
+- **A new database cannot be created at a plugin.** The app opens what a
+  `database-source` plugin offers; "Create database" and "Import database" only work
+  with local files. A plugin's storage must already hold a database.
+- **Plugin databases are asked for at start.** With a `database-source` plugin installed
+  and enabled, its code runs when the application starts (and may use the network it was
+  allowed). Nothing changes in the list while the plugin is not asked again.
 - **The catalog is not signed** (spec version 1): "verified" means "the hash is in the
   list served by GitHub over HTTPS".
 - **Installing blocks the UI briefly:** hashing and inspecting a package runs on the UI

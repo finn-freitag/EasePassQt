@@ -316,6 +316,18 @@ void AppSettings::setRemovePluginSettingsOnUninstall(bool remove) {
     emit removePluginSettingsOnUninstallChanged(remove);
 }
 
+QString AppSettings::passwordGeneratorPlugin() const {
+    return m_store->value(Keys::PasswordGeneratorPlugin, QString()).toString();
+}
+
+void AppSettings::setPasswordGeneratorPlugin(const QString &pluginId) {
+    const QString trimmed = pluginId.trimmed();
+    if (passwordGeneratorPlugin() == trimmed)
+        return;
+    m_store->setValue(Keys::PasswordGeneratorPlugin, trimmed);
+    emit passwordGeneratorPluginChanged(trimmed);
+}
+
 bool AppSettings::fetchFavicons() const {
     return m_store->value(Keys::FetchFavicons, Defaults::FetchFavicons).toBool();
 }
@@ -374,6 +386,7 @@ void AppSettings::resetToDefaults() {
     setDatabasePaths(defaultDatabasePaths());
     setLastDatabase(QString());
     setRemovePluginSettingsOnUninstall(Defaults::RemovePluginSettingsOnUninstall);
+    setPasswordGeneratorPlugin(QString());
     setFetchFavicons(Defaults::FetchFavicons);
     setAppVersion(Defaults::AppVersion);
     setDatabaseDeferredSaveSeconds(Defaults::DatabaseDeferredSaveSeconds);

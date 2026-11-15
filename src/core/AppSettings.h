@@ -37,6 +37,8 @@ class AppSettings : public QObject {
     Q_PROPERTY(QString lastDatabase READ lastDatabase WRITE setLastDatabase NOTIFY lastDatabaseChanged)
     Q_PROPERTY(bool removePluginSettingsOnUninstall READ removePluginSettingsOnUninstall WRITE
                    setRemovePluginSettingsOnUninstall NOTIFY removePluginSettingsOnUninstallChanged)
+    Q_PROPERTY(QString passwordGeneratorPlugin READ passwordGeneratorPlugin WRITE setPasswordGeneratorPlugin NOTIFY
+                   passwordGeneratorPluginChanged)
     Q_PROPERTY(bool fetchFavicons READ fetchFavicons WRITE setFetchFavicons NOTIFY fetchFaviconsChanged)
     Q_PROPERTY(QString appVersion READ appVersion WRITE setAppVersion NOTIFY appVersionChanged)
     Q_PROPERTY(int databaseDeferredSaveSeconds READ databaseDeferredSaveSeconds WRITE setDatabaseDeferredSaveSeconds
@@ -83,6 +85,7 @@ public:
         static inline const QString DatabasePaths = QStringLiteral("databasePaths");
         static inline const QString LastDatabase = QStringLiteral("lastDatabase");
         static inline const QString RemovePluginSettingsOnUninstall = QStringLiteral("removePluginSettingsOnUninstall");
+        static inline const QString PasswordGeneratorPlugin = QStringLiteral("passwordGeneratorPlugin");
         static inline const QString FetchFavicons = QStringLiteral("fetchFavicons");
         static inline const QString AppVersion = QStringLiteral("appVersion");
         static inline const QString DatabaseDeferredSaveSeconds = QStringLiteral("databaseDeferredSaveTime_Sec");
@@ -155,6 +158,10 @@ public:
     bool removePluginSettingsOnUninstall() const;
     void setRemovePluginSettingsOnUninstall(bool remove);
 
+    /// Id of the password-generator plugin used by the generator; empty = built-in generator (NEW).
+    QString passwordGeneratorPlugin() const;
+    void setPasswordGeneratorPlugin(const QString &pluginId);
+
     bool fetchFavicons() const;
     void setFetchFavicons(bool fetch);
 
@@ -203,6 +210,7 @@ signals:
     void databasePathsChanged(const QStringList &paths);
     void lastDatabaseChanged(const QString &path);
     void removePluginSettingsOnUninstallChanged(bool remove);
+    void passwordGeneratorPluginChanged(const QString &pluginId);
     void fetchFaviconsChanged(bool fetch);
     void appVersionChanged(const QString &version);
     void databaseDeferredSaveSecondsChanged(int seconds);

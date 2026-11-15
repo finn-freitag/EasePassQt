@@ -80,6 +80,11 @@ ContentDialog {
             passwordBox.text = password
             root.editor.password = password
         }
+        function onFailed(message) { // a generator plugin gave up
+            root._awaitingPassword = false
+            errorBar.message = message
+            errorBar.open = true
+        }
     }
 
     InfoBar {

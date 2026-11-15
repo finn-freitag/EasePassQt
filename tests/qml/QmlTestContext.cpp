@@ -258,6 +258,51 @@ void QmlTestContext::setGeneratorSettings(int length, const QString &chars) {
     m_ctx->settings()->setPasswordChars(chars);
 }
 
+void QmlTestContext::setFakeGenerator(const QString &mode) {
+    using VM = PasswordGeneratorViewModel;
+    QList<VM::ExternalGenerator> generators;
+    if (!mode.isEmpty()) {
+        VM::ExternalGenerator generator;
+        generator.id = QStringLiteral("org.example.generator");
+        generator.name = QStringLiteral("Example generator");
+        const auto counter = std::make_shared<int>(0);
+        generator.generate = [mode, counter](int, const QString &, bool, VM::ExternalGenerator::Done done) {
+            if (mode == QLatin1String("fail"))
+                done(QString(), QStringLiteral("no dice"));
+            else
+                done(QStringLiteral("plugin-made-%1").arg(++*counter), QString());
+        };
+        generators << generator;
+    } else {
+        m_ctx->settings()->setPasswordGeneratorPlugin(QString());
+    }
+    m_ctx->passwordGenerator()->setExternalGenerators(generators);
+}
+
+namespace {
+class RemoteTestSource : public IDatabaseSource {
+public:
+    QString databaseName() const override { return QStringLiteral("Team"); }
+    QString sourceDescription() const override { return QStringLiteral("sftp://example.test/team"); }
+    bool isReadOnly() const override { return false; }
+    Availability availability() const override { return Availability::Available; }
+    QDateTime lastModified() const override { return {}; }
+    std::optional<QByteArray> getBytes() override { return std::nullopt; }
+    bool saveBytes(const QByteArray &) override { return false; }
+};
+} // namespace
+
+QString QmlTestContext::setFakeRemoteDatabase(bool offered) {
+    const QString key = QStringLiteral("plugin://org.example.remote/team");
+    QList<RemoteDatabase> remote;
+    if (offered)
+        remote << RemoteDatabase{key, QStringLiteral("Team (Example plugin)"),
+                                 QStringLiteral("sftp://example.test/team"), std::make_shared<RemoteTestSource>()};
+    m_ctx->databaseController()->setRemoteDatabases(remote);
+    m_ctx->databaseManagement()->setRemoteDatabases(remote);
+    return key;
+}
+
 // --- Database files ---------------------------------------------------------------------------
 
 QString QmlTestContext::tempPath(const QString &fileName) const { return m_tempDir.filePath(fileName); }

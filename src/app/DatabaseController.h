@@ -2,6 +2,7 @@
 
 #include "DatabaseOperations.h"
 #include "DatabaseService.h"
+#include "RemoteDatabase.h"
 
 #include <QObject>
 #include <functional>
@@ -14,6 +15,10 @@ namespace EasePass::App {
  * open / lock / create / save with busy and error state. Errors are user-visible,
  * translated strings (DatabaseOpResult::describe).
  * C#: Views/LoginPage.xaml.cs, Views/CreateDatabasePage, MainWindow lock handling.
+ *
+ * Databases of database-source plugins (setRemoteDatabases) are listed after the local files
+ * and are opened, selected and remembered by their key instead of a path
+ * (C#: Database.GetAllUnloadedDatabases appends ExtensionManager.DatabaseSources).
  */
 class DatabaseController : public QObject {
     Q_OBJECT
@@ -29,6 +34,8 @@ class DatabaseController : public QObject {
     Q_PROPERTY(QStringList knownDatabases READ knownDatabases NOTIFY knownDatabasesChanged)
     Q_PROPERTY(QString lastDatabase READ lastDatabase NOTIFY knownDatabasesChanged)
     Q_PROPERTY(bool isFirstRun READ isFirstRun NOTIFY knownDatabasesChanged)
+    Q_PROPERTY(bool hasRemoteProviders READ hasRemoteProviders NOTIFY remoteProvidersChanged)
+    Q_PROPERTY(bool remoteLoading READ remoteLoading NOTIFY remoteProvidersChanged)
 public:
     using SourceFactory = std::function<std::shared_ptr<Core::IDatabaseSource>(const QString &path)>;
 
@@ -37,6 +44,21 @@ public:
 
     /// Replaces how paths become sources (default: LocalFileDatabaseSource). Tests inject fakes.
     void setSourceFactory(SourceFactory factory) { m_sourceFactory = std::move(factory); }
+
+    /// Databases of plugins; replaces the previous list.
+    void setRemoteDatabases(QList<RemoteDatabase> databases);
+    /// @p refresh asks the plugins again (refreshRemoteDatabases); null = no such plugin is installed.
+    void setRemoteProviders(std::function<void()> refresh, bool loading);
+    bool hasRemoteProviders() const { return bool(m_remoteRefresh); }
+    bool remoteLoading() const { return m_remoteLoading; }
+    Q_INVOKABLE void refreshRemoteDatabases();
+    Q_INVOKABLE bool isRemote(const QString &pathOrKey) const { return RemoteDatabase::isKey(pathOrKey); }
+    /// Name for the database picker: file name without extension, or the plugin database's name.
+    Q_INVOKABLE QString databaseLabel(const QString &pathOrKey) const;
+    /// The full path, or where the plugin says the database is stored.
+    Q_INVOKABLE QString databaseDescription(const QString &pathOrKey) const;
+    /// Path or key of the open database (empty if none).
+    QString openDatabase() const;
 
     bool isOpen() const { return m_service->isOpen(); }
     bool busy() const { return m_service->isOpening() || m_operationsRunning > 0; }
@@ -50,7 +72,7 @@ public:
     QStringList knownDatabases() const;
     QString lastDatabase() const;
     /// No known database file exists yet -> show the Register (OOBE) page.
-    bool isFirstRun() const { return knownDatabases().isEmpty(); }
+    bool isFirstRun() const;
 
     /// C#: DefaultSettingsValues.databasePaths -> <AppData>/easepass.epdb.
     Q_INVOKABLE static QString defaultDatabasePath();
@@ -99,6 +121,7 @@ signals:
     void dirtyChanged();
     void savingChanged();
     void knownDatabasesChanged();
+    void remoteProvidersChanged();
     void openFailed(const QString &message);
     void created(const QString &path);
     void imported(const QString &path);
@@ -116,6 +139,9 @@ private:
     Core::DatabaseOperations *m_operations;
     std::shared_ptr<Core::AppSettings> m_settings;
     SourceFactory m_sourceFactory;
+    QList<RemoteDatabase> m_remote;
+    std::function<void()> m_remoteRefresh;
+    bool m_remoteLoading = false;
     QString m_openingPath;
     QString m_temporaryPath;
     QString m_errorMessage;

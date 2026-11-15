@@ -49,6 +49,7 @@ Item {
             failOnWarning(/.?/)
         }
         function cleanup() {
+            testContext.setFakeGenerator("")
             testContext.editor.unload()
         }
 
@@ -382,6 +383,65 @@ Item {
         }
 
         // --- Generator dialog -------------------------------------------------------
+        // A password-generator plugin (here: a fake) next to the built-in generator.
+        function test_generatorDialogWithPluginGenerator() {
+            testContext.setGeneratorSettings(12, "abc")
+            const d = createTemporaryObject(generatorC, top)
+            d.open()
+            tryCompare(d, "opened", true)
+            const box = findChild(d, "generatedPassword")
+            const chooser = findChild(d, "generatorBox")
+            verify(!chooser.visible)                               // nothing to choose from
+            tryCompare(box.text, "length", 12)
+
+            testContext.setFakeGenerator("ok")
+            tryCompare(chooser, "visible", true)
+            compare(chooser.count, 2)
+            compare(chooser.currentIndex, 0)                       // installing does not select
+            compare(chooser.textAt(1), "Example generator")
+            mouseClick(findChild(d, "primaryButton"))
+            tryVerify(() => /^[abc]{12}$/.test(box.text))            // still the built-in one
+
+            chooser.currentIndex = 1
+            chooser.activated(1)                                    // the user picks the plugin
+            tryCompare(box, "text", "plugin-made-1")
+            compare(testContext.generator.generatorId, "org.example.generator")
+            compare(testContext.settings.passwordGeneratorPlugin, "org.example.generator")
+            mouseClick(findChild(d, "primaryButton"))
+            tryCompare(box, "text", "plugin-made-2")
+            verify(!findChild(d, "generatorError").visible)
+
+            // A failing plugin: the error is shown, the old password stays, nothing is made up.
+            testContext.setFakeGenerator("fail")
+            mouseClick(findChild(d, "primaryButton"))
+            const error = findChild(d, "generatorError")
+            tryCompare(error, "visible", true)
+            compare(error.message, "Example generator could not generate a password: no dice")
+            compare(box.text, "plugin-made-2")
+
+            // The plugin goes away: the box disappears and the built-in generator is back.
+            testContext.setFakeGenerator("")
+            tryCompare(chooser, "visible", false)
+            mouseClick(findChild(d, "primaryButton"))
+            tryVerify(() => /^[abc]{12}$/.test(box.text))
+            verify(!error.visible)
+        }
+
+        function test_generateButtonReportsFailingPlugin() {
+            testContext.setFakeGenerator("fail")
+            testContext.generator.generatorId = "org.example.generator"
+            const d = openItemDialog()
+            const box = findChild(d, "passwordBox")
+            const before = box.text
+            mouseClick(findChild(d, "generatePasswordButton"))
+            const bar = findChild(d, "errorBar")
+            tryCompare(bar, "open", true)
+            compare(bar.message, "Example generator could not generate a password: no dice")
+            compare(box.text, before)
+            verify(!findChild(d, "generateProgress").visible)
+            verify(findChild(d, "generatePasswordButton").enabled)
+        }
+
         function test_generatorDialog() {
             testContext.setGeneratorSettings(12, "abcXYZ789-")
             const d = createTemporaryObject(generatorC, top)

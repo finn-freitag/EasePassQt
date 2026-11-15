@@ -28,4 +28,6 @@ private slots:
     void testProviderConfigForm();
     void testConfigFieldsFromSchema();
     void testAppContextOwnsPlugins();
+    void testPluginDatabaseInApp();
+    void testPluginGeneratorInApp();
 };

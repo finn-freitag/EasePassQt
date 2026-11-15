@@ -8,6 +8,21 @@ Item {
     width: 900; height: 800
 
     Component { id: fakeC; FakeDatabaseController {} }
+    // A controller that also offers the database of a database-source plugin.
+    Component {
+        id: remoteFakeC
+        FakeDatabaseController {
+            readonly property string remoteKey: "plugin://org.example.remote/team"
+            knownDatabases: ["/home/u/Personal.epdb", remoteKey]
+            lastDatabase: remoteKey
+            property bool hasRemoteProviders: true
+            property bool remoteLoading: false
+            property int refreshCalls: 0
+            function databaseLabel(p) { return p === remoteKey ? "Team (Example plugin)" : displayNameForPath(p) }
+            function databaseDescription(p) { return p === remoteKey ? "sftp://example.test/team" : p }
+            function refreshRemoteDatabases() { refreshCalls++ }
+        }
+    }
     Component { id: pageC; LoginPage { anchors.fill: parent } }
     Component { id: spyC; SignalSpy {} }
 
@@ -25,7 +40,32 @@ Item {
                      second: findChild(page, "secondFactorBox"), error: findChild(page, "errorBar") }
         }
 
+        function test_pluginDatabaseIsOfferedAndOpened() {
+            const ctl = createTemporaryObject(remoteFakeC, top)
+            const page = createTemporaryObject(pageC, top, { controller: ctl })
+            waitForRendering(page)
+            const box = findChild(page, "databaseBox")
+            compare(box.count, 2)
+            compare(box.currentIndex, 1)                 // it was the last database
+            compare(box.displayText, "Team (Example plugin)") // the plugin's name for it, not the key
+            compare(page.selectedPath, ctl.remoteKey)
+            const refresh = findChild(page, "refreshRemoteButton")
+            verify(refresh.visible && refresh.enabled)
+            mouseClick(refresh)
+            compare(ctl.refreshCalls, 1)
+            ctl.remoteLoading = true
+            verify(!refresh.enabled)
+            ctl.remoteLoading = false
+            const pw = findChild(page, "passwordBox")
+            pw.text = "secret"
+            mouseClick(findChild(page, "loginButton"))
+            compare(ctl.lastOpen[0], ctl.remoteKey)
+            tryCompare(ctl, "isOpen", true)
+        }
+
         function test_initialState() {
+            verify(!findChild(makePage().page, "refreshRemoteButton").visible) // no database plugin
+
             const t = makePage()
             const box = findChild(t.page, "databaseBox")
             compare(box.count, 2)

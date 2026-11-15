@@ -40,6 +40,7 @@
 #include "BuildInfo.h"
 #include "PluginsViewModel.h"
 #include <QDir>
+#include <QPointer>
 #include <QStandardPaths>
 #endif
 
@@ -121,6 +122,25 @@ AppContext::AppContext(Deps deps, QObject *parent)
     plugins.clock = m_clock;
     plugins.appVersion = BuildInfo::appVersion();
     m_plugins = new PluginsViewModel(plugins, this);
+    // Databases of database-source plugins join the local ones on the login and database pages.
+    const auto syncRemote = [this] {
+        m_databaseController->setRemoteDatabases(m_plugins->remoteDatabases());
+        m_databaseManagement->setRemoteDatabases(m_plugins->remoteDatabases());
+        std::function<void()> refresh;
+        if (m_plugins->providerCount() > 0)
+            refresh = [plugins = QPointer<PluginsViewModel>(m_plugins)] {
+                if (plugins)
+                    plugins->refreshRemoteDatabases();
+            };
+        m_databaseController->setRemoteProviders(refresh, m_plugins->remoteLoading());
+    };
+    connect(m_plugins, &PluginsViewModel::remoteDatabasesChanged, this, syncRemote);
+    connect(m_plugins, &PluginsViewModel::installedChanged, this, syncRemote);
+    // password-generator plugins are offered in the generator dialog.
+    const auto syncGenerators = [this] { m_generator->setExternalGenerators(m_plugins->passwordGenerators()); };
+    connect(m_plugins, &PluginsViewModel::installedChanged, this, syncGenerators);
+    syncRemote();
+    syncGenerators();
 #endif
 
     // First run (no database file known yet) starts with the Register/OOBE page.

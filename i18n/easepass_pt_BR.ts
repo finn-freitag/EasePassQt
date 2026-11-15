@@ -503,7 +503,7 @@
 <context>
     <name>DatabasePage</name>
     <message>
-        <location filename="../qml/EasePass/DatabasePage.qml" line="+62"/>
+        <location filename="../qml/EasePass/DatabasePage.qml" line="+64"/>
         <source>Ease Pass database (*.epdb)</source>
         <translation>Banco de dados Ease Pass (*.epdb)</translation>
     </message>
@@ -519,14 +519,14 @@
     </message>
     <message>
         <location line="+6"/>
-        <location line="+222"/>
-        <location line="+222"/>
+        <location line="+223"/>
+        <location line="+223"/>
         <source>Import passwords</source>
         <translatorcomment>resw: Dialog_ImportPW_Headline.Text</translatorcomment>
         <translation>Importar senhas</translation>
     </message>
     <message>
-        <location line="-442"/>
+        <location line="-444"/>
         <source>Enter the password of %1</source>
         <translation>Digite a senha de %1</translation>
     </message>
@@ -571,7 +571,7 @@
         <translation>Adicionar um arquivo de banco de dados existente</translation>
     </message>
     <message>
-        <location line="+107"/>
+        <location line="+108"/>
         <source>This database is read-only.</source>
         <translation>Este banco de dados é somente leitura.</translation>
     </message>
@@ -614,13 +614,13 @@
     </message>
     <message>
         <location line="+6"/>
-        <location line="+193"/>
+        <location line="+194"/>
         <source>Export database</source>
         <translatorcomment>resw: View_ManageDB_ExportDB.Content</translatorcomment>
         <translation>Exportar</translation>
     </message>
     <message>
-        <location line="-184"/>
+        <location line="-185"/>
         <source>Export with new password</source>
         <translation>Exportar com nova senha</translation>
     </message>
@@ -665,7 +665,7 @@
         <translation>Apagar</translation>
     </message>
     <message>
-        <location line="+56"/>
+        <location line="+57"/>
         <source>New password for the export</source>
         <translation>Nova senha para a exportação</translation>
     </message>
@@ -744,18 +744,24 @@
 <context>
     <name>EasePass::App::DatabaseManagementViewModel</name>
     <message>
-        <location filename="../src/app/DatabaseManagementViewModel.cpp" line="+82"/>
-        <location line="+19"/>
+        <location filename="../src/app/DatabaseManagementViewModel.cpp" line="+91"/>
+        <location line="+23"/>
+        <location line="+12"/>
         <source>Loaded</source>
         <translation>Carregado</translation>
     </message>
     <message>
-        <location line="-17"/>
+        <location line="-33"/>
         <source>File not found</source>
         <translation>Arquivo não encontrado</translation>
     </message>
     <message>
-        <location line="+17"/>
+        <location line="+21"/>
+        <source>Not available</source>
+        <translation>Indisponível</translation>
+    </message>
+    <message>
+        <location line="+12"/>
         <source>Loaded (temporary)</source>
         <translation>Carregado (temporário)</translation>
     </message>
@@ -863,6 +869,24 @@
         <location line="+27"/>
         <source>The item could not be saved (database closed or read-only)</source>
         <translation>Não foi possível salvar o item (banco de dados fechado ou somente leitura)</translation>
+    </message>
+</context>
+<context>
+    <name>EasePass::App::PasswordGeneratorViewModel</name>
+    <message>
+        <location filename="../src/app/PasswordGeneratorViewModel.cpp" line="+48"/>
+        <source>Built-in generator</source>
+        <translation>Gerador integrado</translation>
+    </message>
+    <message>
+        <location line="+95"/>
+        <source>%1 could not generate a password: %2</source>
+        <translation>%1 não conseguiu gerar uma senha: %2</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>%1 returned a password that cannot be used.</source>
+        <translation>%1 retornou uma senha que não pode ser usada.</translation>
     </message>
 </context>
 <context>
@@ -1009,11 +1033,12 @@
     </message>
     <message>
         <location line="+2"/>
+        <location line="+1028"/>
         <source>This plugin is not installed.</source>
         <translation>Este plugin não está instalado.</translation>
     </message>
     <message>
-        <location line="+2"/>
+        <location line="-1026"/>
         <source>This plugin is disabled.</source>
         <translation>Este plugin está desativado.</translation>
     </message>
@@ -1088,7 +1113,7 @@
         <translation>Não foi possível usar o plugin: %1</translation>
     </message>
     <message>
-        <location line="+183"/>
+        <location line="+186"/>
         <source>%1 only</source>
         <translation>Apenas %1</translation>
     </message>
@@ -1128,7 +1153,7 @@
         <translation>A lista de plugins indica este plugin apenas para %1. Ele pode não funcionar aqui.</translation>
     </message>
     <message>
-        <location line="+53"/>
+        <location line="+57"/>
         <source>&quot;%1&quot; was updated.</source>
         <translation>&quot;%1&quot; foi atualizado.</translation>
     </message>
@@ -1163,12 +1188,12 @@
         <translation>Desinstalar</translation>
     </message>
     <message>
-        <location line="+15"/>
+        <location line="+17"/>
         <source>&quot;%1&quot; was uninstalled.</source>
         <translation>&quot;%1&quot; foi desinstalado.</translation>
     </message>
     <message>
-        <location line="+57"/>
+        <location line="+61"/>
         <source>Files for the plugin (%1)</source>
         <translation>Arquivos para o plugin (%1)</translation>
     </message>
@@ -1224,6 +1249,26 @@
         <location line="+75"/>
         <source>Settings saved</source>
         <translation>Configurações salvas</translation>
+    </message>
+    <message>
+        <location line="+37"/>
+        <source>The open database is stored with this plugin. Close the database first.</source>
+        <translation>O banco de dados aberto é armazenado com este plugin. Feche o banco de dados primeiro.</translation>
+    </message>
+    <message>
+        <location line="+31"/>
+        <source>%1 could not list its databases. %2</source>
+        <translation>%1 não conseguiu listar os seus bancos de dados. %2</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>%1 (%2)</source>
+        <translation>%1 (%2)</translation>
+    </message>
+    <message>
+        <location line="+40"/>
+        <source>The database was closed because its plugin is no longer available.</source>
+        <translation>O banco de dados foi fechado porque o plugin dele não está mais disponível.</translation>
     </message>
 </context>
 <context>
@@ -1624,7 +1669,7 @@
     </message>
     <message>
         <location line="+1"/>
-        <location line="+176"/>
+        <location line="+181"/>
         <source>Cancel</source>
         <translatorcomment>resw: Dialog_Button_Cancel.Text</translatorcomment>
         <translation>Cancelar</translation>
@@ -1731,19 +1776,19 @@
 <context>
     <name>LoginPage</name>
     <message>
-        <location filename="../qml/EasePass/LoginPage.qml" line="+32"/>
+        <location filename="../qml/EasePass/LoginPage.qml" line="+34"/>
         <source> (Temp)</source>
         <translation> (Temporário)</translation>
     </message>
     <message>
         <location line="+13"/>
-        <location line="+98"/>
+        <location line="+112"/>
         <source>Login</source>
         <translatorcomment>resw: View_LoginPage_Login.Text</translatorcomment>
         <translation>Entrar</translation>
     </message>
     <message>
-        <location line="-56"/>
+        <location line="-70"/>
         <source>Welcome back</source>
         <translation>Bem-vindo de volta</translation>
     </message>
@@ -1753,18 +1798,23 @@
         <translation>Desbloqueie seu banco de dados para continuar.</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+12"/>
         <source>No database</source>
         <translation>Nenhum banco de dados</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+12"/>
         <source>Database</source>
         <translatorcomment>resw: View_SettingsPage_HeadlineDatabase.Header</translatorcomment>
         <translation>Banco de dados</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+9"/>
+        <source>Look for plugin databases again</source>
+        <translation>Procurar bancos de dados de plugins novamente</translation>
+    </message>
+    <message>
+        <location line="+8"/>
         <source>Master password</source>
         <translation>Senha mestre</translation>
     </message>
@@ -1912,7 +1962,7 @@ Se você esquecer sua senha ou perder o token, não terá mais acesso ao seu ban
 <context>
     <name>PasswordGeneratorDialog</name>
     <message>
-        <location filename="../qml/EasePass/PasswordGeneratorDialog.qml" line="+12"/>
+        <location filename="../qml/EasePass/PasswordGeneratorDialog.qml" line="+13"/>
         <source>Password generator</source>
         <translatorcomment>resw: Dialog_PWGenerator_New.Text</translatorcomment>
         <translation>Gerador de senhas</translation>
@@ -1930,7 +1980,12 @@ Se você esquecer sua senha ou perder o token, não terá mais acesso ao seu ban
         <translation>OK</translation>
     </message>
     <message>
-        <location line="+23"/>
+        <location line="+26"/>
+        <source>Generator</source>
+        <translation>Gerador</translation>
+    </message>
+    <message>
+        <location line="+30"/>
         <source>Password</source>
         <translatorcomment>resw: Dialog_AddItem_Password.Text</translatorcomment>
         <translation>Senha</translation>

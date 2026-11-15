@@ -4,6 +4,7 @@
 #include "AppController.h"
 #include "AppSettings.h"
 #include "DatabaseController.h"
+#include "DatabaseManagementViewModel.h"
 #include "DatabaseOperations.h"
 #include "ISettingsStore.h"
 #include "LocalFileDatabaseSource.h"
@@ -119,6 +120,90 @@ void DatabaseControllerTest::testOpenSuccessBusyFlags() {
     QCOMPARE(f.ctl.lastDatabase(), QStringLiteral("db1"));
     QVERIFY(!f.ctl.dirty());
     QVERIFY(!f.ctl.readOnly());
+}
+
+// Databases of plugins (here: a fake source) next to the local files.
+void DatabaseControllerTest::testRemoteDatabases() {
+    ControllerFixture f;
+    DatabaseManagementViewModel management(&f.svc, &f.ops, f.settings, nullptr);
+    const QString key = QStringLiteral("plugin://org.example.remote/db%201");
+    const QList<RemoteDatabase> remote{{key, QStringLiteral("Team (Example)"), QStringLiteral("sftp://host/team"),
+                                        makeSource({makeItem("R")})}};
+    // The management list also shows known local files (here: the default path, not existing).
+    const auto remoteEntries = [&] {
+        QVariantList entries;
+        for (const QVariant &entry : management.databases()) {
+            if (entry.toMap().value("remote").toBool())
+                entries << entry;
+        }
+        return entries;
+    };
+    QVERIFY(f.ctl.isFirstRun());
+    QVERIFY(!f.ctl.open(key, kPassword)); // not offered (yet)
+    QCOMPARE(f.ctl.errorMessage(), DatabaseOpResult::describe(DatabaseOpStatus::NotFound));
+
+    QSignalSpy known(&f.ctl, &DatabaseController::knownDatabasesChanged);
+    f.ctl.setRemoteDatabases(remote);
+    management.setRemoteDatabases(remote);
+    QCOMPARE(known.count(), 1);
+    f.ctl.setRemoteDatabases(remote); // unchanged: the login page keeps its selection
+    QCOMPARE(known.count(), 1);
+    QCOMPARE(f.ctl.knownDatabases(), QStringList{key});
+    QVERIFY(f.ctl.isFirstRun()); // the Register page depends on local files only
+    QVERIFY(f.ctl.isRemote(key));
+    QVERIFY(!f.ctl.isRemote(QStringLiteral("/home/u/a.epdb")));
+    QCOMPARE(f.ctl.databaseLabel(key), QStringLiteral("Team (Example)"));
+    QCOMPARE(f.ctl.databaseDescription(key), QStringLiteral("sftp://host/team"));
+    QCOMPARE(f.ctl.databaseLabel(QStringLiteral("/home/u/a.epdb")), QStringLiteral("a"));
+    QCOMPARE(f.ctl.databaseDescription(QStringLiteral("/home/u/a.epdb")), QStringLiteral("/home/u/a.epdb"));
+
+    const qsizetype localEntries = management.databases().size() - 1;
+    QCOMPARE(remoteEntries().size(), 1);
+    QVariantMap entry = remoteEntries().at(0).toMap();
+    QCOMPARE(entry.value("path").toString(), key);
+    QCOMPARE(entry.value("name").toString(), QStringLiteral("Team (Example)"));
+    QCOMPARE(entry.value("description").toString(), QStringLiteral("sftp://host/team"));
+    QCOMPARE(entry.value("remote").toBool(), true);
+    QCOMPARE(entry.value("loaded").toBool(), false);
+    QCOMPARE(entry.value("exists").toBool(), true);
+
+    QVERIFY(f.ctl.open(key, kPassword));
+    QTRY_VERIFY_WITH_TIMEOUT(f.ctl.isOpen(), 30000);
+    QCOMPARE(f.svc.itemCount(), 1);
+    QCOMPARE(f.ctl.openDatabase(), key);
+    QCOMPARE(f.ctl.lastDatabase(), key); // preselected at the next start
+    QVERIFY(!f.ctl.switchTo(key));       // it is the open one
+    QCOMPARE(management.loadedPath(), key);
+    entry = remoteEntries().at(0).toMap();
+    QCOMPARE(management.databases().size(), localEntries + 1); // not a second time as "unknown open database"
+    QCOMPARE(entry.value("loaded").toBool(), true);
+    QCOMPARE(entry.value("state").toString(), QStringLiteral("Loaded"));
+
+    f.ctl.lock();
+    QTRY_VERIFY(!f.ctl.isOpen());
+    QVERIFY(f.ctl.openDatabase().isEmpty());
+    f.settings->setLastDatabase(QString());
+    QVERIFY(f.ctl.switchTo(key));
+    QCOMPARE(f.ctl.lastDatabase(), key);
+
+    // "Look again" button of the login page.
+    QSignalSpy providers(&f.ctl, &DatabaseController::remoteProvidersChanged);
+    QVERIFY(!f.ctl.hasRemoteProviders());
+    f.ctl.refreshRemoteDatabases(); // nothing to ask
+    int refreshes = 0;
+    f.ctl.setRemoteProviders([&] { ++refreshes; }, true);
+    QCOMPARE(providers.count(), 1);
+    QVERIFY(f.ctl.hasRemoteProviders());
+    QVERIFY(f.ctl.remoteLoading());
+    f.ctl.refreshRemoteDatabases();
+    QCOMPARE(refreshes, 1);
+
+    // The plugin is gone: its database is no longer offered.
+    f.ctl.setRemoteDatabases({});
+    management.setRemoteDatabases({});
+    QVERIFY(f.ctl.knownDatabases().isEmpty());
+    QVERIFY(remoteEntries().isEmpty());
+    QVERIFY(!f.ctl.open(key, kPassword));
 }
 
 void DatabaseControllerTest::testOpenWrongPasswordError() {

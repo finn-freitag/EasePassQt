@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PasswordItem.h"
+#include "RemoteDatabase.h"
 
 #include <QList>
 #include <QObject>
@@ -56,8 +57,11 @@ public:
                                 std::shared_ptr<Core::AppSettings> settings, ClipboardService *clipboard,
                                 QObject *parent = nullptr);
 
-    /// One map per known database: name, path, exists, loaded, temporary, state (translated text).
-    /// The open temporary database is listed as well (it is not in the known list).
+    /// One map per known database: name, path, exists, loaded, temporary, remote, state
+    /// (translated text). The open temporary database is listed as well (it is not in the known
+    /// list). Databases of plugins (setRemoteDatabases) follow with remote = true and their key
+    /// as path; they cannot be renamed or deleted here.
+    void setRemoteDatabases(QList<RemoteDatabase> databases);
     QVariantList databases() const;
     QString loadedPath() const;
     bool databaseOpen() const;
@@ -137,6 +141,7 @@ private:
     std::shared_ptr<Core::AppSettings> m_settings;
     ClipboardService *m_clipboard;
     QList<Core::PasswordItem> m_importItems;
+    QList<RemoteDatabase> m_remote;
     int m_running = 0;
 };
 

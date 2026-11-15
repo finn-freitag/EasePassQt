@@ -31,6 +31,56 @@ PasswordGeneratorViewModel::PasswordGeneratorViewModel(AppSettings *settings, Da
             });
         };
     }
+    if (m_settings)
+        connect(m_settings, &AppSettings::passwordGeneratorPluginChanged, this,
+                &PasswordGeneratorViewModel::generatorIdChanged);
+}
+
+void PasswordGeneratorViewModel::setExternalGenerators(QList<ExternalGenerator> generators) {
+    const QString before = generatorId();
+    m_external = std::move(generators);
+    emit generatorsChanged();
+    if (generatorId() != before)
+        emit generatorIdChanged();
+}
+
+QVariantList PasswordGeneratorViewModel::generators() const {
+    QVariantList result{QVariantMap{{QStringLiteral("id"), QString()}, {QStringLiteral("name"), tr("Built-in generator")}}};
+    for (const ExternalGenerator &generator : m_external)
+        result << QVariantMap{{QStringLiteral("id"), generator.id}, {QStringLiteral("name"), generator.name}};
+    return result;
+}
+
+const PasswordGeneratorViewModel::ExternalGenerator *PasswordGeneratorViewModel::external() const {
+    const QString id = m_settings ? m_settings->passwordGeneratorPlugin() : m_generatorId;
+    if (id.isEmpty())
+        return nullptr;
+    for (const ExternalGenerator &generator : m_external) {
+        if (generator.id == id && generator.generate)
+            return &generator;
+    }
+    return nullptr;
+}
+
+QString PasswordGeneratorViewModel::generatorId() const {
+    const ExternalGenerator *generator = external();
+    return generator ? generator->id : QString();
+}
+
+void PasswordGeneratorViewModel::setGeneratorId(const QString &id) {
+    if (m_settings) {
+        m_settings->setPasswordGeneratorPlugin(id); // emits generatorIdChanged through the setting
+    } else if (m_generatorId != id) {
+        m_generatorId = id;
+        emit generatorIdChanged();
+    }
+}
+
+void PasswordGeneratorViewModel::setErrorMessage(const QString &message) {
+    if (m_errorMessage == message)
+        return;
+    m_errorMessage = message;
+    emit errorMessageChanged();
 }
 
 void PasswordGeneratorViewModel::setLeakChecker(LeakChecker checker) { m_checker = std::move(checker); }
@@ -45,6 +95,7 @@ void PasswordGeneratorViewModel::setPassword(const QString &password) {
     if (password == m_password)
         return;
     ++m_generation; // a typed password ends a running generate()
+    setErrorMessage(QString());
     if (m_busy) {
         m_busy = false;
         emit busyChanged();
@@ -67,6 +118,7 @@ void PasswordGeneratorViewModel::generate() {
         return;
     ++m_generation;
     m_attempts = 0;
+    setErrorMessage(QString());
     m_busy = true;
     emit busyChanged();
     attempt();
@@ -75,7 +127,35 @@ void PasswordGeneratorViewModel::generate() {
 void PasswordGeneratorViewModel::attempt() {
     const int length = m_settings ? m_settings->passwordLength() : AppSettings::Defaults::PasswordLength;
     const QString chars = m_settings ? m_settings->passwordChars() : AppSettings::Defaults::PasswordChars;
-    const QString candidate = PasswordGenerator::generateFromCharset(length, chars);
+    const ExternalGenerator *generator = external();
+    if (!generator) {
+        check(PasswordGenerator::generateFromCharset(length, chars));
+        return;
+    }
+    const quint64 generation = m_generation;
+    QPointer<PasswordGeneratorViewModel> self(this);
+    const QString name = generator->name;
+    const auto generate = generator->generate; // the list may change while the plugin works
+    generate(length, chars, leakCheckEnabled(), [self, generation, name](const QString &password, const QString &error) {
+        if (!self || generation != self->m_generation)
+            return; // cancelled (password typed) or destroyed
+        if (!error.isEmpty()) {
+            self->fail(tr("%1 could not generate a password: %2").arg(name, error));
+            return;
+        }
+        // The text becomes a real password: nothing empty, huge or with control characters.
+        bool usable = !password.isEmpty() && password.size() <= MaxExternalPasswordLength;
+        for (const QChar c : password)
+            usable = usable && c.category() != QChar::Other_Control && c.category() != QChar::Other_Format;
+        if (!usable) {
+            self->fail(tr("%1 returned a password that cannot be used.").arg(name));
+            return;
+        }
+        self->check(password);
+    });
+}
+
+void PasswordGeneratorViewModel::check(const QString &candidate) {
     ++m_attempts;
     if (!leakCheckEnabled()) {
         finish(candidate, LeakResult::Unknown);
@@ -91,6 +171,13 @@ void PasswordGeneratorViewModel::attempt() {
         else
             self->finish(candidate, r);
     });
+}
+
+void PasswordGeneratorViewModel::fail(const QString &message) {
+    m_busy = false;
+    setErrorMessage(message);
+    emit busyChanged();
+    emit failed(message);
 }
 
 void PasswordGeneratorViewModel::finish(const QString &password, LeakResult leak) {

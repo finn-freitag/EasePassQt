@@ -25,9 +25,11 @@ FocusScope {
 
     // Name shown in the database box; a database from the command line that is not one of the
     // known databases is opened temporarily (C#: " (Temp)").
+    // Databases of plugins are listed with the name the plugin gives them.
     function databaseLabel(path) {
         if (!controller) return path
-        const name = controller.displayNameForPath(path)
+        const name = controller.databaseLabel !== undefined ? controller.databaseLabel(path)
+                                                            : controller.displayNameForPath(path)
         return controller.isTemporaryPath !== undefined && controller.isTemporaryPath(path)
                ? name + qsTr(" (Temp)") : name
     }
@@ -95,23 +97,37 @@ FocusScope {
                 Layout.alignment: Qt.AlignHCenter
             }
 
-            ComboBox {
-                id: databaseBox
-                objectName: "databaseBox"
-                model: root.controller ? root.controller.knownDatabases : []
-                displayText: currentIndex >= 0 && root.controller ? root.databaseLabel(currentText) : qsTr("No database")
-                delegate: ItemDelegate {
-                    required property string modelData
-                    required property int index
-                    width: ListView.view ? ListView.view.width : implicitWidth
-                    text: root.databaseLabel(modelData)
-                    highlighted: databaseBox.highlightedIndex === index
-                    ToolTip.visible: hovered
-                    ToolTip.text: modelData
-                    ToolTip.delay: 800
-                }
-                Accessible.name: qsTr("Database")
+            RowLayout {
+                spacing: Theme.spacing
                 Layout.fillWidth: true
+                ComboBox {
+                    id: databaseBox
+                    objectName: "databaseBox"
+                    model: root.controller ? root.controller.knownDatabases : []
+                    displayText: currentIndex >= 0 && root.controller ? root.databaseLabel(currentText) : qsTr("No database")
+                    delegate: ItemDelegate {
+                        required property string modelData
+                        required property int index
+                        width: ListView.view ? ListView.view.width : implicitWidth
+                        text: root.databaseLabel(modelData)
+                        highlighted: databaseBox.highlightedIndex === index
+                        ToolTip.visible: hovered
+                        ToolTip.text: root.controller && root.controller.databaseDescription !== undefined
+                                      ? root.controller.databaseDescription(modelData) : modelData
+                        ToolTip.delay: 800
+                    }
+                    Accessible.name: qsTr("Database")
+                    Layout.fillWidth: true
+                }
+                // Only with database plugins: asks them again which databases they offer.
+                IconButton {
+                    objectName: "refreshRemoteButton"
+                    visible: root.controller ? root.controller.hasRemoteProviders === true : false
+                    enabled: !root.ctlBusy && !(root.controller && root.controller.remoteLoading === true)
+                    iconName: "refresh"
+                    toolTip: qsTr("Look for plugin databases again")
+                    onClicked: root.controller.refreshRemoteDatabases()
+                }
             }
 
             EditPasswordBox {

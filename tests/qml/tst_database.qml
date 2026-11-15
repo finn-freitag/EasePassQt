@@ -39,6 +39,7 @@ Item {
             failOnWarning(/.?/)
         }
         function cleanup() {
+            testContext.setFakeRemoteDatabase(false)
             testContext.waitForBackground()
         }
 
@@ -96,6 +97,33 @@ Item {
             verify(!findChild(page, "loadButton").visible)
             verify(!findChild(page, "deleteDatabaseButton").enabled) // loaded database
             verify(!findChild(page, "renameButton").enabled)
+        }
+
+        // A database of a database-source plugin: listed and loadable, but it is no file.
+        function test_pluginDatabaseIsListedWithoutFileActions() {
+            const key = testContext.setFakeRemoteDatabase(true)
+            const page = createPage()
+            compare(findChild(page, "databaseRepeater").count, 3)
+            const remote = card(page, "Team (Example plugin)")
+            verify(remote)
+            compare(findChild(remote, "databaseLocation").text, "sftp://example.test/team") // not the key
+            mouseClick(remote)
+            compare(page.selectedPath, key)
+            verify(findChild(page, "loadButton").enabled)
+            verify(!findChild(page, "renameButton").enabled)
+            verify(!findChild(page, "deleteDatabaseButton").enabled)
+            verify(!findChild(page, "copyPathButton").enabled)
+            click(page, "loadButton")                    // to the login page, selected there
+            tryCompare(testContext.controller, "isOpen", false)
+            compare(testContext.controller.lastDatabase, key)
+            // A local database still has its file actions.
+            verify(testContext.openFile(pathA))
+            waitForRendering(page)                       // the cards were created again
+            mouseClick(card(page, "Beta"))
+            tryCompare(page, "selectedPath", pathB)
+            verify(findChild(page, "renameButton").enabled)
+            verify(findChild(page, "deleteDatabaseButton").enabled)
+            verify(findChild(page, "copyPathButton").enabled)
         }
 
         function test_copyPath() {

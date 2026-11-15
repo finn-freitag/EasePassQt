@@ -51,7 +51,16 @@ DatabaseManagementViewModel::DatabaseManagementViewModel(DatabaseService *servic
 // --- State ------------------------------------------------------------------------------------
 
 QString DatabaseManagementViewModel::loadedPath() const {
-    return m_service->isOpen() ? DatabaseOperations::localPath(m_service->source()) : QString();
+    if (!m_service->isOpen())
+        return QString();
+    if (const RemoteDatabase *database = RemoteDatabase::find(m_remote, m_service->source()))
+        return database->key;
+    return DatabaseOperations::localPath(m_service->source());
+}
+
+void DatabaseManagementViewModel::setRemoteDatabases(QList<RemoteDatabase> databases) {
+    m_remote = std::move(databases);
+    emit databasesChanged();
 }
 
 bool DatabaseManagementViewModel::databaseOpen() const { return m_service->isOpen(); }
@@ -87,7 +96,22 @@ QVariantList DatabaseManagementViewModel::databases() const {
                               {QStringLiteral("exists"), exists},
                               {QStringLiteral("loaded"), isLoaded},
                               {QStringLiteral("temporary"), isLoaded && m_service->isTemporary()},
+                              {QStringLiteral("remote"), false},
                               {QStringLiteral("state"), state}};
+    }
+    for (const RemoteDatabase &database : m_remote) {
+        const bool isLoaded = loaded == database.key;
+        loadedListed = loadedListed || isLoaded;
+        const bool available = database.source &&
+                               database.source->availability() != IDatabaseSource::Availability::Unavailable;
+        result << QVariantMap{{QStringLiteral("name"), database.name},
+                              {QStringLiteral("path"), database.key},
+                              {QStringLiteral("description"), database.description},
+                              {QStringLiteral("exists"), available},
+                              {QStringLiteral("loaded"), isLoaded},
+                              {QStringLiteral("temporary"), false},
+                              {QStringLiteral("remote"), true},
+                              {QStringLiteral("state"), isLoaded ? tr("Loaded") : available ? QString() : tr("Not available")}};
     }
     // The open database is not in the known list when it was opened temporarily (C#: the temp
     // database shows up in the database box until "Load temp database" adds it).
@@ -98,6 +122,7 @@ QVariantList DatabaseManagementViewModel::databases() const {
                               {QStringLiteral("exists"), true},
                               {QStringLiteral("loaded"), true},
                               {QStringLiteral("temporary"), m_service->isTemporary()},
+                              {QStringLiteral("remote"), false},
                               {QStringLiteral("state"), m_service->isTemporary() ? tr("Loaded (temporary)") : tr("Loaded")}};
     }
     return result;

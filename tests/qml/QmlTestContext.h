@@ -101,6 +101,11 @@ public:
     Q_INVOKABLE QString writeQrFile(const QString &text);
     Q_INVOKABLE QString otpauthFor(const QString &secret, const QString &issuer) const;
     Q_INVOKABLE void setGeneratorSettings(int length, const QString &chars);
+    /// A generator next to the built-in one, like a password-generator plugin: "ok" answers
+    /// "plugin-made-<n>", "fail" reports an error, "" removes it (and selects the built-in one).
+    Q_INVOKABLE void setFakeGenerator(const QString &mode);
+    /// Offers (or removes) a database like a database-source plugin would; returns its key.
+    Q_INVOKABLE QString setFakeRemoteDatabase(bool offered);
 
     // --- Database files (T16): real .epdb files in a temporary directory, cheap KDF ---------
     /// Path for @p fileName inside the test's temporary directory (file not created).

@@ -236,6 +236,117 @@ void ItemDialogsTest::testGeneratorLeakRetries() {
     QCOMPARE(calls, 0);
 }
 
+// Generators that are not built in (password-generator plugins; here: fakes).
+void ItemDialogsTest::testGeneratorExternal() {
+    using VM = PasswordGeneratorViewModel;
+    Fixture f;
+    f.settings->setVerifyNotLeaked(false);
+    f.settings->setPasswordLength(12);
+    f.settings->setPasswordChars(QStringLiteral("ab"));
+    VM gen(f.settings.get(), &f.svc, nullptr);
+    QCOMPARE(gen.generators().size(), 1); // built-in only
+    QCOMPARE(gen.generators().at(0).toMap().value("id").toString(), QString());
+    QCOMPARE(gen.generatorId(), QString());
+
+    QStringList calls;
+    QString answer = QStringLiteral("from-plugin-1");
+    QString error;
+    VM::ExternalGenerator::Done held;
+    bool hold = false;
+    VM::ExternalGenerator external;
+    external.id = QStringLiteral("org.example.gen");
+    external.name = QStringLiteral("Example");
+    external.generate = [&](int length, const QString &chars, bool verify, VM::ExternalGenerator::Done done) {
+        calls << QStringLiteral("%1|%2|%3").arg(length).arg(chars).arg(verify);
+        if (hold)
+            held = done;
+        else
+            done(answer, error);
+    };
+    QSignalSpy listSpy(&gen, &VM::generatorsChanged);
+    QSignalSpy idSpy(&gen, &VM::generatorIdChanged);
+    gen.setExternalGenerators({external});
+    QCOMPARE(listSpy.count(), 1);
+    QCOMPARE(gen.generators().size(), 2);
+    QCOMPARE(gen.generators().at(1).toMap().value("name").toString(), QStringLiteral("Example"));
+    QCOMPARE(gen.generatorId(), QString()); // installing a plugin does not select it
+
+    // Built-in until the user chooses the plugin; the choice is stored.
+    gen.generate();
+    QVERIFY(calls.isEmpty());
+    gen.setGeneratorId(QStringLiteral("org.example.gen"));
+    QCOMPARE(idSpy.count(), 1);
+    QCOMPARE(f.settings->passwordGeneratorPlugin(), QStringLiteral("org.example.gen"));
+    QSignalSpy generated(&gen, &VM::generated);
+    QSignalSpy failed(&gen, &VM::failed);
+    gen.generate();
+    QCOMPARE(calls, QStringList{QStringLiteral("12|ab|0")});
+    QCOMPARE(gen.password(), QStringLiteral("from-plugin-1"));
+    QCOMPARE(generated.count(), 1);
+    // The plugin's password is rated like any other (it ignores the wanted characters).
+    QCOMPARE(gen.safetyChecks().at(1).toBool(), false); // no upper case
+
+    // A leaked result is drawn again from the plugin; the host checks itself.
+    f.settings->setVerifyNotLeaked(true);
+    int checks = 0;
+    gen.setLeakChecker([&](const QString &, std::function<void(VM::LeakResult)> done) {
+        done(++checks < 3 ? VM::LeakResult::Leaked : VM::LeakResult::NotLeaked);
+    });
+    calls.clear();
+    gen.generate();
+    QCOMPARE(calls.size(), 3);
+    QCOMPARE(calls.at(0), QStringLiteral("12|ab|1"));
+    QCOMPARE(gen.safetyChecks().at(3).toBool(), true);
+    gen.setLeakChecker({});
+
+    // A failing plugin is reported; the built-in generator does not silently take over.
+    error = QStringLiteral("boom");
+    const QString before = gen.password();
+    gen.generate();
+    QCOMPARE(failed.count(), 1);
+    QVERIFY(!gen.busy());
+    QCOMPARE(gen.errorMessage(), QStringLiteral("Example could not generate a password: boom"));
+    QCOMPARE(gen.password(), before);
+    error.clear();
+
+    // Unusable texts never become a password.
+    for (const QString &bad : {QString(), QStringLiteral("line\nbreak"), QString(VM::MaxExternalPasswordLength + 1, QLatin1Char('x')),
+                               QStringLiteral("zero\u200bwidth")}) {
+        answer = bad;
+        gen.generate();
+        QCOMPARE(gen.errorMessage(), QStringLiteral("Example returned a password that cannot be used."));
+        QCOMPARE(gen.password(), before);
+    }
+    answer = QStringLiteral("good-again");
+    gen.generate();
+    QVERIFY(gen.errorMessage().isEmpty());
+    QCOMPARE(gen.password(), QStringLiteral("good-again"));
+
+    // A typed password cancels a running plugin call; its late answer is ignored.
+    hold = true;
+    gen.generate();
+    QVERIFY(gen.busy());
+    gen.setPassword(QStringLiteral("typed"));
+    QVERIFY(!gen.busy());
+    held(QStringLiteral("late"), QString());
+    QCOMPARE(gen.password(), QStringLiteral("typed"));
+    hold = false;
+
+    // The plugin goes away (uninstalled/disabled): back to the built-in generator.
+    gen.setExternalGenerators({});
+    QCOMPARE(gen.generatorId(), QString());
+    QCOMPARE(gen.generators().size(), 1);
+    calls.clear();
+    gen.generate();
+    QVERIFY(calls.isEmpty());
+    QCOMPARE(gen.password().length(), 12);
+    // ... and it is used again when the plugin comes back (the choice is still stored).
+    gen.setExternalGenerators({external});
+    QCOMPARE(gen.generatorId(), QStringLiteral("org.example.gen"));
+    gen.setGeneratorId(QString());
+    QCOMPARE(gen.generatorId(), QString());
+}
+
 void ItemDialogsTest::testGeneratorAsyncAndTypedPasswordCancels() {
     Fixture f;
     f.settings->setVerifyNotLeaked(true);

@@ -5,6 +5,10 @@
 #include "AppSettings.h"
 #include "AppTestSupport.h"
 #include "DialogService.h"
+#include "PluginAdapters.h"
+#include "PasswordGeneratorViewModel.h"
+#include "DatabaseManagementViewModel.h"
+#include "DatabaseController.h"
 #include "ISettingsStore.h"
 #include "PluginCatalog.h"
 #include "PluginsViewModel.h"
@@ -18,6 +22,8 @@
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
+#include <atomic>
+#include <thread>
 
 // Plugin UI logic (steps.txt T28): install flows with all verification states, the store
 // list with operating-system filter, the data of the permission dialog, uninstall, import
@@ -1115,4 +1121,226 @@ void PluginsViewModelTest::testAppContextOwnsPlugins() {
     deps.pluginsDirectory = directory.filePath(QStringLiteral("plugins"));
     AppContext context(deps);
     QVERIFY(context.plugins()->installed().isEmpty());
+}
+
+// --- Plugins at work in the application -------------------------------------------------------
+
+namespace {
+const QString GeneratorId = QStringLiteral("org.easepass.conformance.password-generator");
+
+struct AppFixture {
+    QTemporaryDir directory;
+    AppTest::FakeClock clock;
+    std::shared_ptr<FakeHttp> http = std::make_shared<FakeHttp>();
+    std::shared_ptr<InMemorySettingsStore> store = std::make_shared<InMemorySettingsStore>();
+    std::unique_ptr<AppContext> context;
+    QStringList messages;
+
+    AppFixture() {
+        http->replies[CatalogUrl] = {200, catalogJson({}), {}};
+        start();
+    }
+    /// A new application on the same settings and plugin directory.
+    void start() {
+        context.reset();
+        AppContext::Deps deps;
+        deps.settingsStore = store;
+        deps.clipboard = std::make_shared<AppTest::FakeClipboard>();
+        deps.networkClient = http;
+        deps.clock = &clock;
+        deps.kdf = AppTest::kFastKdf;
+        deps.pluginsDirectory = directory.filePath(QStringLiteral("plugins"));
+        deps.pluginCatalogUrl = QUrl(CatalogUrl);
+        context = std::make_unique<AppContext>(deps);
+        QObject::connect(plugins(), &PluginsViewModel::message, plugins(), [this](int severity, const QString &text) {
+            messages << QString::number(severity) + QLatin1Char('|') + text;
+        });
+    }
+    PluginsViewModel *plugins() const { return context->plugins(); }
+    DatabaseController *controller() const { return context->databaseController(); }
+
+    bool install(const QString &conformance) {
+        const QString path = directory.filePath(conformance + QStringLiteral(".epplugin"));
+        QFile file(path);
+        if (!file.open(QIODevice::WriteOnly))
+            return false;
+        file.write(conformancePackage(conformance));
+        file.close();
+        plugins()->installFromFile(QUrl::fromLocalFile(path));
+        if (!waitUntil([&] { return !plugins()->busy() && plugins()->installStep() != Step::None; }))
+            return false;
+        if (plugins()->installStep() == Step::UnverifiedWarning)
+            plugins()->confirmUnverified();
+        plugins()->approveInstall();
+        return plugins()->installStep() == Step::None;
+    }
+    /// The plugin database's entry on the database page (empty if it is not listed).
+    QVariantMap remoteEntry() const {
+        for (const QVariant &entry : context->databaseManagement()->databases()) {
+            if (entry.toMap().value(QStringLiteral("remote")).toBool())
+                return entry.toMap();
+        }
+        return {};
+    }
+    QString remoteKey() const {
+        for (const QString &entry : controller()->knownDatabases()) {
+            if (RemoteDatabase::isKey(entry))
+                return entry;
+        }
+        return {};
+    }
+};
+} // namespace
+
+// A database-source plugin's database on the login page: listed, opened, changed, saved
+// through the plugin and found again after a restart.
+void PluginsViewModelTest::testPluginDatabaseInApp() {
+    AppFixture f;
+    QVERIFY(!f.controller()->hasRemoteProviders());
+    QVERIFY(f.install(QStringLiteral("database-source")));
+    QVERIFY(waitUntil([&] { return !f.remoteKey().isEmpty() && !f.plugins()->remoteLoading(); }));
+    const QString key = f.remoteKey();
+    QCOMPARE(key, QStringLiteral("plugin://") + DatabaseId + QStringLiteral("/main"));
+    QVERIFY(f.controller()->hasRemoteProviders());
+    // The name is the plugin's database name together with the plugin's own name.
+    QCOMPARE(f.controller()->databaseLabel(key), QStringLiteral("Conformance database (Conformance: database source)"));
+    QCOMPARE(f.controller()->databaseDescription(key), QStringLiteral("Plugin storage (conformance)"));
+    QVERIFY(f.controller()->isFirstRun()); // no local database: still the Register page
+
+    // Nothing stored yet: opening fails with a message instead of an empty database.
+    QSignalSpy failed(f.controller(), &DatabaseController::openFailed);
+    QVERIFY(f.controller()->open(key, AppTest::kPassword));
+    QVERIFY(waitUntil([&] { return failed.count() == 1; }));
+    QVERIFY(!f.controller()->isOpen());
+
+    // Put an encrypted database there, the way a plugin's server would already have one.
+    {
+        const std::shared_ptr<IDatabaseSource> source = f.plugins()->remoteDatabases().at(0).source;
+        const QByteArray bytes = AppTest::makeDbBytes({AppTest::makeItem("First")});
+        std::atomic_int saved{-1};
+        std::thread writer([&] { saved = source->saveBytes(bytes) ? 1 : 0; });
+        QVERIFY(waitUntil([&] { return saved.load() >= 0; }));
+        writer.join();
+        QCOMPARE(saved.load(), 1);
+    }
+    QVERIFY(f.controller()->open(key, AppTest::kPassword));
+    QVERIFY(waitUntil([&] { return f.controller()->isOpen(); }));
+    DatabaseService *service = f.context->databaseService();
+    QCOMPARE(service->itemCount(), 1);
+    QCOMPARE(f.controller()->databaseName(), QStringLiteral("Conformance database"));
+    QCOMPARE(f.controller()->lastDatabase(), key);
+    QCOMPARE(f.controller()->openDatabase(), key);
+    QCOMPARE(f.remoteEntry().value("path").toString(), key);
+    QCOMPARE(f.remoteEntry().value("loaded").toBool(), true);
+    QCOMPARE(f.context->databaseManagement()->loadedPath(), key);
+
+    // While its database is open the plugin stays: no uninstall, no switching off.
+    QVERIFY(!f.plugins()->uninstall(DatabaseId));
+    QCOMPARE(f.messages.constLast(),
+             QStringLiteral("3|The open database is stored with this plugin. Close the database first."));
+    QVERIFY(!f.plugins()->setEnabled(DatabaseId, false));
+    QVERIFY(f.plugins()->manager()->plugin(DatabaseId)->enabled);
+    // Asking the plugin again keeps the open database recognizable.
+    f.plugins()->refreshRemoteDatabases();
+    QVERIFY(waitUntil([&] { return !f.plugins()->remoteLoading(); }));
+    QCOMPARE(f.controller()->openDatabase(), key);
+
+    // A change is saved through the plugin ...
+    QVERIFY(service->addItem(AppTest::makeItem("Second")));
+    service->saveNow();
+    QVERIFY(waitUntil([&] { return !service->isDirty() && !service->isSaving(); }));
+    f.controller()->lock();
+    QVERIFY(waitUntil([&] { return !f.controller()->isOpen(); }));
+
+    // ... and is there after a restart; the plugin's database is offered again by itself.
+    f.start();
+    QVERIFY(waitUntil([&] { return f.remoteKey() == key; }));
+    QCOMPARE(f.controller()->lastDatabase(), key);
+    QVERIFY(f.controller()->open(key, AppTest::kPassword));
+    QVERIFY(waitUntil([&] { return f.controller()->isOpen(); }));
+    QCOMPARE(f.context->databaseService()->itemCount(), 2);
+    f.controller()->lock();
+    QVERIFY(waitUntil([&] { return !f.controller()->isOpen(); }));
+
+    // A read-only database (the plugin's setting) is opened read-only.
+    QSignalSpy saved(f.plugins(), &PluginsViewModel::configSaved);
+    f.plugins()->openProviderConfig(DatabaseId);
+    QVERIFY(waitUntil([&] { return f.plugins()->configPluginId() == DatabaseId; }));
+    f.plugins()->saveProviderConfig({{QStringLiteral("database_name"), QStringLiteral("Renamed")},
+                                     {QStringLiteral("read_only"), true}});
+    QVERIFY(waitUntil([&] { return saved.count() == 1; }));
+    QVERIFY(saved.at(0).at(0).toBool());
+    // Saving the settings asks the plugin again: the new name shows up without a restart.
+    QVERIFY(waitUntil([&] { return f.controller()->databaseLabel(key).startsWith(QLatin1String("Renamed (")); }));
+    QVERIFY(f.controller()->open(key, AppTest::kPassword));
+    QVERIFY(waitUntil([&] { return f.controller()->isOpen(); }));
+    QVERIFY(f.controller()->readOnly());
+    QVERIFY(!f.context->databaseService()->addItem(AppTest::makeItem("Third")));
+    f.controller()->lock();
+    QVERIFY(waitUntil([&] { return !f.controller()->isOpen(); }));
+
+    // Closed: the plugin can go, and its database is no longer offered.
+    QVERIFY(f.plugins()->setEnabled(DatabaseId, false));
+    QVERIFY(waitUntil([&] { return f.remoteKey().isEmpty(); }));
+    QVERIFY(!f.controller()->hasRemoteProviders());
+    QVERIFY(!f.controller()->open(key, AppTest::kPassword));
+    QVERIFY(f.plugins()->setEnabled(DatabaseId, true));
+    QVERIFY(waitUntil([&] { return f.remoteKey() == key; }));
+    QVERIFY(f.plugins()->uninstall(DatabaseId));
+    QVERIFY(waitUntil([&] { return f.remoteKey().isEmpty(); }));
+    QVERIFY(f.remoteEntry().isEmpty());
+}
+
+// A password-generator plugin in the generator dialog's view model.
+void PluginsViewModelTest::testPluginGeneratorInApp() {
+    AppFixture f;
+    PasswordGeneratorViewModel *generator = f.context->passwordGenerator();
+    f.context->settings()->setVerifyNotLeaked(false);
+    f.context->settings()->setPasswordLength(21);
+    f.context->settings()->setPasswordChars(QStringLiteral("xyz789"));
+    QCOMPARE(generator->generators().size(), 1);
+
+    QVERIFY(f.install(QStringLiteral("password-generator")));
+    QCOMPARE(generator->generators().size(), 2);
+    const QVariantMap entry = generator->generators().at(1).toMap();
+    QCOMPARE(entry.value("id").toString(), GeneratorId);
+    QCOMPARE(entry.value("name").toString(), f.plugins()->manager()->plugin(GeneratorId)->name);
+    QCOMPARE(generator->generatorId(), QString()); // installed, not selected
+
+    generator->setGeneratorId(GeneratorId);
+    QSignalSpy generated(generator, &PasswordGeneratorViewModel::generated);
+    generator->generate();
+    QVERIFY(generator->busy()); // the plugin works on its own thread
+    QVERIFY(waitUntil([&] { return generated.count() == 1; }));
+    QVERIFY2(generator->errorMessage().isEmpty(), qPrintable(generator->errorMessage()));
+    const QString password = generator->password();
+    QCOMPARE(password.length(), 21);
+    for (const QChar c : password)
+        QVERIFY2(QStringLiteral("xyz789").contains(c), qPrintable(password));
+
+    // Switched off: the built-in generator is used again; switched on: the plugin again.
+    QVERIFY(f.plugins()->setEnabled(GeneratorId, false));
+    QCOMPARE(generator->generators().size(), 1);
+    QCOMPARE(generator->generatorId(), QString());
+    generator->generate();
+    QCOMPARE(generator->password().length(), 21);
+    QVERIFY(f.plugins()->setEnabled(GeneratorId, true));
+    QCOMPARE(generator->generatorId(), GeneratorId);
+
+    // The choice survives a restart.
+    f.start();
+    generator = f.context->passwordGenerator();
+    QCOMPARE(generator->generatorId(), GeneratorId);
+
+    // A plugin that cannot run is reported; no password from somewhere else appears instead.
+    QFile package(f.plugins()->manager()->packagePath(GeneratorId));
+    QVERIFY(package.open(QIODevice::WriteOnly | QIODevice::Append));
+    package.write("x");
+    package.close();
+    QSignalSpy failed(generator, &PasswordGeneratorViewModel::failed);
+    generator->generate();
+    QVERIFY(waitUntil([&] { return failed.count() == 1; }));
+    QVERIFY2(!generator->errorMessage().isEmpty(), qPrintable(generator->errorMessage()));
+    QVERIFY(generator->password().isEmpty());
+    QVERIFY(!generator->busy());
 }

@@ -209,6 +209,16 @@ void AppSettingsTest::testSetGetAndSignals() {
     settings->setRemovePluginSettingsOnUninstall(false);
     QCOMPARE(spyPlugin.count(), 0);
 
+    // 17b. PasswordGeneratorPlugin (NEW)
+    QCOMPARE(settings->passwordGeneratorPlugin(), QString());
+    QSignalSpy spyGenerator(settings.get(), &AppSettings::passwordGeneratorPluginChanged);
+    settings->setPasswordGeneratorPlugin(" org.example.generator ");
+    QCOMPARE(settings->passwordGeneratorPlugin(), QString("org.example.generator"));
+    QCOMPARE(spyGenerator.count(), 1);
+    settings->setPasswordGeneratorPlugin("org.example.generator");
+    QCOMPARE(spyGenerator.count(), 1);
+    settings->setPasswordGeneratorPlugin(QString());
+
     // 18. FetchFavicons
     QSignalSpy spyFavicon(settings.get(), &AppSettings::fetchFaviconsChanged);
     settings->setFetchFavicons(true);

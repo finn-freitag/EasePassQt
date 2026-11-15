@@ -1,7 +1,9 @@
 #pragma once
 
+#include "PasswordGeneratorViewModel.h"
 #include "PasswordItem.h"
 #include "PluginManager.h"
+#include "RemoteDatabase.h"
 
 #include <QHash>
 #include <QObject>
@@ -41,6 +43,16 @@ class DialogService;
  *   installStep = UnverifiedWarning  ("not officially verified" / "could not verify")
  *     -> confirmUnverified() -> Permissions -> approveInstall()
  * cancelInstall() drops the candidate at any step.
+ *
+ * Use of the installed plugins by the rest of the application:
+ *   remoteDatabases()    the databases of all enabled database-source plugins, asked at
+ *                        start, after every change of the installed plugins and after a
+ *                        provider's settings were saved (AppContext hands them to
+ *                        DatabaseController and DatabaseManagementViewModel)
+ *   passwordGenerators() the enabled password-generator plugins for
+ *                        PasswordGeneratorViewModel
+ * A plugin whose database is open cannot be uninstalled, disabled or updated: the open
+ * database would keep running the old code.
  */
 class PluginsViewModel : public QObject {
     Q_OBJECT
@@ -58,6 +70,7 @@ class PluginsViewModel : public QObject {
     Q_PROPERTY(QVariantList providers READ providers NOTIFY providersChanged)
     Q_PROPERTY(QVariantList configFields READ configFields NOTIFY configChanged)
     Q_PROPERTY(QString configPluginId READ configPluginId NOTIFY configChanged)
+    Q_PROPERTY(bool remoteLoading READ remoteLoading NOTIFY remoteDatabasesChanged)
 public:
     enum Severity { Info, Success, Warning, Error }; // same order as Theme.Severity
     enum class InstallStep { None, UnverifiedWarning, Permissions };
@@ -87,6 +100,7 @@ public:
     static inline const QString DefaultCatalogUrl =
         QStringLiteral("https://raw.githubusercontent.com/finn-freitag/EasePassQt/main/plugins/PluginList.json");
     static constexpr int MaxConfigFields = 64;
+    static constexpr int MaxDatabasesPerPlugin = 50;
 
     explicit PluginsViewModel(Config config, QObject *parent = nullptr);
     ~PluginsViewModel() override;
@@ -161,6 +175,13 @@ public:
     Q_INVOKABLE void saveProviderConfig(const QVariantMap &values);
     Q_INVOKABLE void closeProviderConfig();
 
+    // --- Databases and generators of plugins -----------------------------------------
+    QList<RemoteDatabase> remoteDatabases() const;
+    bool remoteLoading() const { return m_remotePending > 0; }
+    /// Asks every enabled database-source plugin for its databases (asynchronous).
+    Q_INVOKABLE void refreshRemoteDatabases();
+    QList<PasswordGeneratorViewModel::ExternalGenerator> passwordGenerators();
+
     // --- Texts (steps.txt 4.2; the English texts equal spec/permissions.json) --------
     static QString permissionText(const QString &permission, const QStringList &networkHosts);
     static QString typeText(const QString &type);
@@ -187,6 +208,7 @@ signals:
     void configChanged();
     void configReady();
     void configSaved(bool ok);
+    void remoteDatabasesChanged();
     void filePickRequested(int requestId, const QString &pluginName, const QString &title,
                            const QStringList &nameFilters);
     void urlOpened(const QString &url);
@@ -196,6 +218,15 @@ signals:
 private:
     struct PickBridge;
     struct PickRequest;
+
+    struct RemoteEntry {
+        QString pluginId;
+        RemoteDatabase database;
+    };
+    void finishRemoteRefresh();
+    /// Id of the plugin that stores the open database (empty if it is a local one).
+    QString openDatabasePlugin() const;
+    bool refuseWhileDatabaseOpen(const QString &pluginId);
 
     int countOfType(const QString &type) const;
     QList<Plugin::InstalledPlugin> enabledOfType(const QString &type) const;
@@ -234,6 +265,11 @@ private:
     quint64 m_configGeneration = 0;
     QVariantList m_configFields;
     QString m_configPluginId;
+
+    QList<RemoteEntry> m_remote;
+    QList<RemoteEntry> m_remoteIncoming;
+    int m_remotePending = 0;
+    quint64 m_remoteGeneration = 0;
 };
 
 } // namespace EasePass::App

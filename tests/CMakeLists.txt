@@ -368,6 +368,7 @@ set(TEST_APP_UNIT_FUNCTIONS
     testStartPageFirstRun
     testOpenSuccessBusyFlags
     testOpenWrongPasswordError
+    testRemoteDatabases
     testOpenNeedsSecondFactor
     testOpenEmptyPathError
     testLockAndSaveErrors
@@ -431,6 +432,7 @@ set(TEST_APP_UNIT_FUNCTIONS
     testGeneratorRespectsSettings
     testGeneratorLeakRetries
     testGeneratorAsyncAndTypedPasswordCancels
+    testGeneratorExternal
     testQrImportFileAndClipboard
     testWebcamScanViewModel
     testDatabaseListStates
@@ -490,6 +492,8 @@ if(EASEPASS_HAVE_PLUGINS)
         testProviderConfigForm
         testConfigFieldsFromSchema
         testAppContextOwnsPlugins
+        testPluginDatabaseInApp
+        testPluginGeneratorInApp
     )
 endif()
 easepass_add_qtest(test_app LABELS unit FUNCTIONS ${TEST_APP_UNIT_FUNCTIONS})

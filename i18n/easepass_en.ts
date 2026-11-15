@@ -15,7 +15,7 @@
 <context>
     <name>EasePass::App::DatabaseManagementViewModel</name>
     <message numerus="yes">
-        <location filename="../src/app/DatabaseManagementViewModel.cpp" line="+322"/>
+        <location filename="../src/app/DatabaseManagementViewModel.cpp" line="+347"/>
         <source>%n password(s) imported</source>
         <translation>
             <numerusform>%n password imported</numerusform>
@@ -26,7 +26,7 @@
 <context>
     <name>EasePass::App::PluginsViewModel</name>
     <message numerus="yes">
-        <location filename="../src/app/PluginsViewModel.cpp" line="+844"/>
+        <location filename="../src/app/PluginsViewModel.cpp" line="+857"/>
         <source>%n password(s) imported</source>
         <translation>
             <numerusform>%n password imported</numerusform>

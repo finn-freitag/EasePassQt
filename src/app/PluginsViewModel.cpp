@@ -298,6 +298,7 @@ PluginsViewModel::PluginsViewModel(Config config, QObject *parent)
     connect(m_manager, &PluginManager::pluginsChanged, this, [this] {
         emit installedChanged();
         emit storeChanged();
+        refreshRemoteDatabases();
     });
     if (m_config.service) // imported items are secrets: gone when the database is locked
         connect(m_config.service, &DatabaseService::closed, this, &PluginsViewModel::cancelImport);
@@ -305,6 +306,8 @@ PluginsViewModel::PluginsViewModel(Config config, QObject *parent)
     QTimer::singleShot(0, this, [this] {
         applyRevocations(); // from the cached catalog; no network at startup
         m_manager->startInitializers();
+        // The login page offers the databases of plugins: ask the installed ones now.
+        refreshRemoteDatabases();
     });
 }
 
@@ -628,6 +631,10 @@ void PluginsViewModel::approveInstall() {
         return;
     const QString name = m_candidate.package.manifest.name;
     const bool update = m_candidate.isUpdate;
+    if (update && refuseWhileDatabaseOpen(m_candidate.package.manifest.id)) {
+        clearPending();
+        return;
+    }
     m_manager->unload(m_candidate.package.manifest.id); // an update replaces the running plugin
     const PluginResult result = m_manager->install(m_candidate, m_candidate.inspection.permissions);
     clearPending();
@@ -661,6 +668,8 @@ void PluginsViewModel::requestUninstall(const QString &id) {
 }
 
 bool PluginsViewModel::uninstall(const QString &id) {
+    if (refuseWhileDatabaseOpen(id))
+        return false;
     const std::optional<InstalledPlugin> plugin = m_manager->plugin(id);
     const PluginResult result = m_manager->uninstall(id);
     if (!result.ok()) {
@@ -674,6 +683,10 @@ bool PluginsViewModel::uninstall(const QString &id) {
 }
 
 bool PluginsViewModel::setEnabled(const QString &id, bool enabled) {
+    if (!enabled && refuseWhileDatabaseOpen(id)) {
+        emit installedChanged(); // the switch in the list goes back
+        return false;
+    }
     const std::optional<InstalledPlugin> plugin = m_manager->plugin(id);
     PluginResult result;
     if (enabled && plugin && m_catalog->verify(plugin->sha256) == PluginVerification::Revoked)
@@ -1059,6 +1072,7 @@ void PluginsViewModel::saveProviderConfig(const QVariantMap &values) {
         }
         emit message(Success, tr("Settings saved"));
         emit configSaved(true);
+        refreshRemoteDatabases(); // the settings decide which databases there are
     });
 }
 
@@ -1069,6 +1083,141 @@ void PluginsViewModel::closeProviderConfig() {
     m_configFields.clear();
     m_configPluginId.clear();
     emit configChanged();
+}
+
+// --- Databases and generators of plugins ------------------------------------------------------
+
+QList<RemoteDatabase> PluginsViewModel::remoteDatabases() const {
+    QList<RemoteDatabase> result;
+    for (const RemoteEntry &entry : m_remote)
+        result << entry.database;
+    return result;
+}
+
+QString PluginsViewModel::openDatabasePlugin() const {
+    if (!m_config.service || !m_config.service->isOpen())
+        return QString();
+    for (const RemoteEntry &entry : m_remote) {
+        if (entry.database.source.get() == m_config.service->source())
+            return entry.pluginId;
+    }
+    return QString();
+}
+
+bool PluginsViewModel::refuseWhileDatabaseOpen(const QString &pluginId) {
+    if (pluginId.isEmpty() || openDatabasePlugin() != pluginId)
+        return false;
+    emit message(Error, tr("The open database is stored with this plugin. Close the database first."));
+    return true;
+}
+
+void PluginsViewModel::refreshRemoteDatabases() {
+    const quint64 generation = ++m_remoteGeneration;
+    m_remoteIncoming.clear();
+    const QList<InstalledPlugin> plugins = enabledOfType(QStringLiteral("database-source"));
+    m_remotePending = int(plugins.size());
+    if (plugins.isEmpty()) {
+        finishRemoteRefresh();
+        return;
+    }
+    emit remoteDatabasesChanged(); // remoteLoading
+    for (const InstalledPlugin &plugin : plugins) {
+        PluginResult result;
+        const std::shared_ptr<PluginWorker> worker = m_manager->load(plugin.id, &result);
+        if (generation != m_remoteGeneration)
+            return; // loading changed the installed plugins (e.g. a tampered file): a new refresh runs
+        if (!worker) {
+            emit message(Warning, plugin.name + QStringLiteral(": ") + describe(result));
+            if (--m_remotePending == 0)
+                finishRemoteRefresh();
+            continue;
+        }
+        PluginDatabaseProvider(worker).listDatabases(
+            this, [this, generation, plugin](const QList<std::shared_ptr<PluginDatabaseSource>> &sources,
+                                             const PluginError &error) {
+                if (generation != m_remoteGeneration)
+                    return;
+                if (!error.ok())
+                    emit message(Warning, tr("%1 could not list its databases. %2").arg(plugin.name, describe(error)));
+                // Names and descriptions are the plugin's words: shortened, one line, and always
+                // shown together with the plugin's name.
+                for (const auto &source : sources.mid(0, MaxDatabasesPerPlugin)) {
+                    const QString name = source->databaseName().simplified().left(80);
+                    RemoteEntry entry;
+                    entry.pluginId = plugin.id;
+                    entry.database.key = RemoteDatabase::KeyPrefix + plugin.id + QLatin1Char('/') +
+                                         QString::fromLatin1(QUrl::toPercentEncoding(source->databaseId()));
+                    entry.database.name = name.isEmpty() ? plugin.name : tr("%1 (%2)").arg(name, plugin.name);
+                    entry.database.description = source->sourceDescription().simplified().left(200);
+                    entry.database.source = source;
+                    m_remoteIncoming << entry;
+                }
+                if (--m_remotePending == 0)
+                    finishRemoteRefresh();
+            });
+    }
+}
+
+void PluginsViewModel::finishRemoteRefresh() {
+    m_remotePending = 0;
+    // The open database keeps its object: the pages recognize the open database by it.
+    const IDatabaseSource *open =
+        m_config.service && m_config.service->isOpen() ? m_config.service->source() : nullptr;
+    bool closeDatabase = false;
+    for (const RemoteEntry &old : std::as_const(m_remote)) {
+        if (!open || old.database.source.get() != open)
+            continue;
+        bool listed = false;
+        for (RemoteEntry &entry : m_remoteIncoming) {
+            if (entry.database.key == old.database.key) {
+                entry.database.source = old.database.source;
+                listed = true;
+            }
+        }
+        if (listed)
+            continue;
+        const std::optional<InstalledPlugin> plugin = m_manager->plugin(old.pluginId);
+        if (plugin && plugin->enabled)
+            m_remoteIncoming << old; // not listed this time (e.g. offline): stays while it is open
+        else
+            closeDatabase = true; // e.g. the plugin was revoked
+    }
+    m_remote = m_remoteIncoming;
+    m_remoteIncoming.clear();
+    emit remoteDatabasesChanged();
+    if (closeDatabase) {
+        m_config.service->lock();
+        emit message(Warning, tr("The database was closed because its plugin is no longer available."));
+    }
+}
+
+QList<PasswordGeneratorViewModel::ExternalGenerator> PluginsViewModel::passwordGenerators() {
+    QList<PasswordGeneratorViewModel::ExternalGenerator> result;
+    for (const InstalledPlugin &plugin : enabledOfType(QStringLiteral("password-generator"))) {
+        PasswordGeneratorViewModel::ExternalGenerator generator;
+        generator.id = plugin.id;
+        generator.name = plugin.name;
+        QPointer<PluginsViewModel> self(this);
+        const QString id = plugin.id;
+        generator.generate = [self, id](int length, const QString &characters, bool verifyNotLeaked,
+                                        PasswordGeneratorViewModel::ExternalGenerator::Done done) {
+            PluginResult result;
+            const std::shared_ptr<PluginWorker> worker = self ? self->m_manager->load(id, &result) : nullptr;
+            if (!worker) {
+                done(QString(), self ? describe(result) : tr("This plugin is not installed."));
+                return;
+            }
+            PluginPasswordGenerator(worker).generate(length, characters, verifyNotLeaked, self,
+                                                     [done](const QString &password, const PluginError &error) {
+                                                         if (error.ok())
+                                                             done(password, QString());
+                                                         else
+                                                             done(QString(), describe(error));
+                                                     });
+        };
+        result << generator;
+    }
+    return result;
 }
 
 } // namespace EasePass::App

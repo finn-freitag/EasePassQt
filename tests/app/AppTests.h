@@ -25,6 +25,7 @@ private slots:
     void testOneTimeSecondFactorRotatedAfterLogin();
     void testKnownDatabasesAndFirstRun();
     void testPathHelpers();
+    void testRemoteDatabases();
 };
 
 class DailyTipServiceTest : public QObject {
@@ -109,6 +110,7 @@ private slots:
     void testGeneratorRespectsSettings();
     void testGeneratorLeakRetries();
     void testGeneratorAsyncAndTypedPasswordCancels();
+    void testGeneratorExternal();
     void testQrImportFileAndClipboard();
     void testWebcamScanViewModel();
 };

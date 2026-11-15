@@ -66,7 +66,62 @@ QStringList DatabaseController::knownDatabases() const {
             result << p;
     if (!m_temporaryPath.isEmpty() && !result.contains(m_temporaryPath) && QFileInfo::exists(m_temporaryPath))
         result << m_temporaryPath;
+    for (const RemoteDatabase &database : m_remote)
+        result << database.key;
     return result;
+}
+
+bool DatabaseController::isFirstRun() const {
+    // Remote databases arrive after the start; only local files decide about the Register page.
+    for (const QString &entry : knownDatabases()) {
+        if (!RemoteDatabase::isKey(entry))
+            return false;
+    }
+    return true;
+}
+
+void DatabaseController::setRemoteDatabases(QList<RemoteDatabase> databases) {
+    bool same = databases.size() == m_remote.size();
+    for (qsizetype i = 0; same && i < databases.size(); ++i)
+        same = databases.at(i).key == m_remote.at(i).key && databases.at(i).name == m_remote.at(i).name &&
+               databases.at(i).description == m_remote.at(i).description &&
+               databases.at(i).source == m_remote.at(i).source;
+    if (same)
+        return; // the login page must not lose its selection for nothing
+    m_remote = std::move(databases);
+    emit knownDatabasesChanged();
+    emit stateChanged();
+}
+
+void DatabaseController::setRemoteProviders(std::function<void()> refresh, bool loading) {
+    m_remoteRefresh = std::move(refresh);
+    m_remoteLoading = loading;
+    emit remoteProvidersChanged();
+}
+
+void DatabaseController::refreshRemoteDatabases() {
+    if (m_remoteRefresh)
+        m_remoteRefresh();
+}
+
+QString DatabaseController::databaseLabel(const QString &pathOrKey) const {
+    if (const RemoteDatabase *database = RemoteDatabase::find(m_remote, pathOrKey))
+        return database->name;
+    return displayNameForPath(pathOrKey);
+}
+
+QString DatabaseController::databaseDescription(const QString &pathOrKey) const {
+    if (const RemoteDatabase *database = RemoteDatabase::find(m_remote, pathOrKey))
+        return database->description;
+    return pathOrKey;
+}
+
+QString DatabaseController::openDatabase() const {
+    if (!m_service->isOpen())
+        return QString();
+    if (const RemoteDatabase *database = RemoteDatabase::find(m_remote, m_service->source()))
+        return database->key;
+    return DatabaseOperations::localPath(m_service->source());
 }
 
 QString DatabaseController::defaultDatabasePath() {
@@ -122,7 +177,13 @@ bool DatabaseController::open(const QString &pathOrUrl, const QString &password,
         setError(DatabaseOpResult::describe(DatabaseOpStatus::InvalidPath));
         return false;
     }
-    auto source = m_sourceFactory(path);
+    std::shared_ptr<IDatabaseSource> source;
+    if (RemoteDatabase::isKey(path)) {
+        if (const RemoteDatabase *database = RemoteDatabase::find(m_remote, path))
+            source = database->source;
+    } else {
+        source = m_sourceFactory(path);
+    }
     if (!source) {
         setError(DatabaseOpResult::describe(DatabaseOpStatus::NotFound));
         return false;
@@ -231,7 +292,8 @@ bool DatabaseController::switchTo(const QString &pathOrUrl) {
     const QString path = toLocalPath(pathOrUrl);
     if (!m_settings || path.isEmpty() || !knownDatabases().contains(path))
         return false;
-    if (m_service->isOpen() && DatabaseOperations::isSamePath(DatabaseOperations::localPath(m_service->source()), path))
+    const QString open = openDatabase();
+    if (!open.isEmpty() && (open == path || DatabaseOperations::isSamePath(open, path)))
         return false;
     m_settings->setLastDatabase(path);
     emit knownDatabasesChanged();

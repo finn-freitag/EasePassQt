@@ -27,6 +27,8 @@ Item {
         return null
     }
     readonly property bool selectedLoaded: selected !== null && selected.loaded === true
+    // A database of a plugin: it has no file that could be renamed, deleted or copied as a path.
+    readonly property bool selectedRemote: selected !== null && selected.remote === true
     readonly property bool canModify: selectedLoaded && manager && !manager.readOnly
 
     signal backRequested()
@@ -210,7 +212,8 @@ Item {
                                     Layout.fillWidth: true
                                 }
                                 Label {
-                                    text: card.modelData.path
+                                    objectName: "databaseLocation"
+                                    text: card.modelData.remote === true ? card.modelData.description : card.modelData.path
                                     font.pixelSize: Theme.fontCaption
                                     color: Theme.textSecondary
                                     elide: Text.ElideMiddle
@@ -369,7 +372,7 @@ Item {
                             text: qsTr("Copy path")
                             icon.source: Theme.icon("copy")
                             icon.color: Theme.textPrimary
-                            enabled: root.selectedPath.length > 0
+                            enabled: root.selectedPath.length > 0 && !root.selectedRemote
                             Layout.fillWidth: true
                             onClicked: root.manager.copyPath(root.selectedPath)
                         }
@@ -378,7 +381,7 @@ Item {
                             text: qsTr("Rename")
                             icon.source: Theme.icon("edit")
                             icon.color: Theme.textPrimary
-                            enabled: !root.selectedLoaded && root.selected !== null && root.selected.exists
+                            enabled: !root.selectedLoaded && !root.selectedRemote && root.selected !== null && root.selected.exists
                             Layout.fillWidth: true
                             onClicked: renameDialog.openFor(root.selectedPath)
                         }
@@ -387,7 +390,7 @@ Item {
                             text: qsTr("Delete database")
                             icon.source: Theme.icon("delete")
                             icon.color: Theme.textPrimary
-                            enabled: !root.selectedLoaded && root.selected !== null
+                            enabled: !root.selectedLoaded && !root.selectedRemote && root.selected !== null
                             ToolTip.visible: hovered && root.selectedLoaded
                             ToolTip.text: qsTr("The loaded database cannot be deleted")
                             Layout.fillWidth: true
@@ -443,12 +446,13 @@ Item {
         objectName: "cardMenu"
         MenuItem {
             text: qsTr("Delete")
-            enabled: !root.selectedLoaded
+            enabled: !root.selectedLoaded && !root.selectedRemote
             onTriggered: deleteDialog.openFor(root.selectedPath)
         }
         MenuSeparator {}
         MenuItem {
             text: qsTr("Copy path")
+            enabled: !root.selectedRemote
             onTriggered: root.manager.copyPath(root.selectedPath)
         }
     }
