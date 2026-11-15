@@ -86,9 +86,13 @@ Item {
         // Scrolls the item dialog so that `it` can be clicked.
         function reveal(d, it) {
             const flick = findChild(d, "itemScroll").contentItem
+            // An item that just became visible gets its place with the next layout pass; a
+            // position read before that sends the click to where the item is not yet
+            // (seen as a rare failure of test_remove2FAAsksAndSaves under load).
+            waitForRendering(flick, 100)
             const p = it.mapToItem(flick.contentItem, 0, 0)
             flick.contentY = Math.max(0, Math.min(p.y - 10, flick.contentHeight - flick.height))
-            wait(0)
+            waitForRendering(flick, 100)
         }
         function openItemDialog(index) {
             const d = createTemporaryObject(itemDialogC, top)
