@@ -82,7 +82,6 @@ public:
     TotpTimerService *totpTimer() const { return m_totpTimer; }
     AppController *appController() const { return m_appController; }
     DatabaseController *databaseController() const { return m_databaseController; }
-    PasswordListModel *passwordListModel() const { return m_listModel; }
     PasswordFilterModel *passwordFilterModel() const { return m_filterModel; }
     ItemViewModel *itemViewModel() const { return m_itemViewModel; }
     /// Second edit buffer for the add/edit/2FA dialogs, so the detail pane keeps its item (T15).

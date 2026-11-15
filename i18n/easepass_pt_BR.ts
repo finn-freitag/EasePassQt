@@ -1264,17 +1264,7 @@
 <context>
     <name>EasePass::App::PrintService</name>
     <message>
-        <location filename="../src/app/PrintService.cpp" line="+20"/>
-        <source>Print passwords</source>
-        <translation>Imprimir senhas</translation>
-    </message>
-    <message>
-        <location line="+2"/>
-        <source>Include passwords</source>
-        <translation>Incluir senhas</translation>
-    </message>
-    <message>
-        <location line="+15"/>
+        <location filename="../src/app/PrintService.cpp" line="+21"/>
         <source>Print</source>
         <translation>Imprimir</translation>
     </message>
@@ -1282,17 +1272,6 @@
         <location line="+32"/>
         <source>Creating the PDF failed.</source>
         <translation>Falha ao criar o PDF.</translation>
-    </message>
-    <message>
-        <location line="+15"/>
-        <location line="+8"/>
-        <source>Export PDF</source>
-        <translation>Exportar PDF</translation>
-    </message>
-    <message>
-        <location line="-7"/>
-        <source>PDF files (*.pdf)</source>
-        <translation>Arquivos PDF (*.pdf)</translation>
     </message>
 </context>
 <context>
@@ -1352,7 +1331,7 @@
 <context>
     <name>EasePass::Core::DatabaseService</name>
     <message>
-        <location filename="../src/core/DatabaseService.cpp" line="+313"/>
+        <location filename="../src/core/DatabaseService.cpp" line="+307"/>
         <source>No writable database is open.</source>
         <translation>Nenhum banco de dados gravável aberto.</translation>
     </message>

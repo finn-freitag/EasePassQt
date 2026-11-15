@@ -66,7 +66,6 @@ public:
     /// C#: SortingHelper.ByPopularAllTime (and PopularLastYear when clicks are within 365 days).
     /// If @p clock is provided, only clicks within the last 365 days are counted; if @p clock is
     /// nullptr, all clicks in `item.clicks` are counted (matching C# ByPopularAllTime after ClearOldClicksCache).
-    static int byPopularAllTime(const PasswordItem &item1, const PasswordItem &item2);
     static int byPopularLastYear(const PasswordItem &item1, const PasswordItem &item2, const IClock *clock = nullptr);
     static int byPopularLast30Days(const PasswordItem &item1, const PasswordItem &item2, const IClock *clock = nullptr);
     static int byPasswordStrength(const PasswordItem &item1, const PasswordItem &item2,

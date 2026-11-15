@@ -409,7 +409,7 @@ set(TEST_APP_UNIT_FUNCTIONS
     testCopyActions
     testTotpCode
     testRegisterClickAndReadOnly
-    testDeleteItems
+    testDeleteByIndex
     testExportItems
     testExportWithNewPassword
     testWebsiteIconService

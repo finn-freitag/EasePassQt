@@ -124,7 +124,6 @@ public:
     /// Clears all click history across all items and schedules a deferred save (C#: ResetPopularity_Click).
     bool resetPopularity();
 
-    int saveDelayMs() const { return m_saver->delayMs(); }
     void setSaveDelayMs(int delayMs) { m_saver->setDelayMs(delayMs); }
     /// Schedules a deferred save (debounced).
     void requestSave();

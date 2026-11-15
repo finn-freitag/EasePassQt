@@ -56,12 +56,6 @@ public:
         int passedCriteria = 0; ///< Count of the 6 basic criteria met (0..6)
         int score = 0;          ///< C# SortingHelper.ByPasswordStrength sum (+1 for true, -1 for false): -6..+6
         Rating rating = Rating::VeryWeak;
-
-        /// Returns the 6 basic criteria in the exact order of C# PasswordHelper.EvaluatePassword:
-        /// [0] Lowercase, [1] Uppercase, [2] Length, [3] Special char, [4] Number, [5] No common sequence.
-        std::array<bool, 6> toCriteriaArray() const {
-            return {hasLower, hasUpper, meetsMinLength, hasSpecial, hasNumber, noCommonSequences};
-        }
     };
 
     static constexpr int DefaultMinLength = AppSettings::Defaults::PasswordLength; // 15

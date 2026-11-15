@@ -114,7 +114,7 @@ void TotpHelperTest::testClockInjection() {
     QString secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
     FakeClock clock(1111111109);
 
-    QString token = TotpHelper::generateCurrentToken(secret, 8, 30, "SHA1", &clock);
+    QString token = TotpHelper::generateToken(secret, clock.currentSecsSinceEpoch(), 8, 30, "SHA1");
     QCOMPARE(token, QString("07081804"));
 
     int rem = TotpHelper::getRemainingSeconds(30, std::nullopt, &clock);

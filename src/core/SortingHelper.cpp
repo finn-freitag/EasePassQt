@@ -113,18 +113,6 @@ int SortingHelper::byFirstTag(const PasswordItem &item1, const PasswordItem &ite
     return compareStrings(item1.tags.first(), item2.tags.first());
 }
 
-int SortingHelper::byPopularAllTime(const PasswordItem &item1, const PasswordItem &item2) {
-    // C#: SortingHelper.ByPopularAllTime:
-    // int comp = -pmi1.Clicks.Count.CompareTo(pmi2.Clicks.Count);
-    // if (comp == 0) return (pmi1.DisplayName ?? "").CompareTo(pmi2.DisplayName ?? "");
-    const qsizetype c1 = item1.clicks.size();
-    const qsizetype c2 = item2.clicks.size();
-    if (c1 != c2) {
-        return (c1 > c2) ? -1 : 1; // Higher click count comes first
-    }
-    return byDisplayName(item1, item2);
-}
-
 int SortingHelper::byPopularLastYear(const PasswordItem &item1, const PasswordItem &item2, const IClock *clock) {
     // In C# PasswordsPage.xaml.cs: "popular all time" is equal to "popular last year" because
     // ClearOldClicksCache prunes clicks > 365 days on load. If an explicit clock is supplied

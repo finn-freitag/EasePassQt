@@ -108,13 +108,15 @@ void PasswordActionsTest::testRegisterClickAndReadOnly() {
     QCOMPARE(f.svc.itemCount(), 3);
 }
 
-void PasswordActionsTest::testDeleteItems() {
+void PasswordActionsTest::testDeleteByIndex() {
     Fixture f;
-    QCOMPARE(f.actions.deleteItems({0, 2, 2, 9}), 2); // duplicates/invalid ignored, high index first
-    QCOMPARE(f.svc.itemCount(), 1);
-    QCOMPARE(f.svc.items().at(0).displayName, QStringLiteral("B"));
-    QVERIFY(f.actions.deleteItem(0));
-    QCOMPARE(f.svc.itemCount(), 0);
+    QVERIFY(!f.actions.deleteItem(9));  // no such item
+    QVERIFY(!f.actions.deleteItem(-1));
+    QCOMPARE(f.svc.itemCount(), 3);
+    QVERIFY(f.actions.deleteItem(1));
+    QCOMPARE(f.svc.itemCount(), 2);
+    QCOMPARE(f.svc.items().at(0).displayName, QStringLiteral("A"));
+    QCOMPARE(f.svc.items().at(1).displayName, QStringLiteral("C"));
 }
 
 void PasswordActionsTest::testExportItems() {

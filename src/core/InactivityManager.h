@@ -48,7 +48,6 @@ public:
     /// dialog shows a new token), the inactivity period keeps restarting and no warning or
     /// logout happens. Nested calls are counted.
     void setLogoutPrevented(bool prevented);
-    bool isLogoutPrevented() const { return m_preventCount > 0; }
 
     /// Called by the UI for every user input event. Resets the inactivity period.
     Q_INVOKABLE void reportActivity();

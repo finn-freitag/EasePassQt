@@ -94,7 +94,7 @@ private slots:
     void testCopyActions();
     void testTotpCode();
     void testRegisterClickAndReadOnly();
-    void testDeleteItems();
+    void testDeleteByIndex();
     void testExportItems();
     void testExportWithNewPassword();
     void testWebsiteIconService();

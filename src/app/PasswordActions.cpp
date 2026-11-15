@@ -77,18 +77,6 @@ bool PasswordActions::registerClick(int index) {
 
 bool PasswordActions::deleteItem(int index) { return validIndex(index) && m_service->deleteItem(index); }
 
-int PasswordActions::deleteItems(const QVariantList &indices) {
-    QList<int> list;
-    for (const QVariant &v : indices)
-        list << v.toInt();
-    std::sort(list.begin(), list.end(), std::greater<int>());
-    list.erase(std::unique(list.begin(), list.end()), list.end());
-    int deleted = 0;
-    for (int i : list)
-        deleted += deleteItem(i) ? 1 : 0;
-    return deleted;
-}
-
 bool PasswordActions::exportItems(const QVariantList &indices, const QString &pathOrUrl, const QString &newPassword) {
     if (m_busy || !m_service->isOpen())
         return false;

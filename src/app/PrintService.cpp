@@ -1,8 +1,5 @@
 #include "PrintService.h"
 
-#include <QCheckBox>
-#include <QFileDialog>
-#include <QMessageBox>
 #include <QPrintDialog>
 #include <QPrintPreviewDialog>
 #include <QPrinter>
@@ -10,23 +7,10 @@
 #include <QSaveFile>
 
 #include "FilePermissions.h"
-#include <QStandardPaths>
 
 namespace EasePass::App {
 
 PrintService::PrintService(QObject *parent) : QObject(parent) {}
-
-bool PrintService::askOptions(Options &options, QWidget *parent) {
-    QMessageBox box(QMessageBox::Warning, tr("Print passwords"), Core::PrintDocumentBuilder::plaintextWarning(),
-                    QMessageBox::Ok | QMessageBox::Cancel, parent);
-    auto *check = new QCheckBox(tr("Include passwords"), &box);
-    check->setChecked(options.includePasswords);
-    box.setCheckBox(check);
-    if (box.exec() != QMessageBox::Ok)
-        return false;
-    options.includePasswords = check->isChecked();
-    return true;
-}
 
 bool PrintService::print(const QList<Core::PasswordItem> &items, const Options &options, QWidget *parent) {
     QPrinter printer(QPrinter::HighResolution);
@@ -72,24 +56,6 @@ bool PrintService::exportPdf(const QList<Core::PasswordItem> &items, const Optio
     if (!file.commit()) {
         if (errorString)
             *errorString = file.errorString();
-        return false;
-    }
-    return true;
-}
-
-bool PrintService::exportPdfInteractive(const QList<Core::PasswordItem> &items, const Options &options,
-                                        QWidget *parent) {
-    const QString dir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
-    QString name = options.title.isEmpty() ? QStringLiteral("EasePass") : options.title;
-    QString path = QFileDialog::getSaveFileName(parent, tr("Export PDF"), dir + QLatin1Char('/') + name + ".pdf",
-                                                tr("PDF files (*.pdf)"));
-    if (path.isEmpty())
-        return false;
-    if (!path.endsWith(QLatin1String(".pdf"), Qt::CaseInsensitive))
-        path += QLatin1String(".pdf");
-    QString err;
-    if (!exportPdf(items, options, path, &err)) {
-        QMessageBox::warning(parent, tr("Export PDF"), err);
         return false;
     }
     return true;

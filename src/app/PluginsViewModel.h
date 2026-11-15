@@ -237,7 +237,6 @@ private:
     void setPending(Plugin::InstallCandidate candidate, const QString &feed);
     void clearPending();
     void applyRevocations();
-    void fetchFeedsThenRefresh();
     void beginFilePick(const std::shared_ptr<PickRequest> &request, const QString &pluginName, const QString &title,
                        const QStringList &extensions);
     QString iconSource(const QString &id) const;

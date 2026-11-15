@@ -105,12 +105,6 @@ QString TotpHelper::generateToken(const QString &secret, qint64 timestampSeconds
     return QString("%1").arg(code, digits, 10, QChar('0'));
 }
 
-QString TotpHelper::generateCurrentToken(const QString &secret, int digits, int period, const QString &algorithm,
-                                         const IClock *clock) {
-    qint64 now = clock ? clock->currentSecsSinceEpoch() : SystemClock::instance().currentSecsSinceEpoch();
-    return generateToken(secret, now, digits, period, algorithm);
-}
-
 int TotpHelper::getRemainingSeconds(int period, std::optional<qint64> timestampSeconds, const IClock *clock) {
     if (period <= 0)
         period = 30;

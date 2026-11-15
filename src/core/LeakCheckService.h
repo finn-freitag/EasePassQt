@@ -54,9 +54,7 @@ public:
     /// Asynchronously checks @p password. Empty passwords yield Unknown.
     void check(const SecretString &password, Callback callback);
 
-    void setBaseUrl(const QString &url) { m_baseUrl = url; }
     void setCacheTtlSeconds(int seconds) { m_cacheTtl = std::max(0, seconds); }
-    int cacheTtlSeconds() const { return m_cacheTtl; }
     void clearCache() { m_cache.clear(); }
 
     /// Uppercase hex SHA-1 of the UTF-8 password (40 chars). C#: HashHelper.

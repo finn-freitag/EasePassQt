@@ -40,7 +40,6 @@ public:
     Q_INVOKABLE bool registerClick(int index);
     Q_INVOKABLE bool deleteItem(int index);
     /// Deletes several items (highest index first so indices stay valid).
-    Q_INVOKABLE int deleteItems(const QVariantList &indices);
     /// Exports the given items into a new database file. Empty @p newPassword keeps the
     /// current master password and second factor (C#: Export / "Export new PW").
     Q_INVOKABLE bool exportItems(const QVariantList &indices, const QString &pathOrUrl,

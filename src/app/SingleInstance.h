@@ -35,7 +35,6 @@ public:
     bool sendToPrimary(const QStringList &arguments, int timeoutMs = 2000) const;
 
     QString serverName() const { return m_serverName; }
-    QString lockFilePath() const { return m_lockPath; }
 
 signals:
     /// A second launch asked the primary to show itself; @p arguments are its arguments.
