@@ -21,6 +21,7 @@ private slots:
     void testReadOnlyRejectsMutation();
     void testSourceBecomingReadOnly();
     void testSaveFailureReportedAndRetried();
+    void testFailedSaveOnLockLeavesRecoveryCopy();
     void testLockWipesSecrets();
     void testCloseWhileOpeningDiscardsResult();
     void testDestructorFlushesPendingSave();

@@ -39,10 +39,11 @@
 #ifdef EASEPASS_HAVE_PLUGINS
 #include "BuildInfo.h"
 #include "PluginsViewModel.h"
-#include <QDir>
 #include <QPointer>
-#include <QStandardPaths>
 #endif
+
+#include <QDir>
+#include <QStandardPaths>
 
 namespace EasePass::App {
 
@@ -61,6 +62,10 @@ AppContext::AppContext(Deps deps, QObject *parent)
 
     m_service = new DatabaseService(deps.kdf, this);
     m_service->setSaveDelayMs(m_settings->databaseDeferredSaveSeconds() * 1000);
+    m_service->setRecoveryDirectory(!deps.recoveryDirectory.isEmpty()
+                                        ? deps.recoveryDirectory
+                                        : QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
+                                              .filePath(QStringLiteral("recovery")));
     m_operations = new DatabaseOperations(m_settings, m_service, deps.kdf, this);
     m_clipboardManager = new ClipboardManager(clipboard, m_settings.get(), m_clock, this);
     m_leakCheck = new LeakCheckService(network, m_settings.get(), m_clock, this);

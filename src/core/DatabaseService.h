@@ -41,7 +41,8 @@ namespace EasePass::Core {
  *
  * close()/lock(): flushes unsaved changes (the save runs in the background with its own
  * snapshot), wipes master password/second factor, drops the items and calls logout() on the
- * source after the final save. shutdown() (also called by the destructor) additionally waits
+ * source after the final save. If that final save fails, nothing could retry it any more, so
+ * the encrypted database is written to the recovery directory and saveFailed() names the file. shutdown() (also called by the destructor) additionally waits
  * for all background work - use it on application exit.
  *
  * Management operations on the open database (T6; C#: Views/ManageDatabasePage.xaml.cs,
@@ -125,6 +126,10 @@ public:
     bool resetPopularity();
 
     void setSaveDelayMs(int delayMs) { m_saver->setDelayMs(delayMs); }
+    /// Where the last save of a session is kept if it fails (the source is unreachable while
+    /// the database is being locked): `<directory>/<name>-<time>.epdb`, encrypted like any
+    /// database file, so it can be added as a database. Empty (default): no recovery copy.
+    void setRecoveryDirectory(const QString &directory) { m_recoveryDirectory = directory; }
     /// Schedules a deferred save (debounced).
     void requestSave();
     /// Saves now (asynchronously) if there are unsaved changes.
@@ -212,9 +217,9 @@ private:
     void setState(State state);
     void finishOpen(quint64 openId, LoadResult result, std::shared_ptr<DatabaseFile> db,
                     std::shared_ptr<IDatabaseSource> source);
-    void startSaveJob(bool fromSaver, SaveDone done = {});
+    void startSaveJob(bool fromSaver, SaveDone done = {}, bool closing = false);
     void finishSave(bool ok, quint64 generation, quint64 session, bool fromSaver, const QString &description,
-                    const SaveDone &done);
+                    const QString &recoveryFile, const SaveDone &done);
     void enqueueLogout(std::shared_ptr<IDatabaseSource> source);
     void onSourceChanged();
     bool canMutate() const;
@@ -227,6 +232,7 @@ private:
     void applySecretChange(const std::function<void(DatabaseFile &)> &change, SaveDone done);
 
     KdfParams m_kdf;
+    QString m_recoveryDirectory;
     QThreadPool m_pool;
     DeferredSaveManager *m_saver = nullptr;
 

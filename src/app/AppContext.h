@@ -68,6 +68,7 @@ public:
         QString iconCacheDir;                                 ///< default: WebsiteIconManager default
         const Core::IClock *clock = nullptr;                  ///< default: SystemClock
         Core::KdfParams kdf = Core::KdfParams::production();  ///< tests pass cheap params
+        QString recoveryDirectory;                            ///< default: <AppDataLocation>/recovery
         QString pluginsDirectory;                             ///< default: <AppDataLocation>/plugins
         QUrl pluginCatalogUrl;                                ///< default: PluginsViewModel::DefaultCatalogUrl
     };

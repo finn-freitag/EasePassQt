@@ -106,6 +106,12 @@ PRIMARY selection. Qt does not do that for hidden (password-mode) fields.
 On Windows the Unix permission bits have no effect. There the ACLs of the user profile
 protect the files.
 
+- **Recovery copies.** If the last save of a session fails (the database is being locked and
+  its file or server cannot be written), the encrypted database is written to
+  `<AppData>/recovery/<name>-<time>.epdb` and the error message names the file. It is a
+  normal database file (same master password and second factor, owner-only) and is never
+  overwritten or deleted by the app; add it as a database to get the changes back.
+
 ## Logs
 
 - **No secrets are logged on purpose.** As a second line of defence, every message passes

@@ -331,6 +331,53 @@ void DatabaseServiceTest::testSaveFailureReportedAndRetried() {
     QCOMPARE(decodeNames(src->bytes()), QStringList({"A", "B"}));
 }
 
+// Locking while the source cannot be written (server of a plugin unreachable, disk full):
+// the changes of the session must not vanish with the lock.
+void DatabaseServiceTest::testFailedSaveOnLockLeavesRecoveryCopy() {
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString recovery = QDir(dir.path()).filePath("recovery");
+    auto src = makeSource();
+    DatabaseService svc(kFastKdf);
+    svc.setRecoveryDirectory(recovery);
+    QCOMPARE(openAndWait(svc, src), LoadResult::Success);
+
+    // A failed save while the database stays open is retried later: no copy for that.
+    src->setFailSaves(true);
+    QSignalSpy failed(&svc, &DatabaseService::saveFailed);
+    QVERIFY(svc.addItem(makeItem("B")));
+    svc.saveNow();
+    QVERIFY(failed.wait(10000));
+    QVERIFY(QDir(recovery).entryList(QDir::Files).isEmpty());
+    QVERIFY(svc.isDirty());
+
+    svc.lock();
+    QVERIFY(!svc.isOpen());
+    QVERIFY(failed.wait(10000));
+    const QStringList files = QDir(recovery).entryList(QDir::Files);
+    QCOMPARE(files.size(), 1);
+    QVERIFY(files.first().endsWith(".epdb"));
+    const QString path = QDir(recovery).filePath(files.first());
+    QVERIFY2(failed.last().at(0).toString().contains(path), qPrintable(failed.last().at(0).toString()));
+
+    // The copy is a normal database file with the same password and holds the lost change.
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    QCOMPARE(decodeNames(file.readAll()), QStringList({"A", "B"}));
+#ifdef Q_OS_UNIX
+    QCOMPARE(file.permissions() & (QFileDevice::ReadGroup | QFileDevice::ReadOther), QFileDevice::Permissions());
+#endif
+    QCOMPARE(decodeNames(src->bytes()), QStringList({"A"})); // the source never got it
+
+    // A successful last save leaves nothing behind.
+    src->setFailSaves(false);
+    QCOMPARE(openAndWait(svc, src), LoadResult::Success);
+    QVERIFY(svc.addItem(makeItem("C")));
+    svc.shutdown();
+    QCOMPARE(QDir(recovery).entryList(QDir::Files).size(), 1);
+    QCOMPARE(decodeNames(src->bytes()), QStringList({"A", "C"}));
+}
+
 void DatabaseServiceTest::testLockWipesSecrets() {
     auto src = makeSource();
     DatabaseService svc(kFastKdf);

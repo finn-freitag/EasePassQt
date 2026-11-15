@@ -200,6 +200,7 @@ set(TEST_CORE_UNIT_FUNCTIONS
     testReadOnlyRejectsMutation
     testSourceBecomingReadOnly
     testSaveFailureReportedAndRetried
+    testFailedSaveOnLockLeavesRecoveryCopy
     testLockWipesSecrets
     testCloseWhileOpeningDiscardsResult
     testDestructorFlushesPendingSave

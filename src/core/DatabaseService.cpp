@@ -1,6 +1,12 @@
 #include "DatabaseService.h"
 
+#include "FilePermissions.h"
+
 #include <QCoreApplication>
+#include <QDateTime>
+#include <QDir>
+#include <QFile>
+#include <QRegularExpression>
 #include <QLoggingCategory>
 #include <QMetaObject>
 #include <utility>
@@ -132,7 +138,7 @@ void DatabaseService::close() {
     // Flush: the final save takes its own snapshot, so the secrets below can be wiped now.
     m_saver->cancelPending();
     if (isDirty() && !isReadOnly()) {
-        startSaveJob(false);
+        startSaveJob(false, {}, /*closing=*/true);
     }
 
     disconnect(m_source.get(), nullptr, this, nullptr);
@@ -300,7 +306,37 @@ void DatabaseService::saveNow() {
     }
 }
 
-void DatabaseService::startSaveJob(bool fromSaver, SaveDone done) {
+namespace {
+// Writes the encrypted database next to nothing else: a new, owner-only file.
+QString writeRecoveryFile(const QString &directory, const QString &name, const QByteArray &bytes) {
+    if (directory.isEmpty() || bytes.isEmpty() || !QDir().mkpath(directory)) {
+        return QString();
+    }
+    QString base = name;
+    base.replace(QRegularExpression(QStringLiteral("[^\\w .-]")), QStringLiteral("_"));
+    if (base.trimmed().isEmpty()) {
+        base = QStringLiteral("database");
+    }
+    const QString stamp = QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd-HHmmss"));
+    for (int attempt = 0; attempt < 100; ++attempt) {
+        const QString suffix = attempt == 0 ? QString() : QStringLiteral("-%1").arg(attempt);
+        const QString path = QDir(directory).filePath(QStringLiteral("%1-%2%3.epdb").arg(base, stamp, suffix));
+        QFile file(path);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::NewOnly)) {
+            continue; // exists already: never overwrite another recovery copy
+        }
+        restrictToOwner(file);
+        if (file.write(bytes) == bytes.size() && file.flush()) {
+            return path;
+        }
+        file.remove();
+        return QString();
+    }
+    return QString();
+}
+} // namespace
+
+void DatabaseService::startSaveJob(bool fromSaver, SaveDone done, bool closing) {
     if (!m_db || !m_source || m_db->isReadOnly) {
         // C#: DatabaseItem.SaveDatabase returns false for read-only databases.
         if (fromSaver) {
@@ -319,6 +355,10 @@ void DatabaseService::startSaveJob(bool fromSaver, SaveDone done) {
     const quint64 generation = m_changeGeneration;
     const quint64 session = m_session;
     const QString description = m_source->sourceDescription();
+    // Only the last save of a session gets a recovery copy: any other failed save leaves
+    // the database open and dirty, and is tried again.
+    const QString recoveryDirectory = closing ? m_recoveryDirectory : QString();
+    const QString name = m_source->databaseName();
 
     ++m_pendingJobs;
     if (m_savesRunning++ == 0) {
@@ -326,20 +366,23 @@ void DatabaseService::startSaveJob(bool fromSaver, SaveDone done) {
     }
 
     m_pool.start([this, snapshot = std::move(snapshot), source = std::move(source), generation, session, fromSaver,
-                  description, kdf = m_kdf, done = std::move(done)]() mutable {
+                  description, recoveryDirectory, name, kdf = m_kdf, done = std::move(done)]() mutable {
         const QByteArray bytes = snapshot->serialize(kdf);
         snapshot.reset();
         const bool ok = !bytes.isEmpty() && source->saveBytes(bytes);
+        const QString recoveryFile = ok ? QString() : writeRecoveryFile(recoveryDirectory, name, bytes);
         QMetaObject::invokeMethod(
             this,
-            [this, ok, generation, session, fromSaver, description, source = std::move(source),
-             done = std::move(done)]() { finishSave(ok, generation, session, fromSaver, description, done); },
+            [this, ok, generation, session, fromSaver, description, recoveryFile, source = std::move(source),
+             done = std::move(done)]() {
+                finishSave(ok, generation, session, fromSaver, description, recoveryFile, done);
+            },
             Qt::QueuedConnection);
     });
 }
 
 void DatabaseService::finishSave(bool ok, quint64 generation, quint64 session, bool fromSaver,
-                                 const QString &description, const SaveDone &done) {
+                                 const QString &description, const QString &recoveryFile, const SaveDone &done) {
     --m_pendingJobs;
     --m_savesRunning;
 
@@ -347,9 +390,15 @@ void DatabaseService::finishSave(bool ok, quint64 generation, quint64 session, b
         m_savedGeneration = generation;
     }
 
-    const QString message = ok ? QString() : tr("Could not save the database to \"%1\".").arg(description);
+    QString message;
     if (!ok) {
-        qCWarning(lcDatabaseService) << "Saving database failed:" << description;
+        message = tr("Could not save the database to \"%1\".").arg(description);
+        if (!recoveryFile.isEmpty()) {
+            message += QLatin1Char(' ') +
+                       tr("Your last changes were kept in \"%1\". Add that file as a database to get them back.")
+                           .arg(recoveryFile);
+        }
+        qCWarning(lcDatabaseService) << "Saving database failed:" << description << "recovery copy:" << recoveryFile;
     }
 
     emit saveFinished(ok);

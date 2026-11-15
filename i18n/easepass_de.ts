@@ -1331,17 +1331,22 @@
 <context>
     <name>EasePass::Core::DatabaseService</name>
     <message>
-        <location filename="../src/core/DatabaseService.cpp" line="+307"/>
+        <location filename="../src/core/DatabaseService.cpp" line="+343"/>
         <source>No writable database is open.</source>
         <translation>Keine beschreibbare Datenbank geöffnet.</translation>
     </message>
     <message>
-        <location line="+43"/>
+        <location line="+52"/>
         <source>Could not save the database to &quot;%1&quot;.</source>
         <translation>Die Datenbank konnte nicht unter „%1“ gespeichert werden.</translation>
     </message>
     <message>
-        <location line="+62"/>
+        <location line="+3"/>
+        <source>Your last changes were kept in &quot;%1&quot;. Add that file as a database to get them back.</source>
+        <translation>Deine letzten Änderungen wurden in „%1“ gesichert. Füge diese Datei als Datenbank hinzu, um sie zurückzubekommen.</translation>
+    </message>
+    <message>
+        <location line="+63"/>
         <source> (Temp)</source>
         <translation> (Temporär)</translation>
     </message>
