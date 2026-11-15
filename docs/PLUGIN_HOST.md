@@ -1,4 +1,4 @@
-# Plugin host (T27) and plugin UI (T28)
+# Plugin host (T27), plugin UI (T28) and official plugins (T29)
 
 How Ease Pass runs plugins. The interface itself is specified in
 [easepassqt-plugin-spec](https://github.com/finn-freitag/easepassqt-plugin-spec); why
@@ -61,7 +61,9 @@ storage/<id>/files/<name>      the plugin's files
   in a file dialog does not count. A timeout or crash is returned as `PluginError`; the
   instance is dropped and a new one is created for the next call.
 - **Memory:** 64 MiB of linear memory per instance.
-- **Byte lists:** 8 MiB per call in each direction that the host controls.
+- **Byte lists:** 8 MiB per call in each direction that the host controls. In practice
+  Wasmtime allows less, see "Data per call" under Known limits; a database handled by a
+  `database-source` plugin is limited to 2 MiB (`PluginLimits::MaxDatabaseBytes`).
 - **Storage:** 64 MiB, 1024 keys, 1024 files per plugin. File names are plain names;
   nothing outside `storage/<id>/` can be named.
 - **Network:** host and port must match `network_hosts` of the manifest before the name
@@ -89,7 +91,7 @@ be reached; it never makes a package "verified". The one thing taken from it is 
 revocation. Catalogs named by `store-feed` plugins are read with the same rules and never
 verify anything. The official list is
 `https://raw.githubusercontent.com/finn-freitag/EasePassQt/main/plugins/PluginList.json`
-(the file is published with T29). Nothing is fetched at application start: the list is
+(`plugins/PluginList.json` of this repository, see "Official plugins"). Nothing is fetched at application start: the list is
 loaded when the plugin page opens or a file is installed.
 
 **View model** (`src/app/PluginsViewModel`, QML singleton `Plugins`, owns the
@@ -110,7 +112,9 @@ loaded when the plugin page opens or a file is installed.
   candidates until the user selected them; they are dropped when the database is
   locked), and the settings form of `database-source` plugins, drawn from the plugin's
   JSON Schema (`configFieldsFromSchema`: flat object with string, password, choice,
-  integer, number and boolean fields).
+  integer, number and boolean fields). The fields are ordered by the properties'
+  `propertyOrder` numbers (a JSON object has no order of its own), then by key. A property
+  listed in `required` must not be left empty in the form.
 
 ### Plugins at work in the application
 
@@ -153,9 +157,18 @@ of `SettingsPage.qml`.
   cap bounds it, but a hostile plugin can still make the host allocate about 2 GiB for a
   moment. Avoiding that needs a change of the interface (bytes as text) or a typed call
   API in Wasmtime.
-- **TLS is not covered by tests.** Certificate verification is switched on in code, and a
-  test checks that TLS against a plain server fails, but there is no test with a real TLS
-  server.
+- **Data per call: about 2.6 MiB.** Wasmtime stops a call when more than 128 MiB of its
+  value type were copied between host and plugin, and a byte costs about 24 bytes there.
+  The C API of Wasmtime 48 cannot raise that. A database passes the boundary twice
+  (network to plugin, plugin to Ease Pass), so databases of plugins are limited to 2 MiB
+  and larger ones are refused with a message. Found with the FTP plugin and a 3 MB file.
+- **TLS is only covered by a test that needs servers.** Certificate verification is
+  switched on in code and a test checks that TLS against a plain server fails. A real TLS
+  server is only used by `OfficialPluginsTest::testFtpPluginAgainstServers` (FTPS with a
+  test certificate trusted through `PluginEnvironment::extraCaCertificates`), which is
+  skipped unless the servers of the FTP plugin's repository are running.
+- **No TLS session reuse** between connections of a plugin. FTPS servers that demand it
+  for the data connection refuse the transfer.
 - **Inspection compiles the component** (`wasmtime_component_new`) before the import list
   can be read. The package size is capped first.
 - **Shutdown** interrupts running plugin code, but a host function that is blocking
@@ -175,6 +188,30 @@ of `SettingsPage.qml`.
 - Plugin log lines go to the logging category `easepass.plugin.log` (debug level, so not
   into the log file by default; warnings and errors of a plugin are logged).
 
+## Official plugins (T29)
+
+`plugins/` holds the plugin list the application fetches (`PluginList.json`) and, next to
+it, the exact packages it lists. The packages are built in their own repositories (Rust,
+`tools/build.sh` there) and published as release assets; `download_url` points at those.
+
+| Plugin | Repository | What it does |
+| --- | --- | --- |
+| `com.finnfreitag.easepass.ftp-database` | [EasePassQTDatabaseSourcePlugin](https://github.com/finn-freitag/EasePassQTDatabaseSourcePlugin) | one database on an FTP, FTPS or SFTP server |
+| `com.finnfreitag.easepass.cloud` | [EasePassQTCloudPlugin](https://github.com/finn-freitag/EasePassQTCloudPlugin) | databases on an Ease Pass Cloud server |
+| `com.finnfreitag.easepass.url-database` | [EasePassQTRemoteDatabaseSourcePlugin](https://github.com/finn-freitag/EasePassQTRemoteDatabaseSourcePlugin) | a database file from a web address, read-only |
+
+All three are of type `database-source` with the permissions `storage` and `network`, and
+name `*:*` as servers because the user chooses the server (the install dialog warns about
+that).
+
+To publish a new version: build it in the plugin's repository, create a release there
+with the package, copy the package to `plugins/`, run `tools/update_plugin_list.py`, and
+commit. The test `plugins.list_matches_packages` (`tests/CheckPluginList.cmake`, runs in
+every build including CI) fails if a package and the hash in the list differ.
+
+A user sees a plugin as "verified" only when the pushed `PluginList.json` on the `main`
+branch contains the hash of the package they install.
+
 ## Tests
 
 `test_plugin` (`tests/plugin`): runtime, package, storage, network, manager, adapter and
@@ -183,3 +220,11 @@ is tested in `test_app` (`tests/app/PluginsViewModelTest.cpp`, fake network) and
 `test_qml` (`tests/qml/tst_plugins.qml`, with a fake view model and with the real one). The network tests use
 a local server; names ending in `.conformance.test` are mapped to `127.0.0.1` by a test
 resolver.
+
+`OfficialPluginsTest` runs the packages of `plugins/` in the real host: list against
+packages, computed types and permissions, the URL plugin and the Ease Pass Cloud plugin
+against the local test server (which imitates the cloud's plugin API), and the FTP
+plugin's settings. `testFtpPluginAgainstServers` runs the FTP plugin against real FTP,
+FTPS and SFTP servers; it is skipped unless `EASEPASS_TEST_FTP_SERVERS` and
+`EASEPASS_TEST_FTP_ROOT` are set (see the comment above the test). The protocol code of the
+plugins is tested in their own repositories.

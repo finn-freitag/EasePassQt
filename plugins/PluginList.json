@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "updated": "2026-11-15T00:00:00Z",
+  "plugins": [
+    {
+      "id": "com.finnfreitag.easepass.ftp-database",
+      "name": "FTP/FTPS/SFTP Remote Database",
+      "description": "Opens and saves an Ease Pass database on your own FTP, FTPS or SFTP server. The server only ever receives the encrypted database.",
+      "author": "Finn Freitag",
+      "version": "1.0.0",
+      "api_version": 1,
+      "os": [
+        "windows",
+        "linux",
+        "macos"
+      ],
+      "download_url": "https://github.com/finn-freitag/EasePassQTDatabaseSourcePlugin/releases/download/v1.0.0/com.finnfreitag.easepass.ftp-database.epplugin",
+      "sha256": "1ad8688f2e0627be637a4c78be96d44a76586086735eca402dc0f59e055f40e6",
+      "sensitive": true,
+      "revoked": false
+    },
+    {
+      "id": "com.finnfreitag.easepass.cloud",
+      "name": "Ease Pass Cloud",
+      "description": "Opens and saves databases on your own Ease Pass Cloud server. The server only ever receives the encrypted database.",
+      "author": "Finn Freitag",
+      "version": "1.0.0",
+      "api_version": 1,
+      "os": [
+        "windows",
+        "linux",
+        "macos"
+      ],
+      "download_url": "https://github.com/finn-freitag/EasePassQTCloudPlugin/releases/download/v1.0.0/com.finnfreitag.easepass.cloud.epplugin",
+      "sha256": "22dbd08dace734c5ad1890e0943efbd6c5bae128eb45bccd7b6a47ed31285daa",
+      "sensitive": true,
+      "revoked": false
+    },
+    {
+      "id": "com.finnfreitag.easepass.url-database",
+      "name": "Database from a URL (read-only)",
+      "description": "Opens an Ease Pass database file from a web address (https://.../name.epdb), read-only.",
+      "author": "Finn Freitag",
+      "version": "1.0.0",
+      "api_version": 1,
+      "os": [
+        "windows",
+        "linux",
+        "macos"
+      ],
+      "download_url": "https://github.com/finn-freitag/EasePassQTRemoteDatabaseSourcePlugin/releases/download/v1.0.0/com.finnfreitag.easepass.url-database.epplugin",
+      "sha256": "ddf78e8a0698a06f46fb5764ed97216fb96f8f5afca23506238de164d63b6eef",
+      "sensitive": true,
+      "revoked": false
+    }
+  ]
+}

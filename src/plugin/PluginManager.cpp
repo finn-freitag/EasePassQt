@@ -139,7 +139,14 @@ PluginManager::PluginManager(PluginEnvironment environment, QObject *parent)
     readRecords();
 }
 
-PluginManager::~PluginManager() = default;
+PluginManager::~PluginManager() {
+    // No plugin thread outlives the manager: a thread that is still compiling or running a
+    // plugin when the process ends crashes it.
+    for (const std::weak_ptr<PluginWorker> &started : std::as_const(m_started)) {
+        if (const std::shared_ptr<PluginWorker> worker = started.lock())
+            worker->shutdown();
+    }
+}
 
 QString PluginManager::packagePath(const QString &id) const {
     return QDir(m_environment.pluginsDirectory).filePath(QStringLiteral("packages/%1.epplugin").arg(id));
@@ -333,7 +340,10 @@ PluginResult PluginManager::setAllowPrivateNetwork(const QString &id, bool allow
     return failure(PluginResult::Code::NotInstalled, QStringLiteral("the plugin is not installed"));
 }
 
-void PluginManager::unload(const QString &id) { m_loaded.remove(id); }
+void PluginManager::unload(const QString &id) {
+    if (const std::shared_ptr<PluginWorker> worker = m_loaded.take(id))
+        worker->shutdown();
+}
 
 std::shared_ptr<PluginWorker> PluginManager::load(const QString &id, PluginResult *result) {
     using Code = PluginResult::Code;
@@ -418,6 +428,7 @@ std::shared_ptr<PluginWorker> PluginManager::load(const QString &id, PluginResul
         policy.allowedHosts = package->manifest.networkHosts;
         policy.allowPrivateAddresses = record->allowPrivateNetwork;
         policy.resolver = environment.resolver;
+        policy.extraCaCertificates = environment.extraCaCertificates;
         setup.services.network = std::make_shared<PluginNetwork>(policy);
     }
     if (inspection.permissions.contains(QStringLiteral("leak-check")))
@@ -425,6 +436,8 @@ std::shared_ptr<PluginWorker> PluginManager::load(const QString &id, PluginResul
 
     const auto worker = std::make_shared<PluginWorker>(std::move(setup));
     m_loaded.insert(id, worker);
+    m_started.removeIf([](const std::weak_ptr<PluginWorker> &started) { return started.expired(); });
+    m_started << worker;
     return worker;
 }
 

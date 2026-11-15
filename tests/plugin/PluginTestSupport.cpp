@@ -205,6 +205,27 @@ int TestServer::tcpConnections() const {
     return m_tcpConnections;
 }
 
+void TestServer::setFile(const QByteArray &content) {
+    QMutexLocker lock(&m_mutex);
+    m_file = content;
+}
+QByteArray TestServer::cloudDatabase() const {
+    QMutexLocker lock(&m_mutex);
+    return m_cloudDatabase;
+}
+void TestServer::setCloudDatabase(const QByteArray &content) {
+    QMutexLocker lock(&m_mutex);
+    m_cloudDatabase = content;
+}
+bool TestServer::cloudLocked() const {
+    QMutexLocker lock(&m_mutex);
+    return m_cloudLocked;
+}
+void TestServer::setCloudLocked(bool locked) {
+    QMutexLocker lock(&m_mutex);
+    m_cloudLocked = locked;
+}
+
 QByteArray TestServer::respond(const QByteArray &method, const QByteArray &path, const QList<QByteArray> &headerLines,
                                const QByteArray &body, bool *keepSilent) const {
     const auto header = [&](const QByteArray &name) {
@@ -224,6 +245,34 @@ QByteArray TestServer::respond(const QByteArray &method, const QByteArray &path,
     };
     const QByteArray reply = "X-Conformance-Reply: " + header("x-conformance") + "-" + method + "\r\n";
 
+    if (path == "/files/vault.epdb" || path.startsWith("/files/vault.epdb?")) {
+        QMutexLocker lock(&m_mutex);
+        return m_file.isEmpty() ? QByteArray("HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n") : ok(m_file);
+    }
+    if (path.startsWith("/pluginapi/")) {
+        const auto json = [](const QByteArray &status, const QByteArray &content) {
+            return "HTTP/1.1 " + status + "\r\nContent-Type: application/json\r\nContent-Length: " +
+                   QByteArray::number(content.size()) + "\r\n\r\n" + content;
+        };
+        if (header("accesstoken") != "test-token")
+            return json("401 Unauthorized", R"({"success":false,"message":"Invalid access token."})");
+        QMutexLocker lock(&m_mutex);
+        if (path == "/pluginapi/metadata" && method == "GET")
+            return json("200 OK", QByteArray(R"({"success":true,"data":{"LastModified":"2026-01-29T21:35:17.000Z",)") +
+                                      R"("DatabaseName":"Team vault","DatabaseID":"1","Locked":)" +
+                                      (m_cloudLocked ? "true" : "false") + R"(,"Readonly":false}})");
+        if (path == "/pluginapi/database" && method == "GET")
+            return ok(m_cloudDatabase, "Content-Type: application/octet-stream\r\n");
+        if (path == "/pluginapi/database" && method == "POST") {
+            m_cloudDatabase = body;
+            return json("200 OK", R"({"success":true,"message":"File uploaded successfully."})");
+        }
+        if (path == "/pluginapi/userLock" && method == "GET") {
+            m_cloudLocked = header("lockstatus") == "lock";
+            return json("200 OK", R"({"success":true})");
+        }
+        return json("404 Not Found", "{}");
+    }
     if (path == "/hello")
         return ok("hello", reply);
     if (path == "/echo")

@@ -24,7 +24,9 @@
 #include <QPointer>
 #include <QSemaphore>
 #include <QTimer>
+#include <algorithm>
 #include <atomic>
+#include <numeric>
 
 Q_LOGGING_CATEGORY(lcPluginLog, "easepass.plugin.log")
 
@@ -916,6 +918,7 @@ QVariantList PluginsViewModel::configFieldsFromSchema(const QByteArray &schemaJs
         required << name.toString();
 
     QVariantList fields;
+    QList<double> order;
     for (auto it = properties.constBegin(); it != properties.constEnd(); ++it) {
         const QJsonObject property = it.value().toObject();
         const QString type = property.value(QStringLiteral("type")).toString();
@@ -961,9 +964,19 @@ QVariantList PluginsViewModel::configFieldsFromSchema(const QByteArray &schemaJs
             field.insert(QStringLiteral("minimum"), property.value(QStringLiteral("minimum")).toDouble());
         if (property.value(QStringLiteral("maximum")).isDouble())
             field.insert(QStringLiteral("maximum"), property.value(QStringLiteral("maximum")).toDouble());
+        // "propertyOrder" (a common extension of JSON Schema forms): a JSON object has no
+        // order of its own, so without it the fields come in alphabetical order of their keys.
+        order << property.value(QStringLiteral("propertyOrder")).toDouble(1e9);
         fields << field;
     }
-    return fields;
+    QList<qsizetype> positions(fields.size());
+    std::iota(positions.begin(), positions.end(), 0);
+    std::stable_sort(positions.begin(), positions.end(),
+                     [&order](qsizetype a, qsizetype b) { return order.at(a) < order.at(b); });
+    QVariantList sorted;
+    for (const qsizetype position : positions)
+        sorted << fields.at(position);
+    return sorted;
 }
 
 QByteArray PluginsViewModel::configJsonFromValues(const QVariantList &fields, const QVariantMap &values,

@@ -46,6 +46,10 @@ struct PluginLimits {
     std::shared_ptr<std::atomic_bool> cancel;
 
     static constexpr qsizetype MaxByteListSize = 8 * 1024 * 1024; ///< list<u8> or string per call
+    /// A database handled by a database-source plugin. Wasmtime limits the data copied
+    /// between host and plugin within one call (128 MiB of its value type, about 2.6 MiB
+    /// of bytes), and a database crosses twice (network <-> plugin <-> Ease Pass).
+    static constexpr qsizetype MaxDatabaseBytes = 2 * 1024 * 1024;
 };
 
 /// Thrown by a host function to make the calling plugin trap (misuse that has no error value).

@@ -30,4 +30,5 @@ private slots:
     void testAppContextOwnsPlugins();
     void testPluginDatabaseInApp();
     void testPluginGeneratorInApp();
+    void testOfficialPluginForms();
 };

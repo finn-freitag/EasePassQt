@@ -1000,6 +1000,16 @@ void PluginsViewModelTest::testConfigFieldsFromSchema() {
             "timeout": {"type": "number", "default": 2.5}
         }})";
     QString error;
+    {
+        // Fields come in the order the plugin asks for; fields without a number follow by key.
+        const QByteArray ordered = R"({"type": "object", "properties": {
+            "b": {"type": "string", "propertyOrder": 2}, "a": {"type": "string", "propertyOrder": 3},
+            "z": {"type": "string", "propertyOrder": 1}, "n": {"type": "string"}, "m": {"type": "string"}}})";
+        QStringList keys;
+        for (const QVariant &field : VM::configFieldsFromSchema(ordered, "{}", nullptr))
+            keys << field.toMap().value("key").toString();
+        QCOMPARE(keys, (QStringList{"z", "b", "a", "m", "n"}));
+    }
     const QVariantList fields = VM::configFieldsFromSchema(schema, R"({"host": "example.org", "passive": false})", &error);
     QVERIFY2(error.isEmpty(), qPrintable(error));
     QCOMPARE(fields.size(), 6);
@@ -1343,4 +1353,67 @@ void PluginsViewModelTest::testPluginGeneratorInApp() {
     QVERIFY2(!generator->errorMessage().isEmpty(), qPrintable(generator->errorMessage()));
     QVERIFY(generator->password().isEmpty());
     QVERIFY(!generator->busy());
+}
+
+// The settings forms of the official plugins (steps.txt T29), as the settings page gets them.
+void PluginsViewModelTest::testOfficialPluginForms() {
+    const auto package = [](const QString &id) {
+        QFile file(QStringLiteral(EASEPASS_OFFICIAL_PLUGINS_DIR "/") + id + QStringLiteral(".epplugin"));
+        return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray();
+    };
+    struct Expected {
+        QString id;
+        QString provider;
+        QStringList keys;  ///< in the order of the form
+        QStringList kinds;
+    };
+    const QList<Expected> expected{
+        {QStringLiteral("com.finnfreitag.easepass.ftp-database"), QStringLiteral("FTP, FTPS or SFTP server"),
+         {"mode", "host", "port", "username", "password", "remote_path", "server_key"},
+         {"choice", "string", "integer", "string", "password", "string", "string"}},
+        {QStringLiteral("com.finnfreitag.easepass.cloud"), QStringLiteral("Ease Pass Cloud"),
+         {"paste", "host", "tokens", "offline_copies"}, {"string", "string", "password", "boolean"}},
+        {QStringLiteral("com.finnfreitag.easepass.url-database"), QStringLiteral("Database from a URL (read-only)"),
+         {"address", "offline_copy"}, {"string", "boolean"}},
+    };
+    Fixture f;
+    f.serveCatalog({});
+    for (const Expected &plugin : expected) {
+        QVERIFY2(f.installed(package(plugin.id)), qPrintable(plugin.id));
+        // Each of them may connect to any server: the dialog said so before the install.
+        QCOMPARE(f.installedItem(plugin.id).value("warnings").toStringList().contains(
+                     QStringLiteral("This plugin can connect to ANY server.")),
+                 true);
+    }
+    QCOMPARE(f.vm->providerCount(), 3);
+    f.vm->loadProviders();
+    QVERIFY(waitUntil([&] { return f.vm->providers().size() == 3 && f.idle(); }));
+    QSignalSpy readySpy(f.vm.get(), &PluginsViewModel::configReady);
+    for (const Expected &plugin : expected) {
+        QString providerName;
+        for (const QVariant &provider : f.vm->providers()) {
+            if (provider.toMap().value("pluginId").toString() == plugin.id)
+                providerName = provider.toMap().value("name").toString();
+        }
+        QCOMPARE(providerName, plugin.provider);
+        readySpy.clear();
+        f.vm->openProviderConfig(plugin.id);
+        QVERIFY2(waitUntil([&] { return readySpy.count() == 1; }), qPrintable(plugin.id + f.lastMessage()));
+        QStringList keys, kinds;
+        for (const QVariant &field : f.vm->configFields()) {
+            keys << field.toMap().value("key").toString();
+            kinds << field.toMap().value("kind").toString();
+            QVERIFY(!field.toMap().value("title").toString().isEmpty());
+        }
+        QCOMPARE(keys, plugin.keys);
+        QCOMPARE(kinds, plugin.kinds);
+        // The untouched form can be saved.
+        QSignalSpy savedSpy(f.vm.get(), &PluginsViewModel::configSaved);
+        f.vm->saveProviderConfig({});
+        QVERIFY(waitUntil([&] { return savedSpy.count() == 1; }));
+        QVERIFY2(savedSpy.at(0).at(0).toBool(), qPrintable(plugin.id + f.lastMessage()));
+    }
+    // Nothing is configured, so no plugin offers a database (and none used the network).
+    QVERIFY(waitUntil([&] { return !f.vm->remoteLoading(); }));
+    QVERIFY(f.vm->remoteDatabases().isEmpty());
 }

@@ -8,6 +8,7 @@
 #include <QList>
 #include <QPair>
 #include <QString>
+#include <QSslCertificate>
 #include <QStringList>
 #include <functional>
 #include <memory>
@@ -71,6 +72,8 @@ public:
         int maxRedirects = 5;
         /// Name resolution; default: the system resolver. Tests map fake names to a local server.
         std::function<QList<QHostAddress>(const QString &host)> resolver;
+        /// Test seam: certificates trusted in addition to the system's (empty in the application).
+        QList<QSslCertificate> extraCaCertificates;
     };
 
     using Header = QPair<QString, QString>;

@@ -358,7 +358,8 @@ add_executable(test_app
     app/AppBehaviourTest.cpp
     app/SecurityTest.cpp
 )
-target_compile_definitions(test_app PRIVATE EASEPASS_TEST_FIXTURES_DIR="${EASEPASS_TEST_FIXTURES_DIR}")
+target_compile_definitions(test_app PRIVATE EASEPASS_TEST_FIXTURES_DIR="${EASEPASS_TEST_FIXTURES_DIR}"
+    EASEPASS_OFFICIAL_PLUGINS_DIR="${PROJECT_SOURCE_DIR}/plugins")
 target_link_libraries(test_app PRIVATE easepass_app Qt6::Test Qt6::Qml Qt6::Quick easepass_warnings)
 
 set(TEST_APP_UNIT_FUNCTIONS
@@ -494,6 +495,7 @@ if(EASEPASS_HAVE_PLUGINS)
         testAppContextOwnsPlugins
         testPluginDatabaseInApp
         testPluginGeneratorInApp
+        testOfficialPluginForms
     )
 endif()
 easepass_add_qtest(test_app LABELS unit FUNCTIONS ${TEST_APP_UNIT_FUNCTIONS})
@@ -630,6 +632,13 @@ set_tests_properties(smoke.launch_app PROPERTIES
     ENVIRONMENT_MODIFICATION "${EASEPASS_QML_TEST_ENV}"
 )
 
+# --- Official plugin list (steps.txt T29): hash of every package == hash in the list ----------
+add_test(NAME plugins.list_matches_packages
+    COMMAND ${CMAKE_COMMAND} -DPLUGINS_DIR=${PROJECT_SOURCE_DIR}/plugins
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/CheckPluginList.cmake
+)
+set_tests_properties(plugins.list_matches_packages PROPERTIES LABELS unit)
+
 # --- test_plugin (plugin host on Wasmtime; steps.txt T26/T27) --------------------
 if(EASEPASS_HAVE_PLUGINS)
     add_executable(test_plugin
@@ -645,8 +654,10 @@ if(EASEPASS_HAVE_PLUGINS)
         plugin/PluginManagerTest.cpp
         plugin/PluginAdaptersTest.cpp
         plugin/PluginCatalogTest.cpp
+        plugin/OfficialPluginsTest.cpp
     )
-    target_compile_definitions(test_plugin PRIVATE EASEPASS_TEST_FIXTURES_DIR="${EASEPASS_TEST_FIXTURES_DIR}")
+    target_compile_definitions(test_plugin PRIVATE EASEPASS_TEST_FIXTURES_DIR="${EASEPASS_TEST_FIXTURES_DIR}"
+        EASEPASS_OFFICIAL_PLUGINS_DIR="${PROJECT_SOURCE_DIR}/plugins")
     target_link_libraries(test_plugin PRIVATE easepass_plugin Qt6::Test ZLIB::ZLIB easepass_warnings)
 
     set(TEST_PLUGIN_UNIT_FUNCTIONS
@@ -738,6 +749,12 @@ if(EASEPASS_HAVE_PLUGINS)
         testFeedsNeverVerify
         testDownload
         testNetworkClientSizeCap
+        testManagerStopsThePluginsItStarted
+        testListMatchesPackages
+        testUrlPlugin
+        testCloudPlugin
+        testFtpPluginSettings
+        testFtpPluginAgainstServers
     )
     easepass_add_qtest(test_plugin LABELS unit FUNCTIONS ${TEST_PLUGIN_UNIT_FUNCTIONS})
 

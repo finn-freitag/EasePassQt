@@ -68,17 +68,46 @@ PluginWorker::PluginWorker(Setup setup, QObject *parent)
 }
 
 PluginWorker::~PluginWorker() {
-    // Interrupt a running call, then drop the instance on its own thread (sockets live there).
+    shutdown();
+    delete m_runner;
+}
+
+void PluginWorker::shutdown() {
+    // Interrupt a running call first: a blocking caller on another thread then returns and
+    // releases the lock.
     m_cancel->store(true);
+    QWriteLocker lock(&m_shutdownLock);
+    if (m_stopped)
+        return;
+    m_stopped = true;
+    // Drop the instance on its own thread (sockets live there).
     QMetaObject::invokeMethod(m_runner, [runner = m_runner] { runner->reset(); }, Qt::BlockingQueuedConnection);
     m_thread.quit();
     m_thread.wait();
-    delete m_runner;
 }
+
+namespace {
+PluginError stoppedError() {
+    return {PluginError::Kind::Unusable, {}, QStringLiteral("the plugin was stopped")};
+}
+} // namespace
 
 void PluginWorker::call(const QString &interface, const QString &function, const QList<Value> &arguments,
                         int timeoutMs, QObject *context, Callback callback) {
     QPointer<QObject> guard(context);
+    {
+        QReadLocker lock(&m_shutdownLock);
+        if (m_stopped) {
+            QMetaObject::invokeMethod(
+                this,
+                [guard, callback] {
+                    if (guard && callback)
+                        callback(Value(), stoppedError());
+                },
+                Qt::QueuedConnection);
+            return;
+        }
+    }
     QMetaObject::invokeMethod(
         m_runner,
         [=, this, runner = m_runner] {
@@ -103,6 +132,12 @@ Value PluginWorker::callBlocking(const QString &interface, const QString &functi
         error = &ignored;
     if (QThread::currentThread() == &m_thread)
         return m_runner->run(interface, function, arguments, timeoutMs, error);
+    // Held while waiting, so the thread cannot end underneath (which would wait forever).
+    QReadLocker lock(&m_shutdownLock);
+    if (m_stopped) {
+        *error = stoppedError();
+        return {};
+    }
     Value result;
     QMetaObject::invokeMethod(
         m_runner, [&, runner = m_runner] { result = runner->run(interface, function, arguments, timeoutMs, error); },
@@ -112,6 +147,19 @@ Value PluginWorker::callBlocking(const QString &interface, const QString &functi
 
 void PluginWorker::start(QObject *context, std::function<void(const PluginError &error)> callback) {
     QPointer<QObject> guard(context);
+    {
+        QReadLocker lock(&m_shutdownLock);
+        if (m_stopped) {
+            QMetaObject::invokeMethod(
+                this,
+                [guard, callback] {
+                    if (guard && callback)
+                        callback(stoppedError());
+                },
+                Qt::QueuedConnection);
+            return;
+        }
+    }
     QMetaObject::invokeMethod(
         m_runner,
         [=, this, runner = m_runner] {

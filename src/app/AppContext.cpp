@@ -156,14 +156,15 @@ AppContext::AppContext(Deps deps, QObject *parent)
 }
 
 AppContext::~AppContext() {
+    // Finish background saves before anything is destroyed. A database stored through a
+    // plugin is saved through that plugin, so this comes before the plugins stop.
+    m_operations->waitForBackgroundWork();
+    m_service->shutdown();
 #ifdef EASEPASS_HAVE_PLUGINS
-    // Stops the plugin threads first: plugins may still call into services owned by this object.
+    // Then stop the plugin threads, before the members they may call into go away.
     delete m_plugins;
     m_plugins = nullptr;
 #endif
-    // Finish background saves before the members are destroyed.
-    m_operations->waitForBackgroundWork();
-    m_service->shutdown();
 }
 
 void AppContext::registerQml() {

@@ -282,18 +282,23 @@ std::optional<QByteArray> PluginDatabaseSource::getBytes() {
     const Value value = error.ok() ? PluginError::unwrap(raw, &error) : Value();
     if (error.ok() && value.kind() != Value::Kind::Bytes && value.kind() != Value::Kind::List)
         error = unexpected(QStringLiteral("read-database"));
+    QByteArray bytes = error.ok() ? value.toBytes() : QByteArray();
+    if (error.ok() && bytes.size() > PluginLimits::MaxDatabaseBytes)
+        error = {PluginError::Kind::Host, QStringLiteral("too-large"),
+                 QStringLiteral("the database is too large to be opened through a plugin (2 MiB)")};
     setLastError(error);
     if (!error.ok())
         return std::nullopt;
-    return value.toBytes();
+    return bytes;
 }
 
 bool PluginDatabaseSource::saveBytes(const QByteArray &bytes) {
     PluginError error;
     if (isReadOnly()) {
         error = {PluginError::Kind::Host, {}, QStringLiteral("the database is read-only")};
-    } else if (bytes.size() > PluginLimits::MaxByteListSize) {
-        error = {PluginError::Kind::Host, {}, QStringLiteral("the database is too large for a plugin (8 MiB)")};
+    } else if (bytes.size() > PluginLimits::MaxDatabaseBytes) {
+        error = {PluginError::Kind::Host, QStringLiteral("too-large"),
+                 QStringLiteral("the database is too large to be stored through a plugin (2 MiB)")};
     } else {
         const Value raw = m_worker->callBlocking(DatabaseInterface, QStringLiteral("write-database"),
                                                  {Value::string(databaseId()), Value::bytes(bytes)},

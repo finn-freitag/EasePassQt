@@ -94,6 +94,8 @@ QList<QHostAddress> testResolver(const QString &host);
  * the calling thread). HTTP paths: /hello, /echo, /chunked, /until-close, /continue,
  * /status-404, /redirect-same, /redirect-post, /redirect-other, /redirect-loop, /big,
  * /slow. TCP: answers each line with "echo:<line>".
+ * /files/vault.epdb serves setFile(). /pluginapi/... behaves like an Ease Pass Cloud server
+ * with one database for the access token "test-token" (metadata, database GET/POST, userLock).
  */
 class TestServer : public QThread {
 public:
@@ -106,6 +108,11 @@ public:
     /// "METHOD path" of every HTTP request that reached the server.
     QStringList requests() const;
     int tcpConnections() const;
+    void setFile(const QByteArray &content);
+    QByteArray cloudDatabase() const;
+    void setCloudDatabase(const QByteArray &content);
+    bool cloudLocked() const;
+    void setCloudLocked(bool locked);
 
 protected:
     void run() override;
@@ -120,6 +127,9 @@ private:
     mutable QMutex m_mutex;
     QStringList m_requests;
     int m_tcpConnections = 0;
+    mutable QByteArray m_file;
+    mutable QByteArray m_cloudDatabase = "cloud database v1";
+    mutable bool m_cloudLocked = false;
 };
 
 } // namespace PluginTest

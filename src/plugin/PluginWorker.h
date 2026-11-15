@@ -5,6 +5,7 @@
 
 #include <QObject>
 #include <QPointer>
+#include <QReadWriteLock>
 #include <QThread>
 #include <functional>
 #include <memory>
@@ -44,6 +45,13 @@ public:
     Value callBlocking(const QString &interface, const QString &function, const QList<Value> &arguments,
                        int timeoutMs, PluginError *error);
 
+    /// Stops the plugin for good: interrupts a running call, drops the instance and ends the
+    /// thread. Calls made afterwards fail (Kind::Unusable). The destructor does the same, but
+    /// a worker can outlive its owner (callbacks that are still queued keep it alive), so
+    /// PluginManager calls this when a plugin is unloaded and when the manager goes away.
+    /// Call it on the thread of this object.
+    void shutdown();
+
     /// Instantiates the plugin now (runs `init` if exported) instead of on the first call.
     void start(QObject *context, std::function<void(const PluginError &error)> callback);
 
@@ -52,6 +60,9 @@ private:
     QThread m_thread;
     Runner *m_runner = nullptr;
     std::shared_ptr<std::atomic_bool> m_cancel;
+    /// Read-locked while a blocking call from another thread waits; shutdown() write-locks.
+    QReadWriteLock m_shutdownLock;
+    bool m_stopped = false; ///< guarded by m_shutdownLock
 };
 
 } // namespace EasePass::Plugin

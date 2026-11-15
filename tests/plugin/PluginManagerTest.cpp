@@ -62,6 +62,45 @@ QString installedJson(const ManagerFixture &fixture) {
 
 } // namespace
 
+// A worker can outlive the manager (a queued callback or an open database holds it). Its
+// thread must not: a plugin still being compiled when the process ends crashed it.
+void PluginManagerTest::testManagerStopsThePluginsItStarted() {
+    ManagerFixture fixture;
+    std::shared_ptr<PluginWorker> worker = fixture.installAndLoad(QStringLiteral("importer"));
+    QVERIFY(worker);
+    bool answered = false;
+    QObject context;
+    // Like the adapters: the callback keeps the worker alive until it has run.
+    worker->call(ImporterInterface, QStringLiteral("sources"), {}, 0, &context,
+                 [&, keep = worker](const Value &, const PluginError &) { answered = true; });
+    // The manager goes away at once: the plugin has not even been compiled yet.
+    fixture.manager.reset();
+    PluginError error;
+    worker->callBlocking(ImporterInterface, QStringLiteral("sources"), {}, 0, &error);
+    QCOMPARE(error.kind, PluginError::Kind::Unusable); // stopped, and this did not wait forever
+    bool late = false;
+    worker->call(ImporterInterface, QStringLiteral("sources"), {}, 0, &context,
+                 [&](const Value &, const PluginError &lateError) { late = lateError.kind == PluginError::Kind::Unusable; });
+    worker->start(&context, [](const PluginError &) {});
+    // The call that was already queued got its answer (finished or interrupted, depending
+    // on how far it was), and the worker's thread has ended.
+    QVERIFY(waitUntil([&] { return answered && late; }));
+
+    // unload() stops a plugin the same way; loading again gives a fresh, working one.
+    fixture.reopen();
+    const auto first = fixture.manager->load(ImporterId);
+    QVERIFY(first);
+    callSync(*first, ImporterInterface, QStringLiteral("sources"), {}, &error);
+    QVERIFY2(error.ok(), qPrintable(error.message));
+    fixture.manager->unload(ImporterId);
+    first->callBlocking(ImporterInterface, QStringLiteral("sources"), {}, 0, &error);
+    QCOMPARE(error.kind, PluginError::Kind::Unusable);
+    const auto second = fixture.manager->load(ImporterId);
+    QVERIFY(second && second != first);
+    callSync(*second, ImporterInterface, QStringLiteral("sources"), {}, &error);
+    QVERIFY2(error.ok(), qPrintable(error.message));
+}
+
 void PluginManagerTest::testInstallFromStore() {
     ManagerFixture fixture;
     FakeCatalog catalog;

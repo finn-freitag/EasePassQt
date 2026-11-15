@@ -4,6 +4,7 @@
 #include <QHostInfo>
 #include <QNetworkProxy>
 #include <QRegularExpression>
+#include <QSslConfiguration>
 #include <QSslSocket>
 #include <QUrl>
 
@@ -300,6 +301,11 @@ std::optional<HostError> PluginNetwork::startTls(QSslSocket *socket, const QStri
         return error("invalid-argument", QStringLiteral("the connection is already encrypted"));
     socket->setPeerVerifyMode(QSslSocket::VerifyPeer);
     socket->setPeerVerifyName(host);
+    if (!m_policy.extraCaCertificates.isEmpty()) {
+        QSslConfiguration configuration = socket->sslConfiguration();
+        configuration.addCaCertificates(m_policy.extraCaCertificates);
+        socket->setSslConfiguration(configuration);
+    }
     socket->startClientEncryption();
     if (!socket->waitForEncrypted(timeoutMs)) {
         const bool timedOut = socket->error() == QAbstractSocket::SocketTimeoutError;
@@ -376,7 +382,8 @@ std::optional<HostError> PluginNetwork::httpRequest(const HttpRequest &request, 
         if (body)
             out += *body;
         socket.write(out);
-        while (socket.bytesToWrite() > 0) {
+        // With TLS the data waits twice: as plain text and, once encrypted, for the network.
+    while (socket.bytesToWrite() > 0 || socket.encryptedBytesToWrite() > 0) {
             if (remaining() == 0 || !socket.waitForBytesWritten(remaining()))
                 return error(remaining() == 0 ? "timeout" : "network",
                              QStringLiteral("cannot send the request: %1").arg(socket.errorString()));
@@ -561,8 +568,18 @@ std::optional<HostError> PluginNetwork::tcpStartTls(quint32 handle) {
 }
 
 void PluginNetwork::tcpClose(quint32 handle) {
-    if (const auto connection = m_connections.take(handle))
-        connection->socket.abort();
+    const auto connection = m_connections.take(handle);
+    if (!connection)
+        return;
+    // An orderly end: with TLS the other side must see "close notify", or it has to treat
+    // what it received as cut off (FTPS servers discard such an upload).
+    QSslSocket &socket = connection->socket;
+    if (socket.state() == QAbstractSocket::ConnectedState) {
+        socket.disconnectFromHost();
+        if (socket.state() != QAbstractSocket::UnconnectedState)
+            socket.waitForDisconnected(qMin(connection->timeoutMs, 5000));
+    }
+    socket.abort();
 }
 
 void PluginNetwork::closeAll() {

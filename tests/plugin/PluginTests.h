@@ -87,6 +87,7 @@ private slots:
 class PluginManagerTest : public QObject {
     Q_OBJECT
 private slots:
+    void testManagerStopsThePluginsItStarted();
     void testInstallFromStore();
     void testHashMismatchAborts();
     void testLocalInstallVerificationStates();
@@ -138,4 +139,15 @@ private slots:
     void testFeedsNeverVerify();
     void testDownload();
     void testNetworkClientSizeCap();
+};
+
+// The official plugins of plugins/ (steps.txt T29) in the real plugin host.
+class OfficialPluginsTest : public QObject {
+    Q_OBJECT
+private slots:
+    void testListMatchesPackages();
+    void testUrlPlugin();
+    void testCloudPlugin();
+    void testFtpPluginSettings();
+    void testFtpPluginAgainstServers();
 };

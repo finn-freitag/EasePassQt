@@ -7,6 +7,7 @@
 #include <QHash>
 #include <QHostAddress>
 #include <QObject>
+#include <QSslCertificate>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -49,6 +50,8 @@ struct PluginEnvironment {
     std::function<bool()> removeStorageOnUninstall;
     /// Test seam for name resolution (default: system resolver).
     std::function<QList<QHostAddress>(const QString &host)> resolver;
+    /// Test seam: certificates plugins' TLS connections trust besides the system's.
+    QList<QSslCertificate> extraCaCertificates;
 };
 
 /// Record of an installed plugin (stored in installed.json).
@@ -138,6 +141,7 @@ public:
 
     /// Returns the running plugin, loading it if necessary (hash and permissions re-checked).
     std::shared_ptr<PluginWorker> load(const QString &id, PluginResult *result = nullptr);
+    /// Stops the running plugin (its thread ends; whoever still holds the worker gets errors).
     void unload(const QString &id);
     /// Loads every enabled plugin of type `initializer` and runs its `init` in the background.
     void startInitializers();
@@ -159,6 +163,9 @@ private:
     const IPluginCatalog *m_catalog = nullptr;
     QList<InstalledPlugin> m_plugins;
     QHash<QString, std::shared_ptr<PluginWorker>> m_loaded;
+    /// Every worker ever handed out and maybe still alive (queued callbacks and open
+    /// databases keep a worker alive after unload()); all are stopped with the manager.
+    QList<std::weak_ptr<PluginWorker>> m_started;
 };
 
 } // namespace EasePass::Plugin

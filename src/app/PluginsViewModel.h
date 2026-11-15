@@ -190,7 +190,8 @@ public:
     static QString verificationText(Plugin::PluginVerification verification);
     static QString describe(const Plugin::PluginResult &result);
     static QString describe(const Plugin::PluginError &error);
-    /// Form fields of a JSON Schema object (`type: object` with flat `properties`).
+    /// Form fields of a JSON Schema object (`type: object` with flat `properties`), ordered
+    /// by the properties' "propertyOrder" numbers, then by key.
     static QVariantList configFieldsFromSchema(const QByteArray &schemaJson, const QByteArray &configJson,
                                                QString *error);
     /// The JSON a plugin gets back: form values converted to the types of the fields.
