@@ -61,9 +61,14 @@ storage/<id>/files/<name>      the plugin's files
   in a file dialog does not count. A timeout or crash is returned as `PluginError`; the
   instance is dropped and a new one is created for the next call.
 - **Memory:** 64 MiB of linear memory per instance.
-- **Byte lists:** 8 MiB per call in each direction that the host controls. In practice
-  Wasmtime allows less, see "Data per call" under Known limits; a database handled by a
-  `database-source` plugin is limited to 2 MiB (`PluginLimits::MaxDatabaseBytes`).
+- **Byte lists:** 2 MiB per call (`PluginLimits::MaxByteListSize`): a picked file, a
+  storage value, an HTTP body, one TCP read or write, and a database handled by a
+  `database-source` plugin. Larger data is refused with the error `too-large` that names
+  the limit; see "Data per call" under Known limits for the reason.
+- **Plugins run only when called.** There is no start-up hook: a plugin is compiled and
+  instantiated when the application first calls one of its exports. Name, description,
+  author, homepage and icon come from the package and are shown without running it; a
+  database provider and a password generator appear under the plugin's name.
 - **Storage:** 64 MiB, 1024 keys, 1024 files per plugin. File names are plain names;
   nothing outside `storage/<id>/` can be named.
 - **Network:** host and port must match `network_hosts` of the manifest before the name

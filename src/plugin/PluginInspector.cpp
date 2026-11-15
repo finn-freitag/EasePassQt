@@ -23,9 +23,7 @@ constexpr std::array<Mapping, 4> Permissions = {{{"easepass:plugin/storage", "st
                                                  {"easepass:plugin/file-picker", "pick-file"},
                                                  {"easepass:plugin/network", "network"},
                                                  {"easepass:plugin/leak-check", "leak-check"}}};
-constexpr std::array<Mapping, 6> Types = {{{"easepass:plugin/about", "about"},
-                                           {"easepass:plugin/initializer", "initializer"},
-                                           {"easepass:plugin/importer", "importer"},
+constexpr std::array<Mapping, 4> Types = {{{"easepass:plugin/importer", "importer"},
                                            {"easepass:plugin/database-source", "database-source"},
                                            {"easepass:plugin/password-generator", "password-generator"},
                                            {"easepass:plugin/store-feed", "store-feed"}}};

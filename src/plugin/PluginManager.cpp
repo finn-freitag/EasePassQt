@@ -441,23 +441,6 @@ std::shared_ptr<PluginWorker> PluginManager::load(const QString &id, PluginResul
     return worker;
 }
 
-void PluginManager::startInitializers() {
-    for (const InstalledPlugin &installed : std::as_const(m_plugins)) {
-        if (!installed.enabled || !installed.types.contains(QStringLiteral("initializer")))
-            continue;
-        PluginResult result;
-        const auto worker = load(installed.id, &result);
-        if (!worker) {
-            qCWarning(lcPlugin).noquote() << QStringLiteral("[%1] not loaded: %2").arg(installed.id, result.message);
-            continue;
-        }
-        worker->start(this, [id = installed.id](const PluginError &error) {
-            if (!error.ok())
-                qCWarning(lcPlugin).noquote() << QStringLiteral("[%1] %2").arg(id, error.message);
-        });
-    }
-}
-
 std::function<LeakCheckOutcome(const QString &)> PluginManager::leakCheckWith(Core::LeakCheckService *service) {
     QPointer<Core::LeakCheckService> guard(service);
     return [guard](const QString &password) {

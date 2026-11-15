@@ -16,8 +16,7 @@ namespace EasePass::Plugin {
  * Runs ONE plugin on its own thread (steps.txt 4.2). The UI never waits for plugin code:
  * call() returns at once and the callback arrives later on this object's thread.
  *
- *  - The instance is created on first use. If the plugin exports `initializer`, `init` runs
- *    before any other call; a failing `init` disables the plugin until it is loaded again.
+ *  - The instance is created on first use: a plugin runs only when one of its exports is called.
  *  - After a trap or timeout the instance is thrown away; the next call starts a new one.
  *  - Only the host interfaces of the approved permissions are linked.
  */
@@ -52,7 +51,7 @@ public:
     /// Call it on the thread of this object.
     void shutdown();
 
-    /// Instantiates the plugin now (runs `init` if exported) instead of on the first call.
+    /// Compiles and instantiates the plugin now instead of on the first call.
     void start(QObject *context, std::function<void(const PluginError &error)> callback);
 
 private:

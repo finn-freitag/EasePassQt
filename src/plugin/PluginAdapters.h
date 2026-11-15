@@ -19,23 +19,6 @@ namespace EasePass::Plugin {
 template <typename T> using PluginCallback = std::function<void(const T &value, const PluginError &error)>;
 using PluginDoneCallback = std::function<void(const PluginError &error)>;
 
-/// Type `about`.
-struct PluginAboutInfo {
-    QString name;
-    QString description;
-    QString author;
-    QUrl authorUrl; ///< empty unless it is an http(s) URL
-};
-
-class PluginAbout {
-public:
-    explicit PluginAbout(std::shared_ptr<PluginWorker> worker) : m_worker(std::move(worker)) {}
-    void info(QObject *context, PluginCallback<PluginAboutInfo> callback);
-
-private:
-    std::shared_ptr<PluginWorker> m_worker;
-};
-
 /// Type `importer`: the items go to the user for selection and then to
 /// Core::DatabaseService::importItems().
 struct PluginImportSource {
@@ -49,7 +32,6 @@ public:
     explicit PluginImporter(std::shared_ptr<PluginWorker> worker) : m_worker(std::move(worker)) {}
 
     void sources(QObject *context, PluginCallback<QList<PluginImportSource>> callback);
-    void passwordsAvailable(const QString &sourceId, QObject *context, PluginCallback<bool> callback);
     void importPasswords(const QString &sourceId, QObject *context,
                          PluginCallback<QList<Core::PasswordItem>> callback);
 
@@ -67,7 +49,6 @@ public:
 
     explicit PluginPasswordGenerator(std::shared_ptr<PluginWorker> worker) : m_worker(std::move(worker)) {}
 
-    void name(QObject *context, PluginCallback<QString> callback);
     /// Fails (Kind::Host) if the plugin returns an empty or absurdly long password.
     void generate(int length, const QString &characters, bool verifyNotLeaked, QObject *context,
                   PluginCallback<QString> callback);
@@ -145,12 +126,12 @@ private:
     PluginError m_lastError;
 };
 
-/// Type `database-source`, provider level: configuration and the list of databases.
+/// Type `database-source`, provider level: configuration and the list of databases. The
+/// provider is shown under the plugin's name (manifest).
 class PluginDatabaseProvider {
 public:
     explicit PluginDatabaseProvider(std::shared_ptr<PluginWorker> worker) : m_worker(std::move(worker)) {}
 
-    void providerName(QObject *context, PluginCallback<QString> callback);
     /// JSON Schema of the configuration (the host renders a form from it).
     void configSchema(QObject *context, PluginCallback<QString> callback);
     void config(QObject *context, PluginCallback<QString> callback);

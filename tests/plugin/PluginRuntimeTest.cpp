@@ -50,7 +50,6 @@ void PluginRuntimeTest::testInspectConformancePlugins_data() {
     QTest::addColumn<QStringList>("permissions");
 
     // Must equal expected.json of each conformance plugin in the spec repository.
-    QTest::newRow("about") << "about" << QStringList{"about", "initializer"} << QStringList{};
     QTest::newRow("importer") << "importer" << QStringList{"importer"} << QStringList{"pick-file"};
     QTest::newRow("database-source") << "database-source" << QStringList{"database-source"} << QStringList{"storage"};
     QTest::newRow("password-generator")

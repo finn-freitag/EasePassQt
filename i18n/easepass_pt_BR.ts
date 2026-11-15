@@ -203,7 +203,7 @@
         <translation>Cancelar</translation>
     </message>
     <message>
-        <location line="+22"/>
+        <location line="+23"/>
         <source>No QR code found on the screen.</source>
         <translation>Nenhum QR code encontrado na tela.</translation>
     </message>
@@ -892,7 +892,7 @@
 <context>
     <name>EasePass::App::PluginsViewModel</name>
     <message>
-        <location filename="../src/app/PluginsViewModel.cpp" line="+97"/>
+        <location filename="../src/app/PluginsViewModel.cpp" line="+99"/>
         <source>Keeps its own private settings and files</source>
         <translation>Guarda as suas próprias configurações e arquivos privados</translation>
     </message>
@@ -923,16 +923,6 @@
     </message>
     <message>
         <location line="+5"/>
-        <source>Shows information about itself</source>
-        <translation>Mostra informações sobre si mesmo</translation>
-    </message>
-    <message>
-        <location line="+2"/>
-        <source>Runs when Ease Pass starts</source>
-        <translation>É executado quando o Ease Pass inicia</translation>
-    </message>
-    <message>
-        <location line="+2"/>
         <source>Adds passwords to your database</source>
         <translation>Adiciona senhas ao seu banco de dados</translation>
     </message>
@@ -1033,12 +1023,12 @@
     </message>
     <message>
         <location line="+2"/>
-        <location line="+1028"/>
+        <location line="+1021"/>
         <source>This plugin is not installed.</source>
         <translation>Este plugin não está instalado.</translation>
     </message>
     <message>
-        <location line="-1026"/>
+        <location line="-1019"/>
         <source>This plugin is disabled.</source>
         <translation>Este plugin está desativado.</translation>
     </message>
@@ -1113,7 +1103,7 @@
         <translation>Não foi possível usar o plugin: %1</translation>
     </message>
     <message>
-        <location line="+186"/>
+        <location line="+185"/>
         <source>%1 only</source>
         <translation>Apenas %1</translation>
     </message>
@@ -1221,7 +1211,7 @@
         </translation>
     </message>
     <message>
-        <location line="+51"/>
+        <location line="+34"/>
         <source>The plugin&apos;s settings description is not valid.</source>
         <translation>A descrição das configurações do plugin não é válida.</translation>
     </message>
@@ -1231,12 +1221,12 @@
         <translation>O plugin tem configurações demais.</translation>
     </message>
     <message>
-        <location line="+35"/>
+        <location line="+36"/>
         <source>The plugin has a setting (&quot;%1&quot;) that Ease Pass cannot show.</source>
         <translation>O plugin tem uma configuração (&quot;%1&quot;) que o Ease Pass não consegue mostrar.</translation>
     </message>
     <message>
-        <location line="+40"/>
+        <location line="+50"/>
         <source>&quot;%1&quot; needs a valid number.</source>
         <translation>&quot;%1&quot; precisa de um número válido.</translation>
     </message>
@@ -1341,7 +1331,7 @@
 <context>
     <name>EasePass::App::SettingsViewModel</name>
     <message>
-        <location filename="../src/app/SettingsViewModel.cpp" line="+103"/>
+        <location filename="../src/app/SettingsViewModel.cpp" line="+102"/>
         <source>Open a writable database to reset the popularity counter.</source>
         <translation>Abra um banco de dados gravável para redefinir o contador de popularidade.</translation>
     </message>
@@ -1669,7 +1659,7 @@
     </message>
     <message>
         <location line="+1"/>
-        <location line="+181"/>
+        <location line="+192"/>
         <source>Cancel</source>
         <translatorcomment>resw: Dialog_Button_Cancel.Text</translatorcomment>
         <translation>Cancelar</translation>
@@ -1782,13 +1772,13 @@
     </message>
     <message>
         <location line="+13"/>
-        <location line="+112"/>
+        <location line="+118"/>
         <source>Login</source>
         <translatorcomment>resw: View_LoginPage_Login.Text</translatorcomment>
         <translation>Entrar</translation>
     </message>
     <message>
-        <location line="-70"/>
+        <location line="-76"/>
         <source>Welcome back</source>
         <translation>Bem-vindo de volta</translation>
     </message>
@@ -1809,7 +1799,7 @@
         <translation>Banco de dados</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+15"/>
         <source>Look for plugin databases again</source>
         <translation>Procurar bancos de dados de plugins novamente</translation>
     </message>
@@ -1856,7 +1846,7 @@
         <translation>Ease Pass</translation>
     </message>
     <message>
-        <location line="+183"/>
+        <location line="+184"/>
         <source>You were logged out automatically because of inactivity.</source>
         <translation>Você foi desconectado automaticamente por inatividade.</translation>
     </message>
@@ -2204,7 +2194,7 @@ Se você esquecer sua senha ou perder o token, não terá mais acesso ao seu ban
         <translation>Senhas</translation>
     </message>
     <message>
-        <location line="+74"/>
+        <location line="+83"/>
         <location line="+2"/>
         <source>New entry</source>
         <translatorcomment>resw: View_PasswordPage_CMDBar_New.ToolTipService.ToolTip</translatorcomment>
@@ -2647,7 +2637,7 @@ Se você esquecer sua senha ou perder o token, não terá mais acesso ao seu ban
 <context>
     <name>PluginImportDialog</name>
     <message>
-        <location filename="../qml/EasePass/PluginImportDialog.qml" line="+21"/>
+        <location filename="../qml/EasePass/PluginImportDialog.qml" line="+26"/>
         <source>Import passwords</source>
         <translation>Importar senhas</translation>
     </message>
@@ -3289,7 +3279,7 @@ Se você esquecer sua senha ou perder o token, não terá mais acesso ao seu ban
 <context>
     <name>TwoFactorFields</name>
     <message>
-        <location filename="../qml/EasePass/TwoFactorFields.qml" line="+26"/>
+        <location filename="../qml/EasePass/TwoFactorFields.qml" line="+33"/>
         <location line="+4"/>
         <source>Secret</source>
         <translatorcomment>resw: Dialog_Add2FA_Secret.Text</translatorcomment>
@@ -3344,7 +3334,7 @@ Se você esquecer sua senha ou perder o token, não terá mais acesso ao seu ban
 <context>
     <name>main</name>
     <message>
-        <location filename="../src/main/main.cpp" line="+127"/>
+        <location filename="../src/main/main.cpp" line="+126"/>
         <source>Log out to open %1.</source>
         <translation>Saia para abrir %1.</translation>
     </message>

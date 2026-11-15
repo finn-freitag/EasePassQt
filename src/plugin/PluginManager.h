@@ -143,8 +143,6 @@ public:
     std::shared_ptr<PluginWorker> load(const QString &id, PluginResult *result = nullptr);
     /// Stops the running plugin (its thread ends; whoever still holds the worker gets errors).
     void unload(const QString &id);
-    /// Loads every enabled plugin of type `initializer` and runs its `init` in the background.
-    void startInitializers();
 
     QString packagePath(const QString &id) const;
     QString storageDirectory(const QString &id) const;

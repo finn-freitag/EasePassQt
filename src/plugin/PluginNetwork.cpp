@@ -14,6 +14,12 @@ namespace {
 
 HostError error(const char *code, const QString &message) { return {QLatin1String(code), message}; }
 
+QString sizeText(qsizetype bytes) {
+    constexpr qsizetype MiB = 1024 * 1024;
+    return bytes >= MiB && bytes % MiB == 0 ? QStringLiteral("%1 MiB").arg(bytes / MiB)
+                                            : QStringLiteral("%1 bytes").arg(bytes);
+}
+
 bool inSubnet(const QHostAddress &address, const char *subnet, int prefix) {
     return address.isInSubnet(QHostAddress(QLatin1String(subnet)), prefix);
 }
@@ -324,7 +330,7 @@ std::optional<HostError> PluginNetwork::httpRequest(const HttpRequest &request, 
         return failure;
     std::optional<QByteArray> body = request.body;
     if (body && body->size() > m_policy.maxBodyBytes)
-        return error("too-large", QStringLiteral("the request body is too large"));
+        return error("too-large", QStringLiteral("the request body is larger than %1").arg(sizeText(m_policy.maxBodyBytes)));
 
     QList<Header> headers;
     for (const Header &header : request.headers) {
@@ -419,7 +425,9 @@ std::optional<HostError> PluginNetwork::httpRequest(const HttpRequest &request, 
         QByteArray responseBody;
         const QString transferEncoding = headerValue(responseHeaders, QStringLiteral("transfer-encoding")).toLower();
         const QString contentLength = headerValue(responseHeaders, QStringLiteral("content-length"));
-        const auto tooLarge = [] { return error("too-large", QStringLiteral("the response is too large")); };
+        const auto tooLarge = [this] {
+            return error("too-large", QStringLiteral("the response is larger than %1").arg(sizeText(m_policy.maxBodyBytes)));
+        };
         if (method == QLatin1String("HEAD") || status == 204 || status == 304 || status < 200) {
             // no body
         } else if (transferEncoding.contains(QLatin1String("chunked"))) {
@@ -542,7 +550,7 @@ std::optional<HostError> PluginNetwork::tcpWrite(quint32 handle, const QByteArra
     if (!connection)
         return error("invalid-argument", QStringLiteral("unknown connection"));
     if (data.size() > m_policy.maxBodyBytes)
-        return error("too-large", QStringLiteral("too much data for one write"));
+        return error("too-large", QStringLiteral("more than %1 in one write").arg(sizeText(m_policy.maxBodyBytes)));
     QSslSocket &socket = connection->socket;
     if (socket.state() != QAbstractSocket::ConnectedState)
         return error("network", QStringLiteral("the connection is closed"));

@@ -6,7 +6,6 @@ namespace EasePass::Plugin {
 
 namespace {
 
-const QString AboutInterface = QStringLiteral("easepass:plugin/about");
 const QString ImporterInterface = QStringLiteral("easepass:plugin/importer");
 const QString GeneratorInterface = QStringLiteral("easepass:plugin/password-generator");
 const QString StoreFeedInterface = QStringLiteral("easepass:plugin/store-feed");
@@ -61,23 +60,6 @@ QUrl webUrl(const QString &text, bool httpsOnly) {
 }
 
 } // namespace
-
-// --- about -----------------------------------------------------------------------
-
-void PluginAbout::info(QObject *context, PluginCallback<PluginAboutInfo> callback) {
-    request<PluginAboutInfo>(m_worker, AboutInterface, QStringLiteral("info"), {}, false, 0, context, callback,
-                             [](const Value &value, PluginAboutInfo *info) {
-                                 if (!hasStrings(value, {"name", "description", "author"}))
-                                     return false;
-                                 info->name = value.field(QStringLiteral("name")).toString();
-                                 info->description = value.field(QStringLiteral("description")).toString();
-                                 info->author = value.field(QStringLiteral("author")).toString();
-                                 const Value &url = value.field(QStringLiteral("author-url"));
-                                 if (url.isSome())
-                                     info->authorUrl = webUrl(url.payload().toString(), false);
-                                 return true;
-                             });
-}
 
 // --- importer --------------------------------------------------------------------
 
@@ -136,16 +118,6 @@ void PluginImporter::sources(QObject *context, PluginCallback<QList<PluginImport
                                        });
 }
 
-void PluginImporter::passwordsAvailable(const QString &sourceId, QObject *context, PluginCallback<bool> callback) {
-    request<bool>(m_worker, ImporterInterface, QStringLiteral("passwords-available"), {Value::string(sourceId)}, true,
-                  0, context, callback, [](const Value &value, bool *available) {
-                      if (value.kind() != Value::Kind::Bool)
-                          return false;
-                      *available = value.toBool();
-                      return true;
-                  });
-}
-
 void PluginImporter::importPasswords(const QString &sourceId, QObject *context,
                                      PluginCallback<QList<Core::PasswordItem>> callback) {
     request<QList<Core::PasswordItem>>(m_worker, ImporterInterface, QStringLiteral("import-passwords"),
@@ -164,10 +136,6 @@ void PluginImporter::importPasswords(const QString &sourceId, QObject *context,
 }
 
 // --- password generator ------------------------------------------------------------
-
-void PluginPasswordGenerator::name(QObject *context, PluginCallback<QString> callback) {
-    request<QString>(m_worker, GeneratorInterface, QStringLiteral("name"), {}, false, 0, context, callback, toText);
-}
 
 void PluginPasswordGenerator::generate(int length, const QString &characters, bool verifyNotLeaked, QObject *context,
                                        PluginCallback<QString> callback) {
@@ -351,11 +319,6 @@ void PluginDatabaseSource::refresh() {
                        if (error.ok() && toInfo(value, &info))
                            apply(info);
                    });
-}
-
-void PluginDatabaseProvider::providerName(QObject *context, PluginCallback<QString> callback) {
-    request<QString>(m_worker, DatabaseInterface, QStringLiteral("provider-name"), {}, false, 0, context, callback,
-                     toText);
 }
 
 void PluginDatabaseProvider::configSchema(QObject *context, PluginCallback<QString> callback) {

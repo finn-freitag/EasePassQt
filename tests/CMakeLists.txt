@@ -722,9 +722,8 @@ if(EASEPASS_HAVE_PLUGINS)
         testUpdateKeepsStorage
         testStorageIsolationBetweenPlugins
         testNetworkPolicyFromManifest
-        testInitializerRuns
         testLeakCheckWithService
-        testAbout
+        testMissingInterface
         testImporter
         testImporterFilePickerGetsPluginIdentity
         testTrapAndTimeoutAreErrorsAndPluginRecovers

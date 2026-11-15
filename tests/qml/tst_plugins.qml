@@ -144,8 +144,8 @@ Item {
             const d = make(dialogsC, { plugins: plugins })
             const dialog = findChild(d, "pluginPermissionDialog")
             plugins.pendingInstall = {
-                id: "org.example.p", name: "About", version: "1.1.0", author: "",
-                types: ["Shows information about itself"], permissions: [], warnings: [],
+                id: "org.example.p", name: "Lists", version: "1.1.0", author: "",
+                types: ["Provides additional plugin lists"], permissions: [], warnings: [],
                 verification: 0, verificationText: "Verified", isUpdate: true, installedVersion: "1.0.0",
                 osWarning: "The plugin list names this plugin for Windows only. It may not work here.", feed: ""
             }
@@ -618,7 +618,7 @@ Item {
             const providers = findChild(d, "pluginProviderDialog")
             const rep = findChild(providers, "providerRepeater")
             tryCompare(rep, "count", 1, 20000)
-            compare(rep.itemAt(0).header, "Conformance storage")
+            compare(rep.itemAt(0).header, "Conformance: database source")
             tryCompare(plugins, "busy", false)
             mouseClick(findChild(rep.itemAt(0), "providerSettingsButton"))
 

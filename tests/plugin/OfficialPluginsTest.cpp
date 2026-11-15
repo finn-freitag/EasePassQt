@@ -143,7 +143,6 @@ void OfficialPluginsTest::testUrlPlugin() {
     ManagerFixture fixture;
     Running plugin = start(fixture, UrlId);
     QVERIFY(plugin.worker);
-    QCOMPARE(plugin.text(&PluginDatabaseProvider::providerName), QStringLiteral("Database from a URL (read-only)"));
     QVERIFY(QJsonDocument::fromJson(plugin.text(&PluginDatabaseProvider::configSchema).toUtf8()).isObject());
     QVERIFY(plugin.databases().isEmpty());
 
@@ -199,7 +198,6 @@ void OfficialPluginsTest::testCloudPlugin() {
     ManagerFixture fixture;
     Running plugin = start(fixture, CloudId);
     QVERIFY(plugin.worker);
-    QCOMPARE(plugin.text(&PluginDatabaseProvider::providerName), QStringLiteral("Ease Pass Cloud"));
     QVERIFY(plugin.databases().isEmpty());
 
     // The "Ease Pass Config" of the web interface, pasted as it is.
@@ -262,7 +260,6 @@ void OfficialPluginsTest::testFtpPluginSettings() {
     ManagerFixture fixture;
     Running plugin = start(fixture, FtpId);
     QVERIFY(plugin.worker);
-    QCOMPARE(plugin.text(&PluginDatabaseProvider::providerName), QStringLiteral("FTP, FTPS or SFTP server"));
     const QJsonObject schema = QJsonDocument::fromJson(plugin.text(&PluginDatabaseProvider::configSchema).toUtf8()).object();
     QCOMPARE(schema.value("properties").toObject().size(), 7);
     QVERIFY(plugin.databases().isEmpty());

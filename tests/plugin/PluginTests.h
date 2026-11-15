@@ -103,14 +103,13 @@ private slots:
     void testUpdateKeepsStorage();
     void testStorageIsolationBetweenPlugins();
     void testNetworkPolicyFromManifest();
-    void testInitializerRuns();
     void testLeakCheckWithService();
 };
 
 class PluginAdaptersTest : public QObject {
     Q_OBJECT
 private slots:
-    void testAbout();
+    void testMissingInterface();
     void testImporter();
     void testImporterFilePickerGetsPluginIdentity();
     void testTrapAndTimeoutAreErrorsAndPluginRecovers();

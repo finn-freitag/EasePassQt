@@ -29,7 +29,7 @@ public:
         qint64 totalBytes = 64ll * 1024 * 1024;
         int maxKeys = 1024;
         int maxFiles = 1024;
-        qsizetype maxValueBytes = 8 * 1024 * 1024; ///< one string value or one file
+        qsizetype maxValueBytes = 2 * 1024 * 1024; ///< one string value or one file (PluginLimits::MaxByteListSize)
     };
 
     explicit PluginStorage(const QString &directory);

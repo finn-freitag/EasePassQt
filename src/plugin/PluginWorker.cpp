@@ -8,31 +8,13 @@ public:
     explicit Runner(Setup setup) : m_setup(std::move(setup)) {}
 
     bool ensureInstance(PluginError *error) {
-        if (!m_initError.ok()) {
-            *error = m_initError;
-            return false;
-        }
         if (m_instance && m_instance->usable())
             return true;
         reset();
         m_instance = PluginInstance::create(m_setup.component,
                                             buildHostInterfaces(m_setup.services, m_setup.approvedPermissions),
                                             m_setup.limits, error);
-        if (!m_instance)
-            return false;
-        if (m_instance->inspection().types.contains(QStringLiteral("initializer"))) {
-            const Value result = m_instance->call(QStringLiteral("easepass:plugin/initializer"), QStringLiteral("init"),
-                                                  {}, 0, error);
-            if (error->ok())
-                PluginError::unwrap(result, error);
-            if (!error->ok()) {
-                error->message = QStringLiteral("the plugin could not be initialised: ") + error->message;
-                m_initError = *error; // disabled until the plugin is loaded again
-                reset();
-                return false;
-            }
-        }
-        return true;
+        return m_instance != nullptr;
     }
 
     Value run(const QString &interface, const QString &function, const QList<Value> &arguments, int timeoutMs,
@@ -55,7 +37,6 @@ public:
 private:
     Setup m_setup;
     std::unique_ptr<PluginInstance> m_instance;
-    PluginError m_initError;
 };
 
 PluginWorker::PluginWorker(Setup setup, QObject *parent)

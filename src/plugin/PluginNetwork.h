@@ -65,7 +65,7 @@ public:
     struct Policy {
         QStringList allowedHosts;            ///< manifest network_hosts the user approved
         bool allowPrivateAddresses = false;  ///< user override for loopback/private ranges
-        qsizetype maxBodyBytes = 8 * 1024 * 1024;
+        qsizetype maxBodyBytes = 2 * 1024 * 1024; ///< PluginLimits::MaxByteListSize
         int maxTimeoutMs = 30'000;
         int defaultTimeoutMs = 30'000;
         int maxConnections = 8;

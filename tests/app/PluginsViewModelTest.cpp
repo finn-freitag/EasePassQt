@@ -43,7 +43,6 @@ const QString ImporterId = QStringLiteral("org.easepass.conformance.importer");
 const QString NetworkId = QStringLiteral("org.easepass.conformance.network");
 const QString DatabaseId = QStringLiteral("org.easepass.conformance.database-source");
 const QString FeedId = QStringLiteral("org.easepass.conformance.store-feed");
-const QString AboutId = QStringLiteral("org.easepass.conformance.about");
 
 struct Fixture {
     QTemporaryDir directory;
@@ -304,7 +303,7 @@ void PluginsViewModelTest::testInstallFromFileProblems() {
     QVERIFY(f.vm->installed().isEmpty());
 
     // A second install cannot start while one is waiting for the user.
-    QCOMPARE(f.installFile(conformancePackage(QStringLiteral("about"))), Step::UnverifiedWarning);
+    QCOMPARE(f.installFile(conformancePackage(QStringLiteral("store-feed"))), Step::UnverifiedWarning);
     const QVariantMap pending = f.pending();
     f.vm->installFromFile(f.writeFile(conformancePackage(QStringLiteral("importer"))));
     QVERIFY(waitUntil([&] { return f.idle(); }));
@@ -448,21 +447,21 @@ void PluginsViewModelTest::testOsFilteringAndToggle() {
 void PluginsViewModelTest::testOsWarningForLocalFile() {
     Fixture f;
     // The package itself does not name a system, but the catalog lists this file for Windows.
-    const QByteArray package = conformancePackage(QStringLiteral("about"));
-    f.serveCatalog({catalogEntryJson(AboutId, hashOf(package), QStringLiteral(R"("os": ["windows"])"))});
+    const QByteArray package = conformancePackage(QStringLiteral("store-feed"));
+    f.serveCatalog({catalogEntryJson(FeedId, hashOf(package), QStringLiteral(R"("os": ["windows"])"))});
     QCOMPARE(f.installFile(package), Step::Permissions);
     QCOMPARE(f.pending().value("osWarning").toString(),
              QStringLiteral("The plugin list names this plugin for Windows only. It may not work here."));
     f.vm->cancelInstall();
 
-    f.serveCatalog({catalogEntryJson(AboutId, hashOf(package), QStringLiteral(R"("os": ["linux"])"))});
+    f.serveCatalog({catalogEntryJson(FeedId, hashOf(package), QStringLiteral(R"("os": ["linux"])"))});
     QCOMPARE(f.installFile(package), Step::Permissions);
     QCOMPARE(f.pending().value("osWarning").toString(), QString());
     f.vm->cancelInstall();
 
     // A package whose own manifest excludes this system is refused.
     const QByteArray windowsOnly =
-        customPackage(QStringLiteral("about"), QStringLiteral("org.example.win"),
+        customPackage(QStringLiteral("store-feed"), QStringLiteral("org.example.win"),
                       PlainMembers + QStringLiteral(R"(, "os": ["windows"])"));
     QCOMPARE(f.installFile(windowsOnly), Step::None);
     QVERIFY2(f.lastMessage().startsWith(QLatin1String("3|This plugin does not work with this version of Ease Pass.")),
@@ -544,7 +543,6 @@ void PluginsViewModelTest::testDialogShowsComputedPermissions() {
          {"Generates passwords: its output becomes your passwords"},
          {"Checks passwords against a breach service (sends a hash prefix to a third party)"}},
         {"store-feed", {"Provides additional plugin lists"}, {}},
-        {"about", {"Shows information about itself", "Runs when Ease Pass starts"}, {}},
     };
     for (const Expectation &expected : expectations) {
         QCOMPARE(f.installFile(conformancePackage(QLatin1String(expected.name))), Step::UnverifiedWarning);
@@ -564,9 +562,9 @@ void PluginsViewModelTest::testRiskTexts() {
              QStringList{QStringLiteral("This plugin sends your encrypted database over the network.")});
     QCOMPARE(VM::riskWarnings({QStringLiteral("password-generator")}, network, {}),
              QStringList{QStringLiteral("This plugin creates your passwords and can send data over the network.")});
-    QCOMPARE(VM::riskWarnings({QStringLiteral("about")}, network, {QStringLiteral("*:*")}),
+    QCOMPARE(VM::riskWarnings({QStringLiteral("store-feed")}, network, {QStringLiteral("*:*")}),
              QStringList{QStringLiteral("This plugin can connect to ANY server.")});
-    QVERIFY(VM::riskWarnings({QStringLiteral("about")}, network, {QStringLiteral("*.example.org:*")}).isEmpty());
+    QVERIFY(VM::riskWarnings({QStringLiteral("store-feed")}, network, {QStringLiteral("*.example.org:*")}).isEmpty());
     // Unknown ids (a newer spec) are shown as such, never silently dropped.
     QCOMPARE(VM::permissionText(QStringLiteral("camera"), {}), QStringLiteral("Unknown permission: camera"));
     QCOMPARE(VM::typeText(QStringLiteral("theme")), QStringLiteral("Unknown plugin type: theme"));
@@ -590,7 +588,7 @@ void PluginsViewModelTest::testInstalledList() {
                        R"("homepage": "https://example.org/plugin", "network_hosts": ["example.org:443"])"),
         png);
     QVERIFY(f.installed(withIcon));
-    const QByteArray brokenIcon = customPackage(QStringLiteral("about"), QStringLiteral("org.example.broken"),
+    const QByteArray brokenIcon = customPackage(QStringLiteral("store-feed"), QStringLiteral("org.example.broken"),
                                                 PlainMembers, "this is not a PNG");
     QVERIFY(f.installed(brokenIcon));
 
@@ -745,7 +743,7 @@ void PluginsViewModelTest::testRevocationDisablesInstalledPlugin() {
 
 void PluginsViewModelTest::testUpdateFromStore() {
     Fixture f;
-    const QByteArray v1 = customPackage(QStringLiteral("about"), QStringLiteral("org.example.app"),
+    const QByteArray v1 = customPackage(QStringLiteral("password-generator"), QStringLiteral("org.example.app"),
                                         QStringLiteral(R"("name": "App", "version": "1.0.0", "description": "")"));
     const QByteArray v2 = customPackage(QStringLiteral("importer"), QStringLiteral("org.example.app"),
                                         QStringLiteral(R"("name": "App", "version": "1.1.0", "description": "")"));
@@ -933,7 +931,8 @@ void PluginsViewModelTest::testProviderConfigForm() {
     f.vm->loadProviders();
     QVERIFY(waitUntil([&] { return f.vm->providers().size() == 1 && f.idle(); }));
     QCOMPARE(f.vm->providers().at(0).toMap().value("pluginId").toString(), DatabaseId);
-    QCOMPARE(f.vm->providers().at(0).toMap().value("name").toString(), QStringLiteral("Conformance storage"));
+    // A provider is listed under its plugin's name, without running the plugin.
+    QCOMPARE(f.vm->providers().at(0).toMap().value("name").toString(), QStringLiteral("Conformance: database source"));
 
     QSignalSpy readySpy(f.vm.get(), &PluginsViewModel::configReady);
     QSignalSpy savedSpy(f.vm.get(), &PluginsViewModel::configSaved);
@@ -1087,8 +1086,8 @@ void PluginsViewModelTest::testAppContextOwnsPlugins() {
     QTemporaryDir directory;
     AppTest::FakeClock clock;
     auto http = std::make_shared<FakeHttp>();
-    const QByteArray package = conformancePackage(QStringLiteral("about"));
-    http->replies[CatalogUrl] = {200, catalogJson({catalogEntryJson(AboutId, hashOf(package))}), {}};
+    const QByteArray package = conformancePackage(QStringLiteral("store-feed"));
+    http->replies[CatalogUrl] = {200, catalogJson({catalogEntryJson(FeedId, hashOf(package))}), {}};
     {
         AppContext::Deps deps;
         deps.settingsStore = std::make_shared<InMemorySettingsStore>();
@@ -1103,7 +1102,7 @@ void PluginsViewModelTest::testAppContextOwnsPlugins() {
         QVERIFY(plugins);
         QVERIFY(http->requested.isEmpty()); // no network just because the application started
 
-        const QString path = directory.filePath(QStringLiteral("about.epplugin"));
+        const QString path = directory.filePath(QStringLiteral("feed.epplugin"));
         QFile file(path);
         QVERIFY(file.open(QIODevice::WriteOnly));
         file.write(package);
@@ -1112,13 +1111,13 @@ void PluginsViewModelTest::testAppContextOwnsPlugins() {
         QVERIFY(waitUntil([&] { return plugins->installStep() == Step::Permissions; }));
         plugins->approveInstall();
         QCOMPARE(plugins->installed().size(), 1);
-        QVERIFY(QFile::exists(directory.filePath(QStringLiteral("plugins/packages/") + AboutId + QStringLiteral(".epplugin"))));
+        QVERIFY(QFile::exists(directory.filePath(QStringLiteral("plugins/packages/") + FeedId + QStringLiteral(".epplugin"))));
 
         // The "remove plugin data" setting of the application is the one the manager uses.
         context.settings()->setRemovePluginSettingsOnUninstall(false);
-        const QString storage = plugins->manager()->storageDirectory(AboutId);
+        const QString storage = plugins->manager()->storageDirectory(FeedId);
         QVERIFY(QDir().mkpath(storage));
-        QVERIFY(plugins->uninstall(AboutId));
+        QVERIFY(plugins->uninstall(FeedId));
         QVERIFY(QDir(storage).exists());
     }
     // A second application start finds the same state (nothing installed, data kept).
@@ -1368,7 +1367,7 @@ void PluginsViewModelTest::testOfficialPluginForms() {
         QStringList kinds;
     };
     const QList<Expected> expected{
-        {QStringLiteral("com.finnfreitag.easepass.ftp-database"), QStringLiteral("FTP, FTPS or SFTP server"),
+        {QStringLiteral("com.finnfreitag.easepass.ftp-database"), QStringLiteral("FTP/FTPS/SFTP Remote Database"),
          {"mode", "host", "port", "username", "password", "remote_path", "server_key"},
          {"choice", "string", "integer", "string", "password", "string", "string"}},
         {QStringLiteral("com.finnfreitag.easepass.cloud"), QStringLiteral("Ease Pass Cloud"),

@@ -77,22 +77,15 @@ Value replaceField(const Value &record, const QString &name, const std::optional
 
 } // namespace
 
-void PluginAdaptersTest::testAbout() {
+void PluginAdaptersTest::testMissingInterface() {
+    // Asking a plugin for a type it does not have is an error, not a crash.
     ManagerFixture fixture;
-    PluginAbout about(fixture.installAndLoad(QStringLiteral("about")));
+    PluginImporter importer(fixture.installAndLoad(QStringLiteral("store-feed")));
     PluginError error;
-    const PluginAboutInfo info =
-        await<PluginAboutInfo>([&](QObject *context, auto callback) { about.info(context, callback); }, &error);
-    QVERIFY2(error.ok(), qPrintable(error.message));
-    QCOMPARE(info.name, QStringLiteral("Conformance: about"));
-    QCOMPARE(info.description, QStringLiteral("Exports about and initializer. Needs no permission."));
-    QCOMPARE(info.author, QStringLiteral("Ease Pass plugin spec"));
-    QCOMPARE(info.authorUrl, QUrl(QStringLiteral("https://github.com/finn-freitag/easepassqt-plugin-spec")));
-
-    // A plugin of another type does not have this interface: an error, not a crash.
-    PluginAbout missing(fixture.installAndLoad(QStringLiteral("store-feed")));
-    await<PluginAboutInfo>([&](QObject *context, auto callback) { missing.info(context, callback); }, &error);
+    const auto sources = await<QList<PluginImportSource>>(
+        [&](QObject *context, auto callback) { importer.sources(context, callback); }, &error);
     QCOMPARE(error.kind, PluginError::Kind::Host);
+    QVERIFY(sources.isEmpty());
 }
 
 void PluginAdaptersTest::testImporter() {
@@ -108,15 +101,6 @@ void PluginAdaptersTest::testImporter() {
     QCOMPARE(sources[0].name, QStringLiteral("Fixed items"));
     QCOMPARE(sources[1].id, QStringLiteral("csv-file"));
 
-    QVERIFY(await<bool>([&](QObject *context, auto callback) {
-        importer.passwordsAvailable(QStringLiteral("fixed"), context, callback);
-    }, &error));
-    QVERIFY(error.ok());
-    await<bool>([&](QObject *context, auto callback) {
-        importer.passwordsAvailable(QStringLiteral("nope"), context, callback);
-    }, &error);
-    QCOMPARE(error.kind, PluginError::Kind::Plugin);
-    QCOMPARE(error.code, QStringLiteral("not-found"));
 
     // Plugin items become PasswordItems the database understands.
     const auto items = await<QList<PasswordItem>>([&](QObject *context, auto callback) {
@@ -263,9 +247,6 @@ void PluginAdaptersTest::testPasswordGenerator() {
         }, &error);
     };
 
-    QCOMPARE(await<QString>([&](QObject *context, auto callback) { generator.name(context, callback); }, &error),
-             QStringLiteral("Conformance generator"));
-
     const QString password = generate(20, QStringLiteral("abc123"), false);
     QVERIFY2(error.ok(), qPrintable(error.message));
     QCOMPARE(password.size(), 20);
@@ -309,8 +290,6 @@ void PluginAdaptersTest::testDatabaseProviderConfig() {
     const auto text = [&](void (PluginDatabaseProvider::*getter)(QObject *, PluginCallback<QString>)) {
         return await<QString>([&](QObject *context, auto callback) { (provider.*getter)(context, callback); }, &error);
     };
-
-    QCOMPARE(text(&PluginDatabaseProvider::providerName), QStringLiteral("Conformance storage"));
 
     // The schema is what the host renders a form from.
     const QJsonObject schema = QJsonDocument::fromJson(text(&PluginDatabaseProvider::configSchema).toUtf8()).object();

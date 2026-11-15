@@ -110,10 +110,6 @@ QString PluginsViewModel::permissionText(const QString &permission, const QStrin
 }
 
 QString PluginsViewModel::typeText(const QString &type) {
-    if (type == QLatin1String("about"))
-        return tr("Shows information about itself");
-    if (type == QLatin1String("initializer"))
-        return tr("Runs when Ease Pass starts");
     if (type == QLatin1String("importer"))
         return tr("Adds passwords to your database");
     if (type == QLatin1String("database-source"))
@@ -307,7 +303,6 @@ PluginsViewModel::PluginsViewModel(Config config, QObject *parent)
 
     QTimer::singleShot(0, this, [this] {
         applyRevocations(); // from the cached catalog; no network at startup
-        m_manager->startInitializers();
         // The login page offers the databases of plugins: ask the installed ones now.
         refreshRemoteDatabases();
     });
@@ -871,30 +866,13 @@ void PluginsViewModel::cancelImport() {
 // --- Remote database settings ---------------------------------------------------------------
 
 void PluginsViewModel::loadProviders() {
-    const quint64 generation = ++m_providerGeneration;
+    ++m_providerGeneration;
     m_providers.clear();
-    emit providersChanged();
+    // A provider is its plugin: listed under the plugin's name without running it.
     for (const InstalledPlugin &plugin : enabledOfType(QStringLiteral("database-source"))) {
-        PluginResult result;
-        const std::shared_ptr<PluginWorker> worker = m_manager->load(plugin.id, &result);
-        if (!worker) {
-            emit message(Error, plugin.name + QStringLiteral(": ") + describe(result));
-            continue;
-        }
-        beginBusy();
-        PluginDatabaseProvider(worker).providerName(this, [this, generation, plugin](const QString &name,
-                                                                                    const PluginError &error) {
-            endBusy();
-            if (generation != m_providerGeneration)
-                return;
-            // A provider that cannot tell its name is still listed, under the plugin's name.
-            m_providers << QVariantMap{
-                {QStringLiteral("pluginId"), plugin.id},
-                {QStringLiteral("name"), error.ok() && !name.trimmed().isEmpty() ? name.left(80) : plugin.name},
-            };
-            emit providersChanged();
-        });
+        m_providers << QVariantMap{{QStringLiteral("pluginId"), plugin.id}, {QStringLiteral("name"), plugin.name}};
     }
+    emit providersChanged();
 }
 
 QVariantList PluginsViewModel::configFieldsFromSchema(const QByteArray &schemaJson, const QByteArray &configJson,

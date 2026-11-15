@@ -161,7 +161,7 @@ void PluginManagerTest::testHashMismatchAborts() {
 
     // The catalog entry names another file.
     PluginResult result = fixture.manager->prepareInstall(
-        bytes, &candidate, PluginPackage::hash(conformancePackage(QStringLiteral("about"))));
+        bytes, &candidate, PluginPackage::hash(conformancePackage(QStringLiteral("store-feed"))));
     QCOMPARE(result.code, Code::HashMismatch);
 
     // The download was modified on the way (one byte differs).
@@ -179,7 +179,7 @@ void PluginManagerTest::testHashMismatchAborts() {
     QVERIFY(fixture.manager->prepareInstall(bytes, &candidate, hash.toUpper()).ok());
 
     // A candidate whose bytes were swapped after the check is caught by install().
-    candidate.packageBytes = conformancePackage(QStringLiteral("about"));
+    candidate.packageBytes = conformancePackage(QStringLiteral("store-feed"));
     QCOMPARE(fixture.manager->install(candidate, {QStringLiteral("pick-file")}).code, Code::HashMismatch);
     QVERIFY(fixture.manager->installedPlugins().isEmpty());
 }
@@ -305,7 +305,7 @@ void PluginManagerTest::testRecordsPersist() {
     const QString iconId = QStringLiteral("com.example.with-icon");
     QVERIFY(fixture.install(conformancePackage(QStringLiteral("network"))).ok());
     QVERIFY(fixture.install(makePackage(manifestJson(iconId, QStringLiteral(R"("author": "Jane", "homepage": "https://example.com")")),
-                                        component(QStringLiteral("about")), icon))
+                                        component(QStringLiteral("store-feed")), icon))
                 .ok());
     const QList<InstalledPlugin> before = fixture.manager->installedPlugins();
     QCOMPARE(before.size(), 2);
@@ -332,7 +332,7 @@ void PluginManagerTest::testRecordsPersist() {
     const InstalledPlugin withIcon = *fixture.manager->plugin(iconId);
     QCOMPARE(withIcon.author, QStringLiteral("Jane"));
     QCOMPARE(withIcon.homepage, QStringLiteral("https://example.com"));
-    QCOMPARE(withIcon.types, (QStringList{QStringLiteral("about"), QStringLiteral("initializer")}));
+    QCOMPARE(withIcon.types, QStringList{QStringLiteral("store-feed")});
     QCOMPARE(fixture.manager->icon(iconId), icon);
     QVERIFY(fixture.manager->icon(NetworkId).isEmpty());
     QVERIFY(fixture.manager->icon(QStringLiteral("com.example.unknown")).isEmpty());
@@ -369,7 +369,7 @@ void PluginManagerTest::testTamperedFileRefusedAtLoad() {
     QCOMPARE(result.code, Code::Tampered);
 
     // Replaced by another valid, harmless-looking package.
-    QVERIFY(writeFile(path, conformancePackage(QStringLiteral("about"))));
+    QVERIFY(writeFile(path, conformancePackage(QStringLiteral("store-feed"))));
     QVERIFY(!fixture.manager->load(ImporterId, &result));
     QCOMPARE(result.code, Code::Tampered);
 
@@ -649,30 +649,6 @@ void PluginManagerTest::testNetworkPolicyFromManifest() {
     QVERIFY(fixture.install(update).ok());
     QVERIFY(!fixture.manager->plugin(NetworkId)->allowPrivateNetwork);
     QCOMPARE(fixture.manager->plugin(NetworkId)->networkHosts, QStringList{QStringLiteral("*:*")});
-}
-
-void PluginManagerTest::testInitializerRuns() {
-    ManagerFixture fixture;
-    const QString aboutId = QStringLiteral("org.easepass.conformance.about");
-    const QString disabledId = QStringLiteral("com.example.disabled");
-    QVERIFY(fixture.install(conformancePackage(QStringLiteral("about"))).ok());
-    QVERIFY(fixture.install(conformancePackage(QStringLiteral("importer"))).ok());
-    QVERIFY(fixture.install(makePackage(manifestJson(disabledId), component(QStringLiteral("about")))).ok());
-    QVERIFY(fixture.manager->setEnabled(disabledId, false).ok());
-
-    fixture.manager->startInitializers();
-    const QString initLine = aboutId + QStringLiteral("|info|conformance-about: init");
-    QVERIFY(waitUntil([&] { return fixture.log().contains(initLine); }));
-
-    // init ran exactly once, also after further calls; the disabled plugin did not run.
-    PluginError error;
-    const auto worker = fixture.manager->load(aboutId);
-    const Value info = callSync(*worker, QStringLiteral("easepass:plugin/about"), QStringLiteral("info"), {}, &error);
-    QVERIFY2(error.ok(), qPrintable(error.message));
-    QCOMPARE(info.field("name").toString(), QStringLiteral("Conformance: about"));
-    QCOMPARE(fixture.log().count(initLine), 1);
-    for (const QString &line : fixture.log())
-        QVERIFY2(!line.startsWith(disabledId), qPrintable(line));
 }
 
 void PluginManagerTest::testLeakCheckWithService() {

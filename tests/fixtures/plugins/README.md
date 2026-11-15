@@ -2,12 +2,11 @@
 
 Built from the conformance plugins of
 [easepassqt-plugin-spec](https://github.com/finn-freitag/easepassqt-plugin-spec)
-(commit `a56508b`, `tools/check.sh`, files from its `dist/` directory). Their behaviour is
+(commit `03dba75`, `tools/check.sh`, files from its `dist/` directory). Their behaviour is
 specified in `conformance/README.md` of that repository.
 
 | File | Types | Permissions |
 | --- | --- | --- |
-| `conformance-about.wasm` | about, initializer | - |
 | `conformance-importer.wasm` | importer | pick-file |
 | `conformance-database-source.wasm` | database-source | storage |
 | `conformance-password-generator.wasm` | password-generator | leak-check |
