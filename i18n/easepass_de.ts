@@ -866,9 +866,370 @@
     </message>
 </context>
 <context>
+    <name>EasePass::App::PluginsViewModel</name>
+    <message>
+        <location filename="../src/app/PluginsViewModel.cpp" line="+97"/>
+        <source>Keeps its own private settings and files</source>
+        <translation>Speichert eigene, private Einstellungen und Dateien</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Asks you to choose a file (every time)</source>
+        <translation>Bittet Sie, eine Datei auszuwählen (jedes Mal)</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Uses the network, but names no server it may connect to</source>
+        <translation>Nutzt das Netzwerk, nennt aber keinen Server, mit dem es sich verbinden darf</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Connects to: %1 (any protocol)</source>
+        <translation>Verbindet sich mit: %1 (beliebiges Protokoll)</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Checks passwords against a breach service (sends a hash prefix to a third party)</source>
+        <translation>Prüft Passwörter bei einem Dienst für Datenlecks (sendet den Anfang eines Hashwerts an einen Dritten)</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Unknown permission: %1</source>
+        <translation>Unbekannte Berechtigung: %1</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Shows information about itself</source>
+        <translation>Zeigt Informationen über sich selbst</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Runs when Ease Pass starts</source>
+        <translation>Wird beim Start von Ease Pass ausgeführt</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Adds passwords to your database</source>
+        <translation>Fügt Passwörter zu Ihrer Datenbank hinzu</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Stores your encrypted database elsewhere (it only receives encrypted data)</source>
+        <translation>Speichert Ihre verschlüsselte Datenbank an einem anderen Ort (es erhält nur verschlüsselte Daten)</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Generates passwords: its output becomes your passwords</source>
+        <translation>Erzeugt Passwörter: Seine Ausgabe wird zu Ihren Passwörtern</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Provides additional plugin lists</source>
+        <translation>Stellt weitere Plugin-Listen bereit</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Unknown plugin type: %1</source>
+        <translation>Unbekannte Plugin-Art: %1</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>This plugin sends your encrypted database over the network.</source>
+        <translation>Dieses Plugin sendet Ihre verschlüsselte Datenbank über das Netzwerk.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>This plugin creates your passwords and can send data over the network.</source>
+        <translation>Dieses Plugin erzeugt Ihre Passwörter und kann Daten über das Netzwerk senden.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>This plugin adds passwords to your database and can send data over the network.</source>
+        <translation>Dieses Plugin fügt Passwörter zu Ihrer Datenbank hinzu und kann Daten über das Netzwerk senden.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>This plugin can connect to ANY server.</source>
+        <translation>Dieses Plugin kann sich mit JEDEM Server verbinden.</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Verified</source>
+        <translation>Verifiziert</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Not officially verified</source>
+        <translation>Nicht offiziell verifiziert</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Withdrawn</source>
+        <translation>Zurückgezogen</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Could not be verified (offline)</source>
+        <translation>Konnte nicht verifiziert werden (offline)</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>The plugin file is too large.</source>
+        <translation>Die Plugin-Datei ist zu groß.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>The downloaded file is not the one named in the plugin list. Nothing was installed.</source>
+        <translation>Die heruntergeladene Datei ist nicht die, die in der Plugin-Liste steht. Es wurde nichts installiert.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>This plugin was withdrawn and cannot be used.</source>
+        <translation>Dieses Plugin wurde zurückgezogen und kann nicht verwendet werden.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>This is not a valid plugin file.</source>
+        <translation>Dies ist keine gültige Plugin-Datei.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>This plugin does not work with this version of Ease Pass.</source>
+        <translation>Dieses Plugin funktioniert nicht mit dieser Version von Ease Pass.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>The plugin was rejected because it asks for something plugins may not do.</source>
+        <translation>Das Plugin wurde abgelehnt, weil es etwas verlangt, das Plugins nicht dürfen.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>The plugin was not installed because not every permission was approved.</source>
+        <translation>Das Plugin wurde nicht installiert, weil nicht jede Berechtigung bestätigt wurde.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>This plugin is not installed.</source>
+        <translation>Dieses Plugin ist nicht installiert.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>This plugin is disabled.</source>
+        <translation>Dieses Plugin ist deaktiviert.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>The plugin file was changed after it was installed. It will not be loaded.</source>
+        <translation>Die Plugin-Datei wurde nach der Installation verändert. Sie wird nicht geladen.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>The plugin could not be stored.</source>
+        <translation>Das Plugin konnte nicht gespeichert werden.</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>The plugin did not answer in time.</source>
+        <translation>Das Plugin hat nicht rechtzeitig geantwortet.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>The plugin crashed.</source>
+        <translation>Das Plugin ist abgestürzt.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Cancelled.</source>
+        <translation>Abgebrochen.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>The plugin did not find it.</source>
+        <translation>Das Plugin hat es nicht gefunden.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>The plugin&apos;s service is not available right now.</source>
+        <translation>Der Dienst des Plugins ist gerade nicht erreichbar.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>The plugin was not allowed to do that.</source>
+        <translation>Das Plugin durfte das nicht tun.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>The data is too large for the plugin.</source>
+        <translation>Die Daten sind zu groß für das Plugin.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>The plugin did not accept the input.</source>
+        <translation>Das Plugin hat die Eingabe nicht angenommen.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>The plugin did not accept the input: %1</source>
+        <translation>Das Plugin hat die Eingabe nicht angenommen: %1</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>The plugin reported an error (%1).</source>
+        <translation>Das Plugin hat einen Fehler gemeldet (%1).</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>The plugin reported an error: %1</source>
+        <translation>Das Plugin hat einen Fehler gemeldet: %1</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>The plugin could not be used: %1</source>
+        <translation>Das Plugin konnte nicht verwendet werden: %1</translation>
+    </message>
+    <message>
+        <location line="+183"/>
+        <source>%1 only</source>
+        <translation>Nur %1</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Needs a newer version of Ease Pass</source>
+        <translation>Benötigt eine neuere Version von Ease Pass</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Needs Ease Pass %1 or newer</source>
+        <translation>Benötigt Ease Pass %1 oder neuer</translation>
+    </message>
+    <message>
+        <location line="+64"/>
+        <source>The plugin &quot;%1&quot; was withdrawn and has been disabled.</source>
+        <translation>Das Plugin &quot;%1&quot; wurde zurückgezogen und deaktiviert.</translation>
+    </message>
+    <message>
+        <location line="+49"/>
+        <source>The file could not be read.</source>
+        <translation>Die Datei konnte nicht gelesen werden.</translation>
+    </message>
+    <message>
+        <location line="+26"/>
+        <source>This plugin is not in the plugin list any more.</source>
+        <translation>Dieses Plugin steht nicht mehr in der Plugin-Liste.</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>The plugin could not be downloaded.</source>
+        <translation>Das Plugin konnte nicht heruntergeladen werden.</translation>
+    </message>
+    <message>
+        <location line="+30"/>
+        <source>The plugin list names this plugin for %1 only. It may not work here.</source>
+        <translation>Die Plugin-Liste nennt dieses Plugin nur für %1. Es funktioniert hier möglicherweise nicht.</translation>
+    </message>
+    <message>
+        <location line="+53"/>
+        <source>&quot;%1&quot; was updated.</source>
+        <translation>&quot;%1&quot; wurde aktualisiert.</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>&quot;%1&quot; was installed.</source>
+        <translation>&quot;%1&quot; wurde installiert.</translation>
+    </message>
+    <message>
+        <location line="+16"/>
+        <source>Do you really want to uninstall &quot;%1&quot;?</source>
+        <translation>Möchten Sie &quot;%1&quot; wirklich deinstallieren?</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Its settings and files will be deleted too.</source>
+        <translation>Seine Einstellungen und Dateien werden ebenfalls gelöscht.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Its settings and files will be kept.</source>
+        <translation>Seine Einstellungen und Dateien bleiben erhalten.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Uninstall plugin</source>
+        <translation>Plugin deinstallieren</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Uninstall</source>
+        <translation>Deinstallieren</translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>&quot;%1&quot; was uninstalled.</source>
+        <translation>&quot;%1&quot; wurde deinstalliert.</translation>
+    </message>
+    <message>
+        <location line="+57"/>
+        <source>Files for the plugin (%1)</source>
+        <translation>Dateien für das Plugin (%1)</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>All files (*)</source>
+        <translation>Alle Dateien (*)</translation>
+    </message>
+    <message>
+        <location line="+84"/>
+        <source>The plugin found no passwords.</source>
+        <translation>Das Plugin hat keine Passwörter gefunden.</translation>
+    </message>
+    <message>
+        <location line="+17"/>
+        <source>No passwords selected</source>
+        <translation>Keine Passwörter ausgewählt</translation>
+    </message>
+    <message numerus="yes">
+        <location line="+12"/>
+        <source>%n password(s) imported</source>
+        <translation>
+            <numerusform>%n Passwort importiert</numerusform>
+            <numerusform>%n Passwörter importiert</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location line="+51"/>
+        <source>The plugin&apos;s settings description is not valid.</source>
+        <translation>Die Beschreibung der Plugin-Einstellungen ist ungültig.</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>The plugin has too many settings.</source>
+        <translation>Das Plugin hat zu viele Einstellungen.</translation>
+    </message>
+    <message>
+        <location line="+35"/>
+        <source>The plugin has a setting (&quot;%1&quot;) that Ease Pass cannot show.</source>
+        <translation>Das Plugin hat eine Einstellung (&quot;%1&quot;), die Ease Pass nicht anzeigen kann.</translation>
+    </message>
+    <message>
+        <location line="+40"/>
+        <source>&quot;%1&quot; needs a valid number.</source>
+        <translation>&quot;%1&quot; benötigt eine gültige Zahl.</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>&quot;%1&quot; must not be empty.</source>
+        <translation>&quot;%1&quot; darf nicht leer sein.</translation>
+    </message>
+    <message>
+        <location line="+75"/>
+        <source>Settings saved</source>
+        <translation>Einstellungen gespeichert</translation>
+    </message>
+</context>
+<context>
     <name>EasePass::App::PrintService</name>
     <message>
-        <location filename="../src/app/PrintService.cpp" line="+17"/>
+        <location filename="../src/app/PrintService.cpp" line="+20"/>
         <source>Print passwords</source>
         <translation>Passwörter drucken</translation>
     </message>
@@ -883,7 +1244,7 @@
         <translation>Drucken</translation>
     </message>
     <message>
-        <location line="+28"/>
+        <location line="+32"/>
         <source>Creating the PDF failed.</source>
         <translation>Das PDF konnte nicht erstellt werden.</translation>
     </message>
@@ -935,7 +1296,7 @@
 <context>
     <name>EasePass::App::SettingsViewModel</name>
     <message>
-        <location filename="../src/app/SettingsViewModel.cpp" line="+102"/>
+        <location filename="../src/app/SettingsViewModel.cpp" line="+103"/>
         <source>Open a writable database to reset the popularity counter.</source>
         <translation>Öffnen Sie eine beschreibbare Datenbank, um den Beliebtheitszähler zurückzusetzen.</translation>
     </message>
@@ -1440,13 +1801,13 @@
 <context>
     <name>Main</name>
     <message>
-        <location filename="../qml/EasePass/Main.qml" line="+45"/>
+        <location filename="../qml/EasePass/Main.qml" line="+47"/>
         <location line="+0"/>
         <source>Ease Pass</source>
         <translation>Ease Pass</translation>
     </message>
     <message>
-        <location line="+146"/>
+        <location line="+183"/>
         <source>You were logged out automatically because of inactivity.</source>
         <translation>Sie wurden wegen Inaktivität automatisch abgemeldet.</translation>
     </message>
@@ -1789,7 +2150,7 @@ Wenn Sie Ihr Passwort vergessen oder das Token verlieren, haben Sie keinen Zugri
         <translation>Passwörter</translation>
     </message>
     <message>
-        <location line="+70"/>
+        <location line="+74"/>
         <location line="+2"/>
         <source>New entry</source>
         <translatorcomment>resw: View_PasswordPage_CMDBar_New.ToolTipService.ToolTip</translatorcomment>
@@ -2048,7 +2409,7 @@ Wenn Sie Ihr Passwort vergessen oder das Token verlieren, haben Sie keinen Zugri
         <translation>Weiter</translation>
     </message>
     <message>
-        <location line="+8"/>
+        <location line="+9"/>
         <source>New password</source>
         <translatorcomment>resw: View_SettingsPage_NewPassword.Header</translatorcomment>
         <translation>Neues Passwort</translation>
@@ -2091,6 +2452,278 @@ Wenn Sie Ihr Passwort vergessen oder das Token verlieren, haben Sie keinen Zugri
         <location line="+6"/>
         <source>Lock</source>
         <translation>Sperren</translation>
+    </message>
+</context>
+<context>
+    <name>PluginConfigDialog</name>
+    <message>
+        <location filename="../qml/EasePass/PluginConfigDialog.qml" line="+28"/>
+        <source>Remote database settings</source>
+        <translation>Einstellungen für entfernte Datenbanken</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Close</source>
+        <translation>Schließen</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>No plugin for remote databases is installed.</source>
+        <translation>Es ist kein Plugin für entfernte Datenbanken installiert.</translation>
+    </message>
+    <message>
+        <location line="+17"/>
+        <location line="+13"/>
+        <source>Settings</source>
+        <translation>Einstellungen</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Save</source>
+        <translation>Speichern</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Cancel</source>
+        <translation>Abbrechen</translation>
+    </message>
+</context>
+<context>
+    <name>PluginDialogs</name>
+    <message>
+        <location filename="../qml/EasePass/PluginDialogs.qml" line="+38"/>
+        <source>This plugin could not be verified</source>
+        <translation>Dieses Plugin konnte nicht verifiziert werden</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>This plugin is not officially verified</source>
+        <translation>Dieses Plugin ist nicht offiziell verifiziert</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Continue anyway</source>
+        <translation>Trotzdem fortfahren</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <location line="+39"/>
+        <source>Cancel</source>
+        <translation>Abbrechen</translation>
+    </message>
+    <message>
+        <location line="-23"/>
+        <source>The official plugin list could not be reached, so Ease Pass cannot tell whether this file is a known plugin. Check your internet connection and try again, or continue only if you trust where the file comes from.</source>
+        <translation>Die offizielle Plugin-Liste konnte nicht erreicht werden. Ease Pass kann daher nicht feststellen, ob diese Datei ein bekanntes Plugin ist. Prüfen Sie Ihre Internetverbindung und versuchen Sie es erneut, oder fahren Sie nur fort, wenn Sie der Herkunft der Datei vertrauen.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>This file is not in the official plugin list. Nobody has checked it for Ease Pass. Continue only if you trust where the file comes from.</source>
+        <translation>Diese Datei steht nicht in der offiziellen Plugin-Liste. Niemand hat sie für Ease Pass geprüft. Fahren Sie nur fort, wenn Sie der Herkunft der Datei vertrauen.</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>It comes from the additional plugin list &quot;%1&quot;.</source>
+        <translation>Es stammt aus der zusätzlichen Plugin-Liste &quot;%1&quot;.</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>Update plugin?</source>
+        <translation>Plugin aktualisieren?</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Install plugin?</source>
+        <translation>Plugin installieren?</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Update</source>
+        <translation>Aktualisieren</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Install</source>
+        <translation>Installieren</translation>
+    </message>
+    <message>
+        <location line="+17"/>
+        <source>By %1</source>
+        <translation>Von %1</translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>Replaces the installed version %1.</source>
+        <translation>Ersetzt die installierte Version %1.</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>What this plugin does</source>
+        <translation>Was dieses Plugin tut</translation>
+    </message>
+    <message>
+        <location line="+19"/>
+        <source>What this plugin is allowed to do</source>
+        <translation>Was dieses Plugin tun darf</translation>
+    </message>
+    <message>
+        <location line="+20"/>
+        <source>Nothing beyond its own calculations: no files, no network, no storage.</source>
+        <translation>Nichts außer eigenen Berechnungen: keine Dateien, kein Netzwerk, kein Speicher.</translation>
+    </message>
+    <message>
+        <location line="+34"/>
+        <source>Install plugin from file</source>
+        <translation>Plugin aus Datei installieren</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Ease Pass plugin (*.epplugin)</source>
+        <translation>Ease-Pass-Plugin (*.epplugin)</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>All files (*)</source>
+        <translation>Alle Dateien (*)</translation>
+    </message>
+    <message>
+        <location line="+42"/>
+        <source>%1 asks for a file</source>
+        <translation>%1 bittet um eine Datei</translation>
+    </message>
+</context>
+<context>
+    <name>PluginImportDialog</name>
+    <message>
+        <location filename="../qml/EasePass/PluginImportDialog.qml" line="+21"/>
+        <source>Import passwords</source>
+        <translation>Passwörter importieren</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Close</source>
+        <translation>Schließen</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>No plugin offers passwords to import.</source>
+        <translation>Kein Plugin bietet Passwörter zum Importieren an.</translation>
+    </message>
+    <message>
+        <location line="+23"/>
+        <location line="+14"/>
+        <source>Import</source>
+        <translation>Importieren</translation>
+    </message>
+    <message>
+        <location line="-1"/>
+        <source>Select the passwords to import</source>
+        <translation>Passwörter zum Importieren auswählen</translation>
+    </message>
+</context>
+<context>
+    <name>PluginsPage</name>
+    <message>
+        <location filename="../qml/EasePass/PluginsPage.qml" line="+58"/>
+        <source>Back</source>
+        <translation>Zurück</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Plugins</source>
+        <translation>Plugins</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <location line="+221"/>
+        <source>Installed</source>
+        <translation>Installiert</translation>
+    </message>
+    <message>
+        <location line="-218"/>
+        <source>Install from file...</source>
+        <translation>Aus Datei installieren...</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>No plugins installed.</source>
+        <translation>Keine Plugins installiert.</translation>
+    </message>
+    <message>
+        <location line="+42"/>
+        <location line="+138"/>
+        <source>By %1</source>
+        <translation>Von %1</translation>
+    </message>
+    <message>
+        <location line="-120"/>
+        <source>Enable %1</source>
+        <translation>%1 aktivieren</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Open website</source>
+        <translation>Webseite öffnen</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Uninstall</source>
+        <translation>Deinstallieren</translation>
+    </message>
+    <message>
+        <location line="+39"/>
+        <source>Allow connections to this computer and the local network</source>
+        <translation>Verbindungen zu diesem Computer und zum lokalen Netzwerk erlauben</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>Plugin store</source>
+        <translation>Plugin-Store</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Show plugins for other systems</source>
+        <translation>Plugins für andere Systeme anzeigen</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Reload the plugin list</source>
+        <translation>Plugin-Liste neu laden</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Loading the plugin list...</source>
+        <translation>Plugin-Liste wird geladen...</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>The plugin list could not be loaded. Showing the last known list; installs from it cannot be verified.</source>
+        <translation>Die Plugin-Liste konnte nicht geladen werden. Die zuletzt bekannte Liste wird angezeigt; Installationen daraus können nicht verifiziert werden.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>The plugin list could not be loaded.</source>
+        <translation>Die Plugin-Liste konnte nicht geladen werden.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>No plugins available.</source>
+        <translation>Keine Plugins verfügbar.</translation>
+    </message>
+    <message>
+        <location line="+36"/>
+        <source>From the additional list &quot;%1&quot; (not official)</source>
+        <translation>Aus der zusätzlichen Liste &quot;%1&quot; (nicht offiziell)</translation>
+    </message>
+    <message>
+        <location line="+27"/>
+        <source>Update</source>
+        <translation>Aktualisieren</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Install</source>
+        <translation>Installieren</translation>
     </message>
 </context>
 <context>
@@ -2332,18 +2965,19 @@ Wenn Sie Ihr Passwort vergessen oder das Token verlieren, haben Sie keinen Zugri
 <context>
     <name>SettingsPage</name>
     <message>
-        <location filename="../qml/EasePass/SettingsPage.qml" line="+46"/>
+        <location filename="../qml/EasePass/SettingsPage.qml" line="+51"/>
         <source>Back</source>
         <translation>Zurück</translation>
     </message>
     <message>
         <location line="+5"/>
+        <location line="+290"/>
         <source>Settings</source>
         <translatorcomment>resw: View_PasswordPage_CMDBar_Settings.Label</translatorcomment>
         <translation>Einstellungen</translation>
     </message>
     <message>
-        <location line="+13"/>
+        <location line="-277"/>
         <location line="+10"/>
         <source>Language</source>
         <translatorcomment>resw: View_SettingsPage_Language.Header</translatorcomment>
@@ -2362,12 +2996,13 @@ Wenn Sie Ihr Passwort vergessen oder das Token verlieren, haben Sie keinen Zugri
     </message>
     <message>
         <location line="+4"/>
+        <location line="+218"/>
         <source>Manage</source>
         <translatorcomment>resw: View_SettingsPage_Manage.Content</translatorcomment>
         <translation>Verwalten</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="-209"/>
         <source>Auto-save delay</source>
         <translation>Verzögerung beim automatischen Speichern</translation>
     </message>
@@ -2528,6 +3163,68 @@ Wenn Sie Ihr Passwort vergessen oder das Token verlieren, haben Sie keinen Zugri
         <translatorcomment>resw: View_SettingsPage_ResetPopularityCounter.ToolTipService.ToolTip</translatorcomment>
         <translation>Setzt den Beliebtheitszähler der Passwörter zurück.</translation>
     </message>
+    <message>
+        <location line="+14"/>
+        <location line="+8"/>
+        <source>Plugins</source>
+        <translation>Plugins</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Install, update and remove plugins</source>
+        <translation>Plugins installieren, aktualisieren und entfernen</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>Import passwords</source>
+        <translation>Passwörter importieren</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Needs a plugin that can import passwords</source>
+        <translation>Benötigt ein Plugin, das Passwörter importieren kann</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Import passwords with a plugin</source>
+        <translation>Passwörter mit einem Plugin importieren</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Log in to import passwords</source>
+        <translation>Melden Sie sich an, um Passwörter zu importieren</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Import</source>
+        <translation>Importieren</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>Remote database settings</source>
+        <translation>Einstellungen für entfernte Datenbanken</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Needs a plugin for remote databases</source>
+        <translation>Benötigt ein Plugin für entfernte Datenbanken</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Settings of the plugins that store databases elsewhere</source>
+        <translation>Einstellungen der Plugins, die Datenbanken an einem anderen Ort speichern</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <location line="+6"/>
+        <source>Delete plugin data on uninstall</source>
+        <translation>Plugin-Daten beim Deinstallieren löschen</translation>
+    </message>
+    <message>
+        <location line="-5"/>
+        <source>Removes the settings and files of a plugin when it is uninstalled</source>
+        <translation>Entfernt die Einstellungen und Dateien eines Plugins, wenn es deinstalliert wird</translation>
+    </message>
 </context>
 <context>
     <name>TagRenderControl</name>
@@ -2595,7 +3292,7 @@ Wenn Sie Ihr Passwort vergessen oder das Token verlieren, haben Sie keinen Zugri
 <context>
     <name>main</name>
     <message>
-        <location filename="../src/qmlapp/main.cpp" line="+165"/>
+        <location filename="../src/main/main.cpp" line="+127"/>
         <source>Log out to open %1.</source>
         <translation>Melden Sie sich ab, um %1 zu öffnen.</translation>
     </message>

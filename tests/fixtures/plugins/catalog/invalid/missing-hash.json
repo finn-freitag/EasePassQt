@@ -1,0 +1,1 @@
+{ "schema": 1, "updated": "2026-10-14T00:00:00Z", "plugins": [ { "id": "com.example.plugin", "name": "P", "description": "", "author": "A", "version": "1.0.0", "api_version": 1, "download_url": "https://example.com/p.epplugin" } ] }

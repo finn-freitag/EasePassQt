@@ -15,6 +15,7 @@ specified in `conformance/README.md` of that repository.
 | `conformance-network.wasm` | importer | network |
 | `negative/*.wasm` | - | must be rejected (forbidden import, unknown namespace, future API version) |
 | `packages/*.epplugin` | | the same components as installable packages (manifest + component) |
+| `catalog/valid/*.json`, `catalog/invalid/*.json` | | `samples/catalog` of the spec repository (PluginList.json examples) |
 
 To update: run `nix develop -c tools/check.sh` in the spec repository and copy
 `dist/conformance-*.wasm`, `dist/negative/*.wasm` and `dist/*.epplugin` here.

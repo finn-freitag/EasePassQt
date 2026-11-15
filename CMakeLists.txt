@@ -283,7 +283,7 @@ target_link_libraries(easepass_app
 )
 
 # --- Plugin host (WebAssembly via Wasmtime; T26 proof of concept, T27 real host) ---
-# AUTO: build it when the Wasmtime C API is found. Not yet linked into the application.
+# AUTO: build it when the Wasmtime C API is found.
 set(EASEPASS_WITH_PLUGINS "AUTO" CACHE STRING "Build the Wasmtime plugin host (AUTO, ON, OFF)")
 set_property(CACHE EASEPASS_WITH_PLUGINS PROPERTY STRINGS AUTO ON OFF)
 set(EASEPASS_HAVE_PLUGINS OFF)
@@ -325,12 +325,22 @@ if(EASEPASS_HAVE_PLUGINS)
         src/plugin/PluginAdapters.h
         src/plugin/PluginManager.cpp
         src/plugin/PluginManager.h
+        src/plugin/PluginCatalog.cpp
+        src/plugin/PluginCatalog.h
     )
     target_include_directories(easepass_plugin PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/plugin)
     target_link_libraries(easepass_plugin
         PUBLIC Qt6::Core Qt6::Network easepass_core
         PRIVATE Wasmtime::Wasmtime ZLIB::ZLIB easepass_warnings
     )
+    # Plugin UI (T28): manager page, install dialogs, catalog. Without the plugin host the
+    # application builds without any plugin UI (AppContext::plugins() is null).
+    target_sources(easepass_app PRIVATE
+        src/app/PluginsViewModel.cpp
+        src/app/PluginsViewModel.h
+    )
+    target_link_libraries(easepass_app PUBLIC easepass_plugin)
+    target_compile_definitions(easepass_app PUBLIC EASEPASS_HAVE_PLUGINS)
 endif()
 
 # --- Multimedia (webcam) -----------------------------------------------------
@@ -387,8 +397,14 @@ set(EASEPASS_TS_FILES
 )
 # English needs only the plural forms ("%n password(s)").
 set(EASEPASS_PLURALS_TS ${CMAKE_CURRENT_SOURCE_DIR}/i18n/easepass_en.ts)
+# The plugin UI is translated even when this build has no plugin host (same .ts files everywhere).
+set(EASEPASS_LUPDATE_EXTRA_SOURCES)
+if(NOT EASEPASS_HAVE_PLUGINS)
+    list(APPEND EASEPASS_LUPDATE_EXTRA_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/app/PluginsViewModel.cpp)
+endif()
 qt_add_lupdate(
     SOURCE_TARGETS easepass_core easepass_app easepass_qml_module easepass
+    SOURCES ${EASEPASS_LUPDATE_EXTRA_SOURCES}
     TS_FILES ${EASEPASS_TS_FILES}
     PLURALS_TS_FILE ${EASEPASS_PLURALS_TS}
     OPTIONS -no-obsolete -locations relative

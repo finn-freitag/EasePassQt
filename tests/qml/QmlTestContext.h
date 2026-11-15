@@ -6,6 +6,7 @@
 
 #include <QObject>
 #include <QTemporaryDir>
+#include <QUrl>
 #include <QVariantMap>
 #include <memory>
 
@@ -30,6 +31,7 @@ class QmlTestContext : public QObject {
     Q_PROPERTY(QObject *settingsViewModel READ settingsViewModel CONSTANT)
     Q_PROPERTY(QObject *about READ about CONSTANT)
     Q_PROPERTY(QObject *autoLogout READ autoLogout CONSTANT)
+    Q_PROPERTY(QObject *plugins READ plugins CONSTANT)
     Q_PROPERTY(QStringList openedUrls READ openedUrls NOTIFY openedUrlsChanged)
     Q_PROPERTY(QString clipboardText READ clipboardText NOTIFY clipboardChanged)
     Q_PROPERTY(int itemCount READ itemCount NOTIFY itemsChanged)
@@ -54,6 +56,12 @@ public:
     QObject *settingsViewModel() const;
     QObject *about() const;
     QObject *autoLogout() const;
+    /// PluginsViewModel on a temporary directory; null when built without the plugin host.
+    QObject *plugins() const;
+    /// file:// URL of tests/fixtures/plugins/packages/org.easepass.conformance.<name>.epplugin
+    Q_INVOKABLE QUrl pluginFixture(const QString &name) const;
+    /// Uninstalls every plugin and drops a waiting install.
+    Q_INVOKABLE void resetPlugins();
     /// Runs one inactivity check against the fake clock (the real 1 s timer uses wall time).
     Q_INVOKABLE void tickInactivity();
     /// Lets the LanguageManager retranslate this QML engine (live language switching tests).

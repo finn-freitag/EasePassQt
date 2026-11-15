@@ -3,6 +3,7 @@
 #include "CryptoHelper.h"
 
 #include <QObject>
+#include <QUrl>
 #include <memory>
 
 class QQmlEngine;
@@ -44,6 +45,7 @@ class PasswordFilterModel;
 class PasswordListModel;
 class PrintService;
 class PrintViewModel;
+class PluginsViewModel;
 class ScreenScanViewModel;
 class SettingsViewModel;
 class TotpTimerService;
@@ -66,6 +68,8 @@ public:
         QString iconCacheDir;                                 ///< default: WebsiteIconManager default
         const Core::IClock *clock = nullptr;                  ///< default: SystemClock
         Core::KdfParams kdf = Core::KdfParams::production();  ///< tests pass cheap params
+        QString pluginsDirectory;                             ///< default: <AppDataLocation>/plugins
+        QUrl pluginCatalogUrl;                                ///< default: PluginsViewModel::DefaultCatalogUrl
     };
 
     explicit AppContext(QObject *parent = nullptr);
@@ -102,6 +106,8 @@ public:
     DailyTipService *dailyTipService() const { return m_dailyTip; }
     PasswordActions *passwordActions() const { return m_actions; }
     WebsiteIconService *websiteIcons() const { return m_icons; }
+    /// Plugin UI (T28); null when the application was built without the plugin host.
+    PluginsViewModel *plugins() const { return m_plugins; }
 
 private:
     const Core::IClock *m_clock;
@@ -136,6 +142,7 @@ private:
     Core::WebsiteIconManager *m_iconManager = nullptr;
     PasswordActions *m_actions = nullptr;
     WebsiteIconService *m_icons = nullptr;
+    PluginsViewModel *m_plugins = nullptr;
 };
 
 } // namespace EasePass::App

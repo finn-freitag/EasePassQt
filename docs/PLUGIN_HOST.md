@@ -1,12 +1,13 @@
-# Plugin host (T27)
+# Plugin host (T27) and plugin UI (T28)
 
 How Ease Pass runs plugins. The interface itself is specified in
 [easepassqt-plugin-spec](https://github.com/finn-freitag/easepassqt-plugin-spec); why
 WebAssembly components were chosen is in [PLUGIN_DECISION.md](PLUGIN_DECISION.md).
 
 The host is the library `easepass_plugin` (`src/plugin`). It is built when Wasmtime is
-found and is **not linked into the application yet**: the UI that installs plugins and
-uses them comes with T28.
+found; the application then gets its plugin UI (`App::PluginsViewModel`, see
+[Catalog and UI](#catalog-and-ui-t28)). Without Wasmtime the application builds without
+any plugin UI.
 
 ## Pieces
 
@@ -71,15 +72,49 @@ storage/<id>/files/<name>      the plugin's files
   cannot override them. TLS certificates are always verified.
 - **Log:** control characters removed, 4096 bytes per message, 200 messages per 10 s.
 
-## What the application has to provide (T28)
+## Catalog and UI (T28)
 
-`PluginEnvironment` carries the hooks; all of them are called on plugin threads:
+**Catalog** (`PluginCatalog.{h,cpp}`): `PluginCatalogData::parse` validates a
+`PluginList.json` like the JSON schema of the spec (one invalid entry makes the whole file
+invalid). `CatalogClient` fetches it over HTTPS only, with a timeout and a size cap, and
+implements `IPluginCatalog`:
 
-- `pickFile`: show a file dialog on the UI thread and return name and content.
-- `leakCheck`: `PluginManager::leakCheckWith(LeakCheckService *)` is ready to use.
-- `removeStorageOnUninstall`: `AppSettings::removePluginSettingsOnUninstall`.
-- `log`: where plugin log lines go (default: `qInfo`, category `easepass.plugin`).
-- `setCatalog`: an `IPluginCatalog` (the catalog client of T28).
+| Catalog state | Hash in the official list | Hash not in the list |
+| --- | --- | --- |
+| fetched by the latest `refresh()` | verified (or revoked) | unverified |
+| only the disk cache, or nothing | offline (or revoked) | offline |
+
+The cache (`<plugins>/PluginList.json`) is for *showing* the store while the list cannot
+be reached; it never makes a package "verified". The one thing taken from it is a
+revocation. Catalogs named by `store-feed` plugins are read with the same rules and never
+verify anything. The official list is
+`https://raw.githubusercontent.com/finn-freitag/EasePassQt/main/plugins/PluginList.json`
+(the file is published with T29). Nothing is fetched at application start: the list is
+loaded when the plugin page opens or a file is installed.
+
+**View model** (`src/app/PluginsViewModel`, QML singleton `Plugins`, owns the
+`PluginManager` and the `CatalogClient`):
+
+- Install from a file or from the store: hash, catalog verification and inspection first
+  (`PluginManager::prepareInstall`), then `pendingInstall` for the dialogs. Unverified and
+  offline packages get the extra window first (`installStep`), revoked ones are refused.
+  The texts of the permission dialog are built from the **computed** types and
+  permissions and the allow-list of servers; the plugin's own description is not part of
+  them.
+- Store list with the operating-system filter (`showIncompatible`), update detection and
+  revocation: a plugin whose hash is revoked in the catalog is disabled and cannot be
+  enabled again.
+- `pick-file`: the plugin thread waits while the UI thread shows the file dialog
+  (`filePickRequested` / `resolveFilePick`); the dialog title names the plugin.
+- Settings > Plugins: import passwords through `importer` plugins (the items are
+  candidates until the user selected them; they are dropped when the database is
+  locked), and the settings form of `database-source` plugins, drawn from the plugin's
+  JSON Schema (`configFieldsFromSchema`: flat object with string, password, choice,
+  integer, number and boolean fields).
+
+**QML:** `PluginsPage.qml`, `PluginDialogs.qml` (the two install dialogs and the file
+dialogs), `PluginImportDialog.qml`, `PluginConfigDialog.qml`, and the section "Plugins"
+of `SettingsPage.qml`.
 
 ## Known limits
 
@@ -96,11 +131,21 @@ storage/<id>/files/<name>      the plugin's files
   (a network read, an open file dialog) finishes first.
 - **Windows:** the Windows CI job builds without the plugin host (no vcpkg port of
   Wasmtime). Nothing in `src/plugin` was compiled or run on Windows.
-- Reading a catalog, the install dialogs and the plugin pages are T28.
+- **Not connected yet:** databases of `database-source` plugins cannot be opened from the
+  login and database pages (only their settings form exists), and `password-generator`
+  plugins are not used by the password generator dialog.
+- **The catalog is not signed** (spec version 1): "verified" means "the hash is in the
+  list served by GitHub over HTTPS".
+- **Installing blocks the UI briefly:** hashing and inspecting a package runs on the UI
+  thread.
+- Plugin log lines go to the logging category `easepass.plugin.log` (debug level, so not
+  into the log file by default; warnings and errors of a plugin are logged).
 
 ## Tests
 
-`test_plugin` (`tests/plugin`): runtime, package, storage, network, manager and adapter
-tests against the conformance plugins in `tests/fixtures/plugins`. The network tests use
+`test_plugin` (`tests/plugin`): runtime, package, storage, network, manager, adapter and
+catalog tests against the conformance plugins in `tests/fixtures/plugins`. The plugin UI
+is tested in `test_app` (`tests/app/PluginsViewModelTest.cpp`, fake network) and
+`test_qml` (`tests/qml/tst_plugins.qml`, with a fake view model and with the real one). The network tests use
 a local server; names ending in `.conformance.test` are mapped to `127.0.0.1` by a test
 resolver.

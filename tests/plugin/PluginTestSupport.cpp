@@ -1,5 +1,7 @@
 #include "PluginTestSupport.h"
 
+#include <QTimer>
+
 #include <QFile>
 #include <QTcpServer>
 #include <QTcpSocket>
@@ -133,6 +135,42 @@ QByteArray manifestJson(const QString &id, const QString &extraMembers) {
     if (!extraMembers.isEmpty())
         json += QStringLiteral(", ") + extraMembers;
     return (json + QLatin1Char('}')).toUtf8();
+}
+
+void FakeHttp::get(const QNetworkRequest &request, ResponseCallback callback) {
+    const QString url = request.url().toString();
+    requested << url;
+    if (silent)
+        return;
+    EasePass::Core::NetworkResponse response;
+    const auto it = replies.constFind(url);
+    if (it == replies.constEnd()) {
+        response.statusCode = 404;
+    } else {
+        response.statusCode = it->status;
+        response.data = it->body;
+        response.errorString = it->error;
+    }
+    QTimer::singleShot(0, this, [callback, response] { callback(response); });
+}
+
+QString downloadUrl(const QString &id) {
+    return QStringLiteral("https://plugins.example.test/%1.epplugin").arg(id);
+}
+
+QByteArray catalogEntryJson(const QString &id, const QByteArray &sha256, const QString &extraMembers,
+                            const QString &version) {
+    QString json = QStringLiteral(R"({"id": "%1", "name": "Catalog %1", "description": "From the catalog", )"
+                                  R"("author": "Catalog author", "version": "%2", "api_version": 1, )"
+                                  R"("download_url": "%3", "sha256": "%4")")
+                       .arg(id, version, downloadUrl(id), QString::fromLatin1(sha256));
+    if (!extraMembers.isEmpty())
+        json += QStringLiteral(", ") + extraMembers;
+    return (json + QLatin1Char('}')).toUtf8();
+}
+
+QByteArray catalogJson(const QList<QByteArray> &entries) {
+    return R"({"schema": 1, "updated": "2026-11-01T00:00:00Z", "plugins": [)" + entries.join(", ") + "]}";
 }
 
 QList<QHostAddress> testResolver(const QString &host) {

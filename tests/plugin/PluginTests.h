@@ -121,3 +121,21 @@ private slots:
     void testDatabaseSourceWithDatabaseService();
     void testUntrustedValuesRejected();
 };
+
+class PluginCatalogTest : public QObject {
+    Q_OBJECT
+private slots:
+    void testParseSpecSamples();
+    void testParseFields();
+    void testParseRejects_data();
+    void testParseRejects();
+    void testRefreshGoesLiveAndWritesCache();
+    void testVerificationStates();
+    void testCacheIsForDisplayOnly();
+    void testTimeout();
+    void testInvalidAnswerKeepsLastCatalog();
+    void testHttpsOnly();
+    void testFeedsNeverVerify();
+    void testDownload();
+    void testNetworkClientSizeCap();
+};

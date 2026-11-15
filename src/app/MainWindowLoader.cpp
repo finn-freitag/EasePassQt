@@ -21,6 +21,9 @@
 #include "WebcamScanViewModel.h"
 #include "WebsiteIconService.h"
 #include "AppSettings.h"
+#ifdef EASEPASS_HAVE_PLUGINS
+#include "PluginsViewModel.h"
+#endif
 
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
@@ -32,6 +35,10 @@ QQuickWindow *loadMainWindow(QQmlApplicationEngine &engine, AppContext &context)
     engine.addImageProvider(WebsiteIconService::ProviderId, context.websiteIcons()->createImageProvider());
     engine.addImageProvider(WebcamScanViewModel::ProviderId, context.webcamScan()->createImageProvider());
     auto obj = [](QObject *o) { return QVariant::fromValue<QObject *>(o); };
+    QObject *plugins = nullptr;
+#ifdef EASEPASS_HAVE_PLUGINS
+    plugins = context.plugins();
+#endif
     engine.setInitialProperties({
         {QStringLiteral("appController"), obj(context.appController())},
         {QStringLiteral("databaseController"), obj(context.databaseController())},
@@ -53,6 +60,7 @@ QQuickWindow *loadMainWindow(QQmlApplicationEngine &engine, AppContext &context)
         {QStringLiteral("settingsViewModel"), obj(context.settingsViewModel())},
         {QStringLiteral("about"), obj(context.about())},
         {QStringLiteral("autoLogout"), obj(context.autoLogout())},
+        {QStringLiteral("plugins"), obj(plugins)},
     });
     engine.loadFromModule("EasePass", "Main");
     if (engine.rootObjects().isEmpty())

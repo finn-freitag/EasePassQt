@@ -24,9 +24,20 @@
     </message>
 </context>
 <context>
+    <name>EasePass::App::PluginsViewModel</name>
+    <message numerus="yes">
+        <location filename="../src/app/PluginsViewModel.cpp" line="+844"/>
+        <source>%n password(s) imported</source>
+        <translation>
+            <numerusform>%n password imported</numerusform>
+            <numerusform>%n passwords imported</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
     <name>PasswordsPage</name>
     <message numerus="yes">
-        <location filename="../qml/EasePass/PasswordsPage.qml" line="+410"/>
+        <location filename="../qml/EasePass/PasswordsPage.qml" line="+414"/>
         <source>%n second(s) remaining</source>
         <translation>
             <numerusform>%n second remaining</numerusform>

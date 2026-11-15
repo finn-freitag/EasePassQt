@@ -20,6 +20,7 @@ int main(int argc, char *argv[]) {
     tests.push_back(std::make_unique<PluginNetworkTest>());
     tests.push_back(std::make_unique<PluginManagerTest>());
     tests.push_back(std::make_unique<PluginAdaptersTest>());
+    tests.push_back(std::make_unique<PluginCatalogTest>());
 
     for (int i = 1; i < argc; ++i) {
         if (strcmp(argv[i], "-functions") == 0) {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "INetworkClient.h"
 #include "PluginHostFunctions.h"
 #include "PluginInstance.h"
 #include "PluginWorker.h"
@@ -7,6 +8,7 @@
 #include <QByteArray>
 #include <QCoreApplication>
 #include <QElapsedTimer>
+#include <QHash>
 #include <QHostAddress>
 #include <QList>
 #include <QMutex>
@@ -56,6 +58,31 @@ QByteArray makeZip(const QList<ZipFile> &files);
 QByteArray makePackage(const QByteArray &manifestJson, const QByteArray &wasm, const QByteArray &icon = {});
 /// Minimal valid manifest with the given id and extra JSON members (e.g. `"os": ["linux"]`).
 QByteArray manifestJson(const QString &id, const QString &extraMembers = {});
+
+// --- catalog ---------------------------------------------------------------------------
+
+/// Network client for catalog tests: answers by URL (404 for unknown ones), asynchronously.
+class FakeHttp : public EasePass::Core::INetworkClient {
+public:
+    struct Reply {
+        int status = 200;
+        QByteArray body;
+        QString error;
+    };
+    QHash<QString, Reply> replies;
+    bool silent = false; ///< never answers (timeout tests)
+    QStringList requested;
+
+    void get(const QNetworkRequest &request, ResponseCallback callback) override;
+};
+
+/// One catalog entry as JSON. `extraMembers` e.g. `"os": ["windows"], "revoked": true`.
+QByteArray catalogEntryJson(const QString &id, const QByteArray &sha256, const QString &extraMembers = {},
+                            const QString &version = QStringLiteral("1.0.0"));
+/// A PluginList.json with the given entries.
+QByteArray catalogJson(const QList<QByteArray> &entries);
+/// URL used as download_url by catalogEntryJson().
+QString downloadUrl(const QString &id);
 
 // --- local server --------------------------------------------------------------------
 

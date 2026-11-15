@@ -458,6 +458,40 @@ set(TEST_APP_UNIT_FUNCTIONS
     testCoreDumpLimitZero
     testLogFilesOwnerOnly
 )
+# Plugin UI (T28): only with the plugin host. Shares the fixtures and fakes of test_plugin.
+if(EASEPASS_HAVE_PLUGINS)
+    target_sources(test_app PRIVATE
+        app/PluginUiTests.h
+        app/PluginsViewModelTest.cpp
+        plugin/PluginTestSupport.h
+        plugin/PluginTestSupport.cpp
+    )
+    target_link_libraries(test_app PRIVATE ZLIB::ZLIB)
+    list(APPEND TEST_APP_UNIT_FUNCTIONS
+        testInstallFromFileVerified
+        testInstallFromFileUnverified
+        testInstallFromFileOffline
+        testInstallFromFileRevoked
+        testInstallFromFileProblems
+        testInstallFromStore
+        testStoreHashMismatchAborts
+        testStoreFromCachedListIsNotVerified
+        testOsFilteringAndToggle
+        testOsWarningForLocalFile
+        testDialogShowsComputedPermissions
+        testRiskTexts
+        testInstalledList
+        testUninstallFlow
+        testRevocationDisablesInstalledPlugin
+        testUpdateFromStore
+        testStoreFeedPluginAddsCatalog
+        testImportThroughPlugin
+        testImportWithFileDialog
+        testProviderConfigForm
+        testConfigFieldsFromSchema
+        testAppContextOwnsPlugins
+    )
+endif()
 easepass_add_qtest(test_app LABELS unit FUNCTIONS ${TEST_APP_UNIT_FUNCTIONS})
 add_test(NAME test_app.all_functions_registered
     COMMAND ${CMAKE_COMMAND}
@@ -485,6 +519,7 @@ target_include_directories(test_qml PRIVATE ${CMAKE_SOURCE_DIR}/src/main)
 target_link_libraries(test_qml PRIVATE Qt6::Test)
 target_compile_definitions(test_qml PRIVATE
     EASEPASS_QML_TEST_DIR="${CMAKE_CURRENT_SOURCE_DIR}/qml"
+    EASEPASS_TEST_FIXTURES_DIR="${EASEPASS_TEST_FIXTURES_DIR}"
 )
 target_link_libraries(test_qml PRIVATE
     easepass_app
@@ -605,6 +640,7 @@ if(EASEPASS_HAVE_PLUGINS)
         plugin/PluginNetworkTest.cpp
         plugin/PluginManagerTest.cpp
         plugin/PluginAdaptersTest.cpp
+        plugin/PluginCatalogTest.cpp
     )
     target_compile_definitions(test_plugin PRIVATE EASEPASS_TEST_FIXTURES_DIR="${EASEPASS_TEST_FIXTURES_DIR}")
     target_link_libraries(test_plugin PRIVATE easepass_plugin Qt6::Test ZLIB::ZLIB easepass_warnings)
@@ -686,6 +722,18 @@ if(EASEPASS_HAVE_PLUGINS)
         testDatabaseSourceReadOnly
         testDatabaseSourceWithDatabaseService
         testUntrustedValuesRejected
+        testParseSpecSamples
+        testParseFields
+        testParseRejects
+        testRefreshGoesLiveAndWritesCache
+        testVerificationStates
+        testCacheIsForDisplayOnly
+        testTimeout
+        testInvalidAnswerKeepsLastCatalog
+        testHttpsOnly
+        testFeedsNeverVerify
+        testDownload
+        testNetworkClientSizeCap
     )
     easepass_add_qtest(test_plugin LABELS unit FUNCTIONS ${TEST_PLUGIN_UNIT_FUNCTIONS})
 

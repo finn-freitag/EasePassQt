@@ -1,6 +1,9 @@
 // test_app: view model / service layer tests (steps.txt T12). Same runner as test_core:
 // a function name argument runs only that function (one CTest test per function).
 #include "AppTests.h"
+#ifdef EASEPASS_HAVE_PLUGINS
+#include "PluginUiTests.h"
+#endif
 
 #include <QApplication>
 #include <QStandardPaths>
@@ -25,6 +28,9 @@ int main(int argc, char *argv[]) {
     tests.push_back(std::make_unique<DatabaseManagementTest>());
     tests.push_back(std::make_unique<AppBehaviourTest>());
     tests.push_back(std::make_unique<SecurityTest>());
+#ifdef EASEPASS_HAVE_PLUGINS
+    tests.push_back(std::make_unique<PluginsViewModelTest>());
+#endif
 
     for (int i = 1; i < argc; ++i) {
         if (strcmp(argv[i], "-functions") == 0) {

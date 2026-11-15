@@ -26,6 +26,10 @@
 #include "ScreenScanViewModel.h"
 #include "WebcamScanViewModel.h"
 
+#ifdef EASEPASS_HAVE_PLUGINS
+#include "PluginsViewModel.h"
+#endif
+
 #include <QJsonObject>
 #include <QPainter>
 #include "TotpHelper.h"
@@ -70,6 +74,7 @@ QmlTestContext::QmlTestContext(QObject *parent)
     deps.webcamScanner = m_webcam;
     deps.clock = &m_clock;
     deps.kdf = AppTest::kFastKdf;
+    deps.pluginsDirectory = m_tempDir.filePath(QStringLiteral("plugins"));
     m_ctx = std::make_unique<AppContext>(deps);
     m_ctx->settings()->setVerifyNotLeaked(false); // no HIBP requests in UI tests
     connect(m_ctx->clipboardService(), &ClipboardService::copied, this, &QmlTestContext::clipboardChanged);
@@ -100,6 +105,27 @@ QObject *QmlTestContext::appController() const { return m_ctx->appController(); 
 QObject *QmlTestContext::settingsViewModel() const { return m_ctx->settingsViewModel(); }
 QObject *QmlTestContext::about() const { return m_ctx->about(); }
 QObject *QmlTestContext::autoLogout() const { return m_ctx->autoLogout(); }
+QObject *QmlTestContext::plugins() const {
+#ifdef EASEPASS_HAVE_PLUGINS
+    return m_ctx->plugins();
+#else
+    return nullptr;
+#endif
+}
+QUrl QmlTestContext::pluginFixture(const QString &name) const {
+    return QUrl::fromLocalFile(
+        QStringLiteral(EASEPASS_TEST_FIXTURES_DIR "/plugins/packages/org.easepass.conformance.%1.epplugin").arg(name));
+}
+void QmlTestContext::resetPlugins() {
+#ifdef EASEPASS_HAVE_PLUGINS
+    PluginsViewModel *plugins = m_ctx->plugins();
+    plugins->cancelInstall();
+    plugins->cancelImport();
+    plugins->closeProviderConfig();
+    for (const auto &plugin : plugins->manager()->installedPlugins())
+        plugins->manager()->uninstall(plugin.id);
+#endif
+}
 void QmlTestContext::tickInactivity() { m_ctx->inactivityManager()->tick(); }
 void QmlTestContext::attachEngine(QQmlEngine *engine) { m_ctx->languageManager()->setEngine(engine); }
 QString QmlTestContext::translate(const QString &context, const QString &source) const {

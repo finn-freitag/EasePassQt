@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "updated": "2026-10-14T00:00:00Z",
+  "plugins": [
+    {
+      "id": "de.frozenassassine.fileimporter",
+      "name": "File Password Importer",
+      "description": "Imports passwords from CSV and JSON exports of other password managers.",
+      "author": "Example Author",
+      "version": "1.2.0",
+      "api_version": 1,
+      "os": ["windows", "linux", "macos"],
+      "download_url": "https://github.com/example/plugins/releases/download/v1.2.0/de.frozenassassine.fileimporter.epplugin",
+      "icon_url": "https://example.com/icons/fileimporter.png",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sensitive": true,
+      "min_app_version": "2.0.0",
+      "revoked": false
+    },
+    {
+      "id": "com.example.windows-only",
+      "name": "Windows Only",
+      "description": "",
+      "author": "Example Author",
+      "version": "0.1.0",
+      "api_version": 1,
+      "os": ["windows"],
+      "download_url": "https://example.com/windows-only.epplugin",
+      "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "revoked": true
+    }
+  ]
+}

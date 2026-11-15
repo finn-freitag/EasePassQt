@@ -4,16 +4,21 @@ import QtQuick.Layouts
 
 // C#: Views/SettingsPage - language, database, security, password generator and
 // miscellaneous settings. Every control reads and writes AppSettings directly (through
-// SettingsViewModel `viewModel`); AppSettings clamps the values. Plugin sections follow in T26.
+// SettingsViewModel `viewModel`); AppSettings clamps the values. The plugin section (T28) is
+// only shown when `plugins` (PluginsViewModel) is set, i.e. the app was built with the plugin host.
 Item {
     id: root
     required property var viewModel
     readonly property var settings: viewModel ? viewModel.settings : null
     property bool databaseOpen: false
     property bool showBack: true
+    property var plugins: null
 
     signal backRequested()
     signal manageDatabaseRequested()
+    signal managePluginsRequested()
+    signal pluginImportRequested()
+    signal pluginSettingsRequested()
 
     // Re-establishes a binding after the user changed a spin box (SpinBox replaces it).
     function rebind(box, getter) { box.value = Qt.binding(getter) }
@@ -284,6 +289,78 @@ Item {
                     width: Math.max(100, implicitWidth)
                     enabled: root.viewModel.canResetPopularity
                     onClicked: root.viewModel.resetPopularity()
+                }
+            }
+
+            // --- Plugins (C#: Settings > Plugins) ---------------------------------------
+            SettingsItemSeparator {
+                text: qsTr("Plugins")
+                visible: root.plugins !== null
+                Layout.fillWidth: true
+            }
+            SettingsControl {
+                objectName: "pluginsCard"
+                visible: root.plugins !== null
+                iconName: "settings"
+                header: qsTr("Plugins")
+                description: qsTr("Install, update and remove plugins")
+                Layout.fillWidth: true
+                Button {
+                    objectName: "managePluginsButton"
+                    text: qsTr("Manage")
+                    highlighted: true
+                    width: Math.max(100, implicitWidth)
+                    onClicked: root.managePluginsRequested()
+                }
+            }
+            SettingsControl {
+                objectName: "pluginImportCard"
+                visible: root.plugins !== null
+                iconName: "add"
+                header: qsTr("Import passwords")
+                description: !root.plugins || root.plugins.importerCount === 0
+                             ? qsTr("Needs a plugin that can import passwords")
+                             : root.databaseOpen ? qsTr("Import passwords with a plugin")
+                                                 : qsTr("Log in to import passwords")
+                Layout.fillWidth: true
+                Button {
+                    objectName: "pluginImportButton"
+                    text: qsTr("Import")
+                    highlighted: true
+                    width: Math.max(100, implicitWidth)
+                    enabled: root.plugins !== null && root.plugins.importerCount > 0 && root.databaseOpen
+                    onClicked: root.pluginImportRequested()
+                }
+            }
+            SettingsControl {
+                objectName: "pluginDatabaseCard"
+                visible: root.plugins !== null
+                iconName: "folder"
+                header: qsTr("Remote database settings")
+                description: !root.plugins || root.plugins.providerCount === 0
+                             ? qsTr("Needs a plugin for remote databases")
+                             : qsTr("Settings of the plugins that store databases elsewhere")
+                Layout.fillWidth: true
+                Button {
+                    objectName: "pluginSettingsButton"
+                    text: qsTr("Settings")
+                    highlighted: true
+                    width: Math.max(100, implicitWidth)
+                    enabled: root.plugins !== null && root.plugins.providerCount > 0
+                    onClicked: root.pluginSettingsRequested()
+                }
+            }
+            SettingsControl {
+                visible: root.plugins !== null
+                iconName: "delete"
+                header: qsTr("Delete plugin data on uninstall")
+                description: qsTr("Removes the settings and files of a plugin when it is uninstalled")
+                Layout.fillWidth: true
+                Switch {
+                    objectName: "removePluginDataSwitch"
+                    checked: root.settings.removePluginSettingsOnUninstall
+                    Accessible.name: qsTr("Delete plugin data on uninstall")
+                    onToggled: root.settings.removePluginSettingsOnUninstall = checked
                 }
             }
             Item { implicitHeight: Theme.spacingXL }

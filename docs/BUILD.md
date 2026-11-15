@@ -220,8 +220,9 @@ Secrets (passwords, 2FA secrets) are never list-model roles; only `ItemViewModel
 - `SettingsPage.qml` (C# SettingsPage): language (applies immediately, T20),
   database (Manage, auto-save delay), security (inactivity logout 1..1000 min, clipboard clear
   1..100000 s), password generator (characters + reset, length, verify not leaked),
-  miscellaneous (quick copy, show icons, download website icons, reset popularity). Plugin
-  sections come with T26.
+  miscellaneous (quick copy, show icons, download website icons, reset popularity), plugins
+  (manage, import passwords, remote database settings, delete plugin data on uninstall;
+  only when built with the plugin host, see [PLUGIN_HOST.md](PLUGIN_HOST.md)).
 - Controls write AppSettings directly through `SettingsViewModel.settings`; spin boxes re-bind
   after user edits so resets show up. The two generator text fields follow the C# rules
   (`applyPasswordLengthText`, `applyPasswordCharsText`) and are not bound, so clearing a field

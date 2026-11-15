@@ -26,6 +26,8 @@ ApplicationWindow {
     property var settingsViewModel: null
     property var about: null
     property var autoLogout: null
+    // PluginsViewModel; null when the app was built without the plugin host.
+    property var plugins: null
 
     // Values of App::AppController::Page
     readonly property int pageLogin: 0
@@ -58,6 +60,7 @@ ApplicationWindow {
             case window.pageDatabase: return window.databaseManagement ? databasePage : placeholderPage
             case window.pageSettings: return window.settingsViewModel ? settingsPage : placeholderPage
             case window.pageAbout: return window.about ? aboutPage : placeholderPage
+            case window.pagePlugins: return window.plugins ? pluginsPage : placeholderPage
             default: return placeholderPage
             }
         }
@@ -152,6 +155,19 @@ ApplicationWindow {
             showBack: window.appController.canGoBack
             onBackRequested: window.appController.goBack()
             onManageDatabaseRequested: window.appController.navigate(window.pageDatabase)
+            plugins: window.plugins
+            onManagePluginsRequested: window.appController.navigate(window.pagePlugins)
+            onPluginImportRequested: if (pluginUi.item) pluginUi.item.openImport()
+            onPluginSettingsRequested: if (pluginUi.item) pluginUi.item.openSettings()
+        }
+    }
+    Component {
+        id: pluginsPage
+        PluginsPage {
+            plugins: window.plugins
+            showBack: window.appController.canGoBack
+            onBackRequested: window.appController.goBack()
+            onInstallFromFileRequested: if (pluginUi.item) pluginUi.item.chooseInstallFile()
         }
     }
     Component {
@@ -169,6 +185,29 @@ ApplicationWindow {
             showBack: window.appController.canGoBack
             onBackRequested: window.appController.goBack()
             onLockRequested: window.databaseController.lock()
+        }
+    }
+
+    // --- Plugins (T28): install dialogs, file dialog for plugins, import, provider settings ---
+    Loader {
+        id: pluginUi
+        active: window.plugins !== null
+        sourceComponent: Item {
+            function chooseInstallFile() { pluginDialogs.chooseInstallFile() }
+            function openImport() { pluginImport.open() }
+            function openSettings() { pluginConfig.open() }
+            PluginDialogs { id: pluginDialogs; objectName: "pluginDialogs"; plugins: window.plugins }
+            PluginImportDialog { id: pluginImport; objectName: "pluginImport"; plugins: window.plugins }
+            PluginConfigDialog { id: pluginConfig; objectName: "pluginConfig"; plugins: window.plugins }
+            Connections {
+                target: window.plugins
+                function onMessage(severity, text) {
+                    globalInfo.severity = severity
+                    globalInfo.title = ""
+                    globalInfo.message = text
+                    globalInfo.show()
+                }
+            }
         }
     }
 

@@ -36,6 +36,13 @@
 #include "SettingsViewModel.h"
 #include "TotpTimerService.h"
 
+#ifdef EASEPASS_HAVE_PLUGINS
+#include "BuildInfo.h"
+#include "PluginsViewModel.h"
+#include <QDir>
+#include <QStandardPaths>
+#endif
+
 #include <QQmlEngine>
 
 namespace EasePass::App {
@@ -99,6 +106,23 @@ AppContext::AppContext(Deps deps, QObject *parent)
         m_iconManager->setCacheDir(deps.iconCacheDir);
     m_icons = new WebsiteIconService(m_iconManager, m_settings.get(), this);
 
+#ifdef EASEPASS_HAVE_PLUGINS
+    PluginsViewModel::Config plugins;
+    plugins.pluginsDirectory = !deps.pluginsDirectory.isEmpty()
+                                   ? deps.pluginsDirectory
+                                   : QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
+                                         .filePath(QStringLiteral("plugins"));
+    plugins.catalogUrl = deps.pluginCatalogUrl;
+    plugins.network = network;
+    plugins.settings = m_settings.get();
+    plugins.service = m_service;
+    plugins.leakCheck = m_leakCheck;
+    plugins.dialogs = m_dialogService;
+    plugins.clock = m_clock;
+    plugins.appVersion = BuildInfo::appVersion();
+    m_plugins = new PluginsViewModel(plugins, this);
+#endif
+
     // First run (no database file known yet) starts with the Register/OOBE page.
     m_appController->start(m_databaseController->isFirstRun());
 
@@ -112,6 +136,11 @@ AppContext::AppContext(Deps deps, QObject *parent)
 }
 
 AppContext::~AppContext() {
+#ifdef EASEPASS_HAVE_PLUGINS
+    // Stops the plugin threads first: plugins may still call into services owned by this object.
+    delete m_plugins;
+    m_plugins = nullptr;
+#endif
     // Finish background saves before the members are destroyed.
     m_operations->waitForBackgroundWork();
     m_service->shutdown();
@@ -143,6 +172,9 @@ void AppContext::registerQml() {
     single("DailyTip", m_dailyTip);
     single("PasswordActions", m_actions);
     single("WebsiteIcons", m_icons);
+#ifdef EASEPASS_HAVE_PLUGINS
+    single("Plugins", m_plugins);
+#endif
     qmlRegisterUncreatableType<AppSettings>(uri, 1, 0, "AppSettings", QStringLiteral("use SettingsViewModel.settings"));
     qmlRegisterUncreatableType<PasswordListModel>(uri, 1, 0, "PasswordListModel", QStringLiteral("singleton only"));
 }
