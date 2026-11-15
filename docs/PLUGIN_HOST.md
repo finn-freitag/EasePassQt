@@ -164,7 +164,7 @@ of `SettingsPage.qml`.
   API in Wasmtime.
 - **Data per call: about 2.6 MiB.** Wasmtime stops a call when more than 128 MiB of its
   value type were copied between host and plugin, and a byte costs about 24 bytes there.
-  The C API of Wasmtime 48 cannot raise that. A database passes the boundary twice
+  The C API of Wasmtime 50 cannot raise that. A database passes the boundary twice
   (network to plugin, plugin to Ease Pass), so databases of plugins are limited to 2 MiB
   and larger ones are refused with a message. Found with the FTP plugin and a 3 MB file.
 - **TLS is only covered by a test that needs servers.** Certificate verification is

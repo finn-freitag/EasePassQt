@@ -77,6 +77,15 @@ QString PluginInspector::importOfPermission(const QString &permission) {
     return {};
 }
 
+/// Takes the kind of an import or export; the entry itself stays owned by the caller.
+static bool isComponentInstance(const wasmtime_component_extern_t *entry) {
+    wasmtime_component_item_t item;
+    wasmtime_component_extern_type(entry, &item);
+    const bool isInstance = item.kind == WASMTIME_COMPONENT_ITEM_COMPONENT_INSTANCE;
+    wasmtime_component_item_delete(&item);
+    return isInstance;
+}
+
 PluginInspection PluginInspector::inspect(const QByteArray &componentBytes) {
     PluginInspection result;
     wasm_engine_t *engine = PluginEngine::instance().engine();
@@ -96,12 +105,12 @@ PluginInspection PluginInspector::inspect(const QByteArray &componentBytes) {
     for (size_t i = 0; i < importCount; ++i) {
         const char *name = nullptr;
         size_t nameLength = 0;
-        wasmtime_component_item_t item;
-        if (!wasmtime_component_type_import_nth(type, engine, i, &name, &nameLength, &item))
+        wasmtime_component_extern_t *entry = nullptr;
+        if (!wasmtime_component_type_import_nth(type, engine, i, &name, &nameLength, &entry))
             continue;
         const QString import = QString::fromUtf8(name, qsizetype(nameLength));
-        const bool isInstance = item.kind == WASMTIME_COMPONENT_ITEM_COMPONENT_INSTANCE;
-        wasmtime_component_item_delete(&item);
+        const bool isInstance = isComponentInstance(entry);
+        wasmtime_component_extern_delete(entry); // also ends the lifetime of `name`
         result.imports << import;
 
         const QString base = baseName(import, isInstance, "import", result.rejected);
@@ -120,12 +129,12 @@ PluginInspection PluginInspector::inspect(const QByteArray &componentBytes) {
     for (size_t i = 0; i < exportCount; ++i) {
         const char *name = nullptr;
         size_t nameLength = 0;
-        wasmtime_component_item_t item;
-        if (!wasmtime_component_type_export_nth(type, engine, i, &name, &nameLength, &item))
+        wasmtime_component_extern_t *entry = nullptr;
+        if (!wasmtime_component_type_export_nth(type, engine, i, &name, &nameLength, &entry))
             continue;
         const QString exported = QString::fromUtf8(name, qsizetype(nameLength));
-        const bool isInstance = item.kind == WASMTIME_COMPONENT_ITEM_COMPONENT_INSTANCE;
-        wasmtime_component_item_delete(&item);
+        const bool isInstance = isComponentInstance(entry);
+        wasmtime_component_extern_delete(entry); // also ends the lifetime of `name`
         result.exports << exported;
 
         const QString base = baseName(exported, isInstance, "export", result.rejected);

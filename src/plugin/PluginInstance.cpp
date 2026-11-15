@@ -264,7 +264,7 @@ struct PluginInstance::Private {
     }
 
     // Runs whenever the engine epoch advances while this store executes plugin code.
-    static wasmtime_error_t *onEpoch(wasmtime_context_t *, void *data, uint64_t *delta,
+    static wasmtime_error_t *onEpoch(const wasmtime_context_t *, void *data, uint64_t *delta,
                                      wasmtime_update_deadline_kind_t *kind) {
         auto *self = static_cast<Private *>(data);
         const bool cancelled = self->limits.cancel && self->limits.cancel->load();
