@@ -1,7 +1,5 @@
 #include "QrCodeScanner.h"
 
-#include <QGuiApplication>
-#include <QClipboard>
 #include <QPointer>
 #include <QThreadPool>
 #include <ZXing/ReadBarcode.h>
@@ -82,23 +80,6 @@ QrScanDecision QrScanDecision::decide(const QStringList& found) {
 QString QrCodeScanner::scanImageFile(const QString& filePath) {
     QImage img(filePath);
     return scanImage(img);
-}
-
-QString QrCodeScanner::scanClipboard() {
-    QClipboard* clipboard = QGuiApplication::clipboard();
-    if (!clipboard) return QString();
-
-    QString text = clipboard->text().trimmed();
-    if (text.startsWith("otpauth://", Qt::CaseInsensitive)) {
-        return text;
-    }
-
-    QImage img = clipboard->image();
-    if (!img.isNull()) {
-        return scanImage(img);
-    }
-
-    return QString();
 }
 
 } // namespace EasePass::Core

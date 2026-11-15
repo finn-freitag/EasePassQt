@@ -59,9 +59,8 @@ struct Fixture {
     bool open(const QString &path, bool temporary = false) {
         DatabaseService *svc = ctx->databaseService();
         QSignalSpy spy(svc, &DatabaseService::openFinished);
-        const bool started = temporary
-            ? ctx->databaseOperations()->openTemporaryDatabase(path, SecretString(kPassword))
-            : svc->open(std::make_shared<LocalFileDatabaseSource>(path), SecretString(kPassword));
+        const bool started = svc->open(std::make_shared<LocalFileDatabaseSource>(path), SecretString(kPassword),
+                                       SecretString(), temporary);
         return started && spy.wait(30000) && svc->isOpen();
     }
 

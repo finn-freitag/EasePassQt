@@ -47,25 +47,6 @@ void DatabaseFile::wipeSecrets() {
     secondFactor.clear();
 }
 
-LoadResult DatabaseFile::loadFromFile(const QString &path, const SecretString &masterPassword, DatabaseFile &outDb,
-                                      const SecretString &secondFactor) {
-    QFile file(path);
-    if (!file.exists() || !file.open(QIODevice::ReadOnly)) {
-        return LoadResult::DatabaseNotFound;
-    }
-
-    QByteArray fileBytes = file.readAll();
-    file.close();
-
-    LoadResult res = loadFromBytes(fileBytes, masterPassword, outDb, secondFactor);
-    if (res == LoadResult::Success || res == LoadResult::NeedsSecondFactor) {
-        outDb.filePath = path;
-        QFileInfo fileInfo(path);
-        outDb.isReadOnly = !fileInfo.isWritable();
-    }
-    return res;
-}
-
 LoadResult DatabaseFile::loadFromBytes(const QByteArray &fileBytes, const SecretString &masterPassword,
                                        DatabaseFile &outDb, const SecretString &secondFactor, const KdfParams &kdf) {
     int versionTag = 0;
@@ -155,45 +136,6 @@ LoadResult DatabaseFile::loadFromBytes(const QByteArray &fileBytes, const Secret
     }
 
     return LoadResult::Success;
-}
-
-bool DatabaseFile::saveToFile(const QString &path) {
-    if (isReadOnly) {
-        return false;
-    }
-
-    QString targetPath = path.isEmpty() ? filePath : path;
-    if (targetPath.isEmpty()) {
-        return false;
-    }
-
-    // 1.-5. Serialize, encrypt and add the version tag
-    QByteArray finalBytes = serialize();
-    if (finalBytes.isEmpty()) {
-        return false;
-    }
-
-    // 6. Write atomically using QSaveFile
-    QSaveFile saveFile(targetPath);
-    const bool isNewFile = !QFile::exists(targetPath);
-    if (!saveFile.open(QIODevice::WriteOnly)) {
-        return false;
-    }
-    if (isNewFile) {
-        restrictToOwner(saveFile); // T23: new database files are owner-only
-    }
-
-    if (saveFile.write(finalBytes) != finalBytes.size()) {
-        saveFile.cancelWriting();
-        return false;
-    }
-
-    if (!saveFile.commit()) {
-        return false;
-    }
-
-    filePath = targetPath;
-    return true;
 }
 
 QByteArray DatabaseFile::serialize(const KdfParams &kdf) const {

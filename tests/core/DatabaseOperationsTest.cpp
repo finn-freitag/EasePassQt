@@ -793,7 +793,7 @@ void DatabaseOperationsTest::testExportSelectedItemsAndBackup() {
     svc.close();
     svc.waitForBackgroundWork();
     QSignalSpy finished(&svc, &DatabaseService::openFinished);
-    QVERIFY(ops.openTemporaryDatabase(main, kPassword));
+    QVERIFY(svc.open(std::make_shared<LocalFileDatabaseSource>(main), SecretString(kPassword), SecretString(), true));
     QVERIFY(finished.wait(30000));
     QVERIFY(svc.isReadOnly());
     QVERIFY(runOp([&](auto cb) { ops.backupDatabase(tmpPath("fromTemp.epdb"), cb); }).ok());
@@ -859,7 +859,8 @@ void DatabaseOperationsTest::testTemporaryDatabaseIsReadOnly() {
     DatabaseOperations ops(settings, &svc, kFastKdf);
 
     QSignalSpy finished(&svc, &DatabaseService::openFinished);
-    QVERIFY(ops.openTemporaryDatabase(path, kPassword));
+    // Opened like the application opens a file from the command line: temporary.
+    QVERIFY(svc.open(std::make_shared<LocalFileDatabaseSource>(path), SecretString(kPassword), SecretString(), true));
     QVERIFY(finished.wait(30000));
     QCOMPARE(finished.at(0).at(0).value<LoadResult>(), LoadResult::Success);
 
@@ -892,7 +893,7 @@ void DatabaseOperationsTest::testTemporaryDatabaseIsReadOnly() {
     // Wrong password: open fails, nothing opened
     svc.close();
     finished.clear();
-    QVERIFY(ops.openTemporaryDatabase(path, "wrong"));
+    QVERIFY(svc.open(std::make_shared<LocalFileDatabaseSource>(path), SecretString("wrong"), SecretString(), true));
     QVERIFY(finished.wait(30000));
     QCOMPARE(finished.at(0).at(0).value<LoadResult>(), LoadResult::WrongPassword);
     QVERIFY(!svc.isOpen());
@@ -919,7 +920,6 @@ void DatabaseOperationsTest::testOperationsWithoutOpenDatabase() {
     QCOMPARE(rotated->status, DatabaseOpStatus::NoDatabaseOpen);
 
     DatabaseOperations ops(makeSettings(), nullptr, kFastKdf);
-    QVERIFY(!ops.openTemporaryDatabase(tmpPath("x.epdb"), kPassword));
     QCOMPARE(runOp([&](auto cb) { ops.exportDatabase(tmpPath("x.epdb"), {}, cb); }).status,
              DatabaseOpStatus::NoDatabaseOpen);
     QCOMPARE(runOp([&](auto cb) { ops.backupDatabase(tmpPath("x.epdb"), cb); }).status,

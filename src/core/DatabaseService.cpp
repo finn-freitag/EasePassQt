@@ -1,7 +1,5 @@
 #include "DatabaseService.h"
 
-#include "LocalFileDatabaseSource.h"
-
 #include <QCoreApplication>
 #include <QLoggingCategory>
 #include <QMetaObject>
@@ -203,10 +201,6 @@ bool DatabaseService::makePermanent() {
         return false;
     }
     m_temporary = false;
-    // DatabaseOperations::openTemporaryDatabase forces the local file source read-only.
-    if (auto *local = dynamic_cast<LocalFileDatabaseSource *>(m_source.get())) {
-        local->setReadOnly(false);
-    }
     onSourceChanged(); // read-only state + display name
     return true;
 }

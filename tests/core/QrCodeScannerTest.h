@@ -12,8 +12,6 @@ private slots:
     void testDecodeSampleQrNoisy();
     void testNonQrImageReturnsEmpty();
     void testNullImageAndMissingFileReturnsEmpty();
-    void testClipboardOtpauthText();
-    void testClipboardImageScanning();
     void testGenerateRoundTrip();
     void testGenerateEmptyAndScale();
 };

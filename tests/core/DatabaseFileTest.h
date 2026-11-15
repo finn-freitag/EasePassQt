@@ -14,13 +14,10 @@ private slots:
     void testSecondFactorHandling();
 
     // Fast tests (unit)
-    void testLoadDatabaseNotFound();
     void testLoadWrongFormatNotEpdb();
     void testLoadWrongFormatBadVersionTag();
     void testLoadWrongFormatInvalidOuterJson();
     void testLoadWrongFormatInvalidInnerJson();
-    void testSaveReadOnlyFails();
-    void testSaveEmptyPathFails();
     void testItemAddUpdateDeleteBounds();
     void testCountOccurrences();
     void testWrongPasswordPassingPaddingCheck();

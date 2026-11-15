@@ -148,15 +148,6 @@ public:
     /// Backup = exportDatabase() with all items and the current password.
     void backupDatabase(const QString &targetPath, DatabaseOpCallback callback);
 
-    /**
-     * Opens @p path as a temporary, read-only database (C#: TemporaryDatabaseHelper; databases
-     * opened by file association / "load temporary database"). The path is NOT added to the known
-     * list. Result: DatabaseService::openFinished. Returns false if no service is set or
-     * DatabaseService::open() rejected the request.
-     */
-    bool openTemporaryDatabase(const QString &path, const SecretString &password,
-                               const SecretString &secondFactor = SecretString());
-
     /// Blocks until all background jobs are done and their callbacks were delivered.
     void waitForBackgroundWork();
 

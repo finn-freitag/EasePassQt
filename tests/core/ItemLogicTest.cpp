@@ -548,11 +548,11 @@ void ItemLogicTest::testEmailAddressIndexer() {
 
 void ItemLogicTest::testPasswordItemTagHelper() {
     PasswordItem item;
-    PasswordItemTagHelper::parseToTags("  Work   Finance\tSocial  ", item);
+    item.tags = PasswordItemTagHelper::parseTags("  Work   Finance\tSocial  ");
     QCOMPARE(item.tags, QStringList({"Work", "Finance", "Social"}));
     QCOMPARE(PasswordItemTagHelper::formatTags(item), QString("Work Finance Social"));
 
-    PasswordItemTagHelper::parseToTags("", item);
+    item.tags = PasswordItemTagHelper::parseTags("");
     QVERIFY(item.tags.isEmpty());
     QCOMPARE(PasswordItemTagHelper::formatTags(item), QString(""));
 

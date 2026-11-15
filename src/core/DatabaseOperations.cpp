@@ -454,13 +454,4 @@ void DatabaseOperations::backupDatabase(const QString &targetPath, DatabaseOpCal
     exportDatabase(targetPath, DatabaseService::ExportOptions{}, std::move(callback));
 }
 
-bool DatabaseOperations::openTemporaryDatabase(const QString &path, const SecretString &password,
-                                               const SecretString &secondFactor) {
-    if (!m_service || path.isEmpty()) {
-        return false;
-    }
-    auto source = std::make_shared<LocalFileDatabaseSource>(path, /*readOnly=*/true);
-    return m_service->open(std::move(source), password, secondFactor, /*temporary=*/true);
-}
-
 } // namespace EasePass::Core

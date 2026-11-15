@@ -101,13 +101,10 @@ set(TEST_CORE_UNIT_FUNCTIONS
     testVersionTagGood
     testVersionTagMalformedHeader
     testVersionTagTruncated
-    testLoadDatabaseNotFound
     testLoadWrongFormatNotEpdb
     testLoadWrongFormatBadVersionTag
     testLoadWrongFormatInvalidOuterJson
     testLoadWrongFormatInvalidInnerJson
-    testSaveReadOnlyFails
-    testSaveEmptyPathFails
     testItemAddUpdateDeleteBounds
     testCountOccurrences
     testWrongPasswordPassingPaddingCheck
@@ -135,12 +132,6 @@ set(TEST_CORE_UNIT_FUNCTIONS
     testOtpauthUriParsingUrlEncoded
     testOtpauthUriParsingMissingSecretFails
     testOtpauthUriRoundtrip
-    testLengthBounds
-    testEachEnabledClassPresent
-    testSelectiveClasses
-    testEmptyPoolFallback
-    testCustomSymbolsOnly
-    testDistributionSanity
     testFromCharsetRespectsLengthAndChars
     testFromCharsetSecureAndTerminates
     testDecodeSampleQrNormal
@@ -149,8 +140,6 @@ set(TEST_CORE_UNIT_FUNCTIONS
     testDecodeSampleQrNoisy
     testNonQrImageReturnsEmpty
     testNullImageAndMissingFileReturnsEmpty
-    testClipboardOtpauthText
-    testClipboardImageScanning
     testGenerateRoundTrip
     testGenerateEmptyAndScale
     testUrlNormalization

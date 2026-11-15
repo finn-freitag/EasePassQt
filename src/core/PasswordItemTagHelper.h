@@ -17,7 +17,6 @@ class PasswordItemTagHelper {
 public:
     /// C#: PasswordItemTagHelper.ParseToTags: splits `raw` on whitespace (`SkipEmptyParts`).
     static QStringList parseTags(const QString &raw);
-    static void parseToTags(const QString &raw, PasswordItem &item);
 
     /// C#: PasswordItemTagHelper.FillTags: joins tags with `" "`.
     static QString formatTags(const QStringList &tags);

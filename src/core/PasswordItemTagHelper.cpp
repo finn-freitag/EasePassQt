@@ -14,10 +14,6 @@ QStringList PasswordItemTagHelper::parseTags(const QString &raw) {
     return raw.split(wsRe, Qt::SkipEmptyParts);
 }
 
-void PasswordItemTagHelper::parseToTags(const QString &raw, PasswordItem &item) {
-    item.tags = parseTags(raw);
-}
-
 QString PasswordItemTagHelper::formatTags(const QStringList &tags) {
     // C#: string.Join(" ", item.Tags)
     if (tags.isEmpty()) {

@@ -12,7 +12,6 @@ class QrCodeScanner {
 public:
     static QString scanImage(const QImage& image);
     static QString scanImageFile(const QString& filePath);
-    static QString scanClipboard();
 
     /// All distinct QR texts found in @p image (order of detection).
     static QStringList scanImageAll(const QImage& image);

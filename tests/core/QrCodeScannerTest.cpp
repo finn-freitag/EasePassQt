@@ -59,41 +59,6 @@ void QrCodeScannerTest::testNullImageAndMissingFileReturnsEmpty() {
     QVERIFY(QrCodeScanner::scanImageFile("/nonexistent/file/path.png").isEmpty());
 }
 
-void QrCodeScannerTest::testClipboardOtpauthText() {
-    QClipboard *clipboard = QGuiApplication::clipboard();
-    if (!clipboard) {
-        QSKIP("No clipboard available in this environment");
-    }
-
-    // Injected otpauth text
-    QString injected = "otpauth://totp/Injected:test?secret=JBSWY3DPEHPK3PXP";
-    clipboard->setText(injected);
-    QCOMPARE(QrCodeScanner::scanClipboard(), injected);
-
-    // Non-otpauth plain text returns empty
-    clipboard->setText("regular text string");
-    QVERIFY(QrCodeScanner::scanClipboard().isEmpty());
-
-    clipboard->clear();
-}
-
-void QrCodeScannerTest::testClipboardImageScanning() {
-    QClipboard *clipboard = QGuiApplication::clipboard();
-    if (!clipboard) {
-        QSKIP("No clipboard available in this environment");
-    }
-
-    QString path = QStringLiteral(EASEPASS_TEST_FIXTURES_DIR "/qr_valid.png");
-    QImage img(path);
-    QVERIFY(!img.isNull());
-
-    clipboard->setImage(img);
-    QString result = QrCodeScanner::scanClipboard();
-    QCOMPARE(result, EXPECTED_URI);
-
-    clipboard->clear();
-}
-
 // Export 2FA (T15): generated codes decode to the same text, incl. non-ASCII issuer names.
 void QrCodeScannerTest::testGenerateRoundTrip() {
     const QStringList texts{EXPECTED_URI,

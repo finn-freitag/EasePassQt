@@ -11,12 +11,30 @@
 
 using namespace EasePass::Core;
 
+namespace {
+// The application reads and writes database files as bytes through an IDatabaseSource;
+// these helpers do the same with a plain file.
+LoadResult loadFile(const QString &path, const SecretString &masterPassword, DatabaseFile &db,
+                    const SecretString &secondFactor = SecretString()) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly))
+        return LoadResult::DatabaseNotFound;
+    return DatabaseFile::loadFromBytes(file.readAll(), masterPassword, db, secondFactor);
+}
+
+bool saveFile(const DatabaseFile &db, const QString &path) {
+    const QByteArray bytes = db.serialize();
+    QFile file(path);
+    return !bytes.isEmpty() && file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size();
+}
+} // namespace
+
 void DatabaseFileTest::testLoadCSharpTestDbFixture() {
     QString testDbPath = QStringLiteral(EASEPASS_TEST_FIXTURES_DIR "/test_db.epdb");
     QVERIFY(QFile::exists(testDbPath));
 
     DatabaseFile db;
-    LoadResult res = DatabaseFile::loadFromFile(testDbPath, "SecretPassword123!", db);
+    LoadResult res = loadFile(testDbPath, "SecretPassword123!", db);
     QCOMPARE(res, LoadResult::Success);
 
     QCOMPARE(db.version, 1.4);
@@ -42,7 +60,7 @@ void DatabaseFileTest::testLoadCSharpOfficialTestEpdbFixture() {
     QVERIFY(QFile::exists(fixturePath));
 
     DatabaseFile db;
-    LoadResult res = DatabaseFile::loadFromFile(fixturePath, "123456", db);
+    LoadResult res = loadFile(fixturePath, "123456", db);
     QCOMPARE(res, LoadResult::Success);
 
     QCOMPARE(db.version, 1.4);
@@ -84,7 +102,7 @@ void DatabaseFileTest::testLoadWrongPassword() {
     QVERIFY(QFile::exists(testDbPath));
 
     DatabaseFile db;
-    LoadResult res = DatabaseFile::loadFromFile(testDbPath, "CompletelyWrongPassword!", db);
+    LoadResult res = loadFile(testDbPath, "CompletelyWrongPassword!", db);
     QCOMPARE(res, LoadResult::WrongPassword);
 }
 
@@ -94,7 +112,6 @@ void DatabaseFileTest::testSaveAndLoadRoundtrip() {
     QString filePath = tempDir.filePath("roundtrip.epdb");
 
     DatabaseFile db;
-    db.filePath = filePath;
     db.masterPassword = "RoundtripPassword789!";
     db.version = 1.4;
     db.useSecondFactor = false;
@@ -113,11 +130,11 @@ void DatabaseFileTest::testSaveAndLoadRoundtrip() {
     item2.secret = "JBSWY3DPEHPK3PXP";
     db.addItem(item2);
 
-    QVERIFY(db.saveToFile(filePath));
+    QVERIFY(saveFile(db, filePath));
     QVERIFY(QFile::exists(filePath));
 
     DatabaseFile loaded;
-    LoadResult res = DatabaseFile::loadFromFile(filePath, "RoundtripPassword789!", loaded);
+    LoadResult res = loadFile(filePath, "RoundtripPassword789!", loaded);
     QCOMPARE(res, LoadResult::Success);
     QCOMPARE(loaded.items.size(), 2);
     QCOMPARE(loaded.items[0].displayName, QString("Service Alpha"));
@@ -168,27 +185,21 @@ void DatabaseFileTest::testSecondFactorHandling() {
 
     // 1. Without second factor -> NeedsSecondFactor
     DatabaseFile db1;
-    LoadResult res1 = DatabaseFile::loadFromFile(filePath, masterPw, db1, "");
+    LoadResult res1 = loadFile(filePath, masterPw, db1, "");
     QCOMPARE(res1, LoadResult::NeedsSecondFactor);
     QCOMPARE(db1.useSecondFactor, true);
 
     // 2. With wrong second factor -> WrongPassword
     DatabaseFile db2;
-    LoadResult res2 = DatabaseFile::loadFromFile(filePath, masterPw, db2, "Wrong2FAToken");
+    LoadResult res2 = loadFile(filePath, masterPw, db2, "Wrong2FAToken");
     QCOMPARE(res2, LoadResult::WrongPassword);
 
     // 3. With correct second factor -> Success
     DatabaseFile db3;
-    LoadResult res3 = DatabaseFile::loadFromFile(filePath, masterPw, db3, secondFactor);
+    LoadResult res3 = loadFile(filePath, masterPw, db3, secondFactor);
     QCOMPARE(res3, LoadResult::Success);
     QCOMPARE(db3.items.size(), 1);
     QCOMPARE(db3.items[0].displayName, QString("Secure Service"));
-}
-
-void DatabaseFileTest::testLoadDatabaseNotFound() {
-    DatabaseFile db;
-    LoadResult res = DatabaseFile::loadFromFile("/nonexistent/path/to/database.epdb", "pw", db);
-    QCOMPARE(res, LoadResult::DatabaseNotFound);
 }
 
 void DatabaseFileTest::testLoadWrongFormatNotEpdb() {
@@ -202,7 +213,7 @@ void DatabaseFileTest::testLoadWrongFormatNotEpdb() {
     file.close();
 
     DatabaseFile db;
-    LoadResult res = DatabaseFile::loadFromFile(filePath, "pw", db);
+    LoadResult res = loadFile(filePath, "pw", db);
     QCOMPARE(res, LoadResult::WrongFormat);
 }
 
@@ -218,7 +229,7 @@ void DatabaseFileTest::testLoadWrongFormatBadVersionTag() {
     file.close();
 
     DatabaseFile db;
-    LoadResult res = DatabaseFile::loadFromFile(filePath, "pw", db);
+    LoadResult res = loadFile(filePath, "pw", db);
     QCOMPARE(res, LoadResult::WrongFormat);
 }
 
@@ -239,7 +250,7 @@ void DatabaseFileTest::testLoadWrongFormatInvalidOuterJson() {
     file.close();
 
     DatabaseFile db;
-    LoadResult res = DatabaseFile::loadFromFile(filePath, "SecretPassword123!", db);
+    LoadResult res = loadFile(filePath, "SecretPassword123!", db);
     QCOMPARE(res, LoadResult::WrongFormat);
 }
 
@@ -269,21 +280,8 @@ void DatabaseFileTest::testLoadWrongFormatInvalidInnerJson() {
     file.close();
 
     DatabaseFile db;
-    LoadResult res = DatabaseFile::loadFromFile(filePath, masterPw, db);
+    LoadResult res = loadFile(filePath, masterPw, db);
     QCOMPARE(res, LoadResult::WrongFormat);
-}
-
-void DatabaseFileTest::testSaveReadOnlyFails() {
-    DatabaseFile db;
-    db.isReadOnly = true;
-    db.filePath = "/tmp/test_readonly.epdb";
-    QVERIFY(!db.saveToFile());
-}
-
-void DatabaseFileTest::testSaveEmptyPathFails() {
-    DatabaseFile db;
-    db.filePath = "";
-    QVERIFY(!db.saveToFile(""));
 }
 
 void DatabaseFileTest::testItemAddUpdateDeleteBounds() {

@@ -396,7 +396,8 @@ bool QmlTestContext::openTemporary(const QString &path) {
     svc->close();
     svc->waitForBackgroundWork();
     QSignalSpy spy(svc, &DatabaseService::openFinished);
-    if (!m_ctx->databaseOperations()->openTemporaryDatabase(path, SecretString(AppTest::kPassword)))
+    if (!svc->open(std::make_shared<EasePass::Core::LocalFileDatabaseSource>(path), SecretString(AppTest::kPassword),
+                   SecretString(), true))
         return false;
     const bool ok = spy.wait(30000) && svc->isOpen();
     emit itemsChanged();

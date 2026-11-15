@@ -117,11 +117,26 @@ void PasswordItemTest::testAvatarColorDeterministic() {
 }
 
 void PasswordItemTest::testAvatarTextColorContrast() {
-    PasswordItem item;
-    // Avatar color has luminance check: > 140 -> dark text (20, 20, 20), else white (255, 255, 255)
-    item.displayName = "Sample Service";
-    QColor textCol = item.avatarTextColor();
-    QVERIFY(textCol == QColor(20, 20, 20) || textCol == QColor(255, 255, 255));
+    // Dark text on light avatars, white text on dark ones: checked for many names, and both
+    // cases must occur among them.
+    int dark = 0, white = 0;
+    for (int i = 0; i < 200; ++i) {
+        PasswordItem item;
+        item.displayName = QStringLiteral("Service %1").arg(i);
+        const QColor background = item.avatarColor();
+        const QColor text = item.avatarTextColor();
+        QVERIFY(text == QColor(20, 20, 20) || text == QColor(255, 255, 255));
+        // Contrast: the text is on the other side of mid-grey than the background.
+        const bool lightBackground = qGray(background.rgb()) > 127;
+        if (text == QColor(20, 20, 20)) {
+            ++dark;
+            QVERIFY2(lightBackground, qPrintable(item.displayName));
+        } else {
+            ++white;
+        }
+    }
+    QVERIFY(dark > 0);
+    QVERIFY(white > 0);
 }
 
 void PasswordItemTest::testRegisterClick() {
