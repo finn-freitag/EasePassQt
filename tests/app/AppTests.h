@@ -85,7 +85,7 @@ private slots:
     void testPrintViewModelExportPdf();
     void testScreenScanViewModelFound();
     void testScreenScanViewModelFailureAndClear();
-    void testAppContextQmlRegistration();
+    void testAppContextWiring();
 };
 
 class PasswordActionsTest : public QObject {

@@ -19,10 +19,10 @@ PasswordFilterModel::PasswordFilterModel(PasswordListModel *source, const Core::
     connect(this, &QAbstractItemModel::layoutChanged, this, &PasswordFilterModel::scheduleCountChanged);
     connect(this, &QAbstractItemModel::rowsInserted, this, &PasswordFilterModel::scheduleCountChanged);
     connect(this, &QAbstractItemModel::rowsRemoved, this, &PasswordFilterModel::scheduleCountChanged);
-    // New items -> refresh the tag list used for "/tag" suggestions.
-    connect(source, &QAbstractItemModel::modelReset, this, [this] {
-        m_search.updateTagList(m_list->service()->isOpen() ? m_list->service()->items() : QList<Core::PasswordItem>());
-    });
+    // The search belongs to the session: a locked database leaves no filter behind for the
+    // next login (the search box of the new page starts empty).
+    connect(source->service(), &Core::DatabaseService::closed, this,
+            [this] { setFilterTextProgrammatically(QString()); });
 }
 
 void PasswordFilterModel::scheduleCountChanged() {
@@ -45,7 +45,7 @@ void PasswordFilterModel::applyFilterText(const QString &text, bool isUserChange
     beginFilterChange();
     m_filterText = text;
     if (isUserChange && isTagSearch() && m_list->service()->isOpen()) {
-        setSuggestions(m_search.searchPasswords(m_list->service()->items(), text, true).suggestions);
+        setSuggestions(Core::SearchPasswordsManager::tagSuggestions(m_list->service()->items(), text));
     } else {
         setSuggestions({});
     }

@@ -14,6 +14,5 @@ private slots:
     void testWindowGeometry();
     void testDatabasePathsAddRemoveDedupe();
     void testPersistenceAcrossInstances();
-    void testLegacyKeysMigration();
-    void testResetToDefaults();
+    void testResets();
 };

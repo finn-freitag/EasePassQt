@@ -94,6 +94,9 @@ public:
     Q_INVOKABLE void importDatabase(const QString &path, const QString &password,
                                     const QString &secondFactor = QString());
     Q_INVOKABLE void clearError() { setError(QString()); }
+    /// Another database was picked on the login page: the error and the second-factor
+    /// question belong to the previous one.
+    Q_INVOKABLE void resetLoginPrompt();
     /// Loads another database (C#: ManageDatabasePage.Load_DatabaseItem_Click): selects @p path on
     /// the login page and locks the open database, so the user enters that database's password
     /// there. Returns false if @p path is the open database, unknown or missing.

@@ -13,6 +13,11 @@ Item {
         plugins.loadImportSources()
         sourceDialog.open()
     }
+    /// The database was locked: there is nothing to import into any more.
+    function close() {
+        sourceDialog.close()
+        selectDialog.close()
+    }
 
     ContentDialog {
         id: sourceDialog

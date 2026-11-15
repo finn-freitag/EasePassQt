@@ -201,6 +201,13 @@ bool DatabaseController::open(const QString &pathOrUrl, const QString &password,
     return started;
 }
 
+void DatabaseController::resetLoginPrompt() {
+    if (busy())
+        return;
+    setError(QString());
+    setNeedsSecondFactor(false);
+}
+
 void DatabaseController::lock() {
     setNeedsSecondFactor(false);
     m_service->lock();

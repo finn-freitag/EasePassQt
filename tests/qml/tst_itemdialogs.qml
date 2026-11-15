@@ -53,6 +53,28 @@ Item {
             testContext.editor.unload()
         }
 
+        // The dialogs stay alive (hidden) after a lock: no secret may remain in their fields.
+        function test_lockedDialogsKeepNoSecrets() {
+            const d = openItemDialog(1)                      // amazon: password + 2FA
+            compare(findChild(d, "passwordBox").text, "weak")
+            compare(findChild(d, "secretBox").text, top.secret)
+            d.close()                                        // what Main.qml does on lock
+            tryCompare(d, "visible", false)
+            for (const name of ["nameBox", "usernameBox", "emailBox", "passwordBox", "websiteBox",
+                                "notesBox", "tagsBox", "secretBox"])
+                compare(findChild(d, name).text, "", name)
+            compare(testContext.itemAt(1).Password, "weak")  // closing changed nothing
+
+            const a = createTemporaryObject(add2FAC, top)
+            verify(a.openFor(1))
+            tryCompare(a, "opened", true)
+            compare(findChild(a, "secretBox").text, top.secret)
+            a.close()
+            tryCompare(a, "visible", false)
+            compare(findChild(a, "secretBox").text, "")
+            compare(testContext.itemAt(1).Secret, top.secret)
+        }
+
         // --- helpers ----------------------------------------------------------------
         function typeInto(field, text) {
             field.forceActiveFocus()

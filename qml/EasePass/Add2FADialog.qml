@@ -60,6 +60,7 @@ ContentDialog {
     onClosed: {
         candidates = []
         editor.unload()
+        twoFactor.clear() // a hidden dialog must not keep the secret
     }
 
     Connections {

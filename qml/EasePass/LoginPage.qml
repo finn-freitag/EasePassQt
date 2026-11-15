@@ -118,6 +118,12 @@ FocusScope {
                     }
                     Accessible.name: qsTr("Database")
                     Layout.fillWidth: true
+                    // Picked by the user: what the previous database asked for no longer applies.
+                    onActivated: {
+                        secondFactorBox.text = ""
+                        if (root.controller.resetLoginPrompt !== undefined)
+                            root.controller.resetLoginPrompt()
+                    }
                 }
                 // Only with database plugins: asks them again which databases they offer.
                 IconButton {

@@ -70,6 +70,17 @@ ContentDialog {
         _awaitingPassword = false
         qrCode = ""
         editor.unload()
+        _clearFields() // a hidden dialog must not keep the password (it stays alive after a lock)
+    }
+    function _clearFields() {
+        nameBox.text = ""
+        usernameBox.text = ""
+        emailBox.setTextProgrammatically("")
+        passwordBox.text = ""
+        websiteBox.text = ""
+        notesBox.text = ""
+        tagsBox.text = ""
+        twoFactor.clear()
     }
 
     Connections {

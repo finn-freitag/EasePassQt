@@ -141,8 +141,7 @@ void AppServicesTest::testSettingsViewModel() {
     settings.setInactivityLogoutMinutes(99);
     vm.resetPasswordLength();
     QCOMPARE(settings.passwordLength(), AppSettings::Defaults::PasswordLength);
-    vm.resetToDefaults();
-    QCOMPARE(settings.inactivityLogoutMinutes(), AppSettings::Defaults::InactivityLogoutMinutes);
+    QCOMPARE(settings.inactivityLogoutMinutes(), 99); // the resets touch only their own value
 }
 
 void AppServicesTest::testSettingsLanguages() {
@@ -417,7 +416,7 @@ void AppServicesTest::testScreenScanViewModelFailureAndClear() {
     QVERIFY(!vm.available());
 }
 
-void AppServicesTest::testAppContextQmlRegistration() {
+void AppServicesTest::testAppContextWiring() {
     FakeClock clock;
     AppContext::Deps deps;
     deps.settingsStore = std::make_shared<InMemorySettingsStore>();
@@ -427,48 +426,16 @@ void AppServicesTest::testAppContextQmlRegistration() {
     deps.clock = &clock;
     deps.kdf = kFastKdf;
     AppContext ctx(deps);
-    ctx.registerQml();
 
-    // Wiring: opening via the service drives navigation, list and item view model.
+    // Opening via the service drives navigation, list and item view model.
     QVERIFY(openItems(*ctx.databaseService(), {makeItem("Zeta"), makeItem("Alpha")}));
     QCOMPARE(ctx.appController()->page(), AppController::Page::Passwords);
+    QVERIFY(ctx.databaseController()->isOpen());
     QCOMPARE(ctx.passwordFilterModel()->count(), 2);
-
-    QQmlEngine engine;
-    QQmlComponent component(&engine);
-    component.setData(R"(
-        import QtQml
-        import EasePass.App
-        QtObject {
-            property int page: AppController.page
-            property bool open: DatabaseController.isOpen
-            property int count: PasswordList.count
-            property bool settingsOk: SettingsViewModel.settings.passwordLength >= 8
-            property bool loaded: ItemViewModel.load(1)
-            property string name: ItemViewModel.displayName
-            property bool timerIdle: !TotpTimer.running
-            property int pending: DialogService.pendingCount
-            property bool canPrint: PrintViewModel.canPrint
-            property bool scanIdle: !ScreenScanViewModel.busy
-            property bool clip: !ClipboardService.clearPending
-            function sortByName() { PasswordList.sortMode = 0 }
-        }
-    )", QUrl("qrc:/test.qml"));
-    std::unique_ptr<QObject> obj(component.create());
-    QVERIFY2(obj, qPrintable(component.errorString()));
-    QCOMPARE(obj->property("page").toInt(), int(AppController::Page::Passwords));
-    QVERIFY(obj->property("open").toBool());
-    QCOMPARE(obj->property("count").toInt(), 2);
-    QVERIFY(obj->property("settingsOk").toBool());
-    QVERIFY(obj->property("loaded").toBool());
-    QCOMPARE(obj->property("name").toString(), QStringLiteral("Alpha"));
-    QVERIFY(obj->property("timerIdle").toBool());
-    QCOMPARE(obj->property("pending").toInt(), 0);
-    QVERIFY(obj->property("canPrint").toBool());
-    QVERIFY(obj->property("scanIdle").toBool());
-    QVERIFY(obj->property("clip").toBool());
-    QMetaObject::invokeMethod(obj.get(), "sortByName");
-    QCOMPARE(ctx.passwordFilterModel()->sortMode(), PasswordFilterModel::SortMode::Name);
+    QVERIFY(ctx.itemViewModel()->load(1));
+    QCOMPARE(ctx.itemViewModel()->displayName(), QStringLiteral("Alpha"));
+    ctx.passwordFilterModel()->setFilterText("zeta");
+    QCOMPARE(ctx.passwordFilterModel()->count(), 1);
 
     // Locking cancels open dialogs and unloads the item.
     bool cancelled = false;
@@ -478,6 +445,11 @@ void AppServicesTest::testAppContextQmlRegistration() {
     ctx.databaseController()->lock();
     QVERIFY(cancelled);
     QVERIFY(!ctx.itemViewModel()->hasItem());
-    QCOMPARE(obj->property("page").toInt(), int(AppController::Page::Login));
-    QTRY_COMPARE(obj->property("count").toInt(), 0); // countChanged after a reset is queued
+    QCOMPARE(ctx.appController()->page(), AppController::Page::Login);
+    QCOMPARE(ctx.passwordFilterModel()->count(), 0);
+    // The search ends with the session: the next login starts with the whole list
+    // (bug: the new page's search box was empty while the old filter still applied).
+    QCOMPARE(ctx.passwordFilterModel()->filterText(), QString());
+    QVERIFY(openItems(*ctx.databaseService(), {makeItem("Zeta"), makeItem("Alpha")}));
+    QCOMPARE(ctx.passwordFilterModel()->count(), 2);
 }

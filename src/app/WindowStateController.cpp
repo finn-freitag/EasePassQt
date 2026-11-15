@@ -30,21 +30,12 @@ QRect WindowStateController::fitToScreens(const QRect &saved, const QList<QRect>
     return fitted;
 }
 
-Qt::WindowState WindowStateController::toWindowState(int stored) {
-    return stored == Maximized ? Qt::WindowMaximized : Qt::WindowNoState; // minimized starts restored
+bool WindowStateController::isMaximized(Qt::WindowStates state) {
+    return !(state & Qt::WindowMinimized) && (state & (Qt::WindowMaximized | Qt::WindowFullScreen));
 }
 
-int WindowStateController::fromWindowState(Qt::WindowStates state) {
-    if (state & Qt::WindowMinimized)
-        return Minimized;
-    if (state & (Qt::WindowMaximized | Qt::WindowFullScreen))
-        return Maximized;
-    return Restored;
-}
-
-bool WindowStateController::isDefaultGeometry(const QRect &g) {
-    return g == QRect(AppSettings::Defaults::WindowLeft, AppSettings::Defaults::WindowTop,
-                      AppSettings::Defaults::WindowWidth, AppSettings::Defaults::WindowHeight);
+bool WindowStateController::isNormal(Qt::WindowStates state) {
+    return !(state & (Qt::WindowMinimized | Qt::WindowMaximized | Qt::WindowFullScreen));
 }
 
 void WindowStateController::attach(QWindow *window) {
@@ -54,8 +45,8 @@ void WindowStateController::attach(QWindow *window) {
     if (!m_window || !m_settings)
         return;
     const QRect stored = m_settings->windowGeometry();
-    if (isDefaultGeometry(stored)) {
-        m_window->resize(stored.size()); // window manager places it
+    if (!stored.isValid()) {
+        m_window->resize(AppSettings::defaultWindowSize()); // the window manager places it
     } else {
         QList<QRect> screens;
         if (QScreen *primary = QGuiApplication::primaryScreen())
@@ -66,7 +57,7 @@ void WindowStateController::attach(QWindow *window) {
         m_window->setGeometry(fitToScreens(stored, screens));
     }
     m_normalGeometry = m_window->geometry();
-    m_window->setWindowStates(toWindowState(m_settings->windowState()));
+    m_window->setWindowStates(m_settings->windowMaximized() ? Qt::WindowMaximized : Qt::WindowNoState);
     m_window->installEventFilter(this);
     connect(m_window, &QWindow::windowStateChanged, this, [this] { track(); });
     // Geometry signals as well: some platforms report changes without Move/Resize events.
@@ -77,8 +68,8 @@ void WindowStateController::attach(QWindow *window) {
 void WindowStateController::track() {
     if (!m_window)
         return;
-    // C#: AppWindow_Changed - only the restored geometry is remembered.
-    if (fromWindowState(m_window->windowStates()) == Restored && m_window->isVisible())
+    // Only the geometry of the normal window is remembered.
+    if (isNormal(m_window->windowStates()) && m_window->isVisible())
         m_normalGeometry = m_window->geometry();
 }
 
@@ -105,7 +96,9 @@ void WindowStateController::save() {
     track();
     if (m_normalGeometry.isValid())
         m_settings->setWindowGeometry(m_normalGeometry);
-    m_settings->setWindowState(fromWindowState(m_window->windowStates()));
+    // A minimized window keeps what was stored: it says nothing about maximized or not.
+    if (!(m_window->windowStates() & Qt::WindowMinimized))
+        m_settings->setWindowMaximized(isMaximized(m_window->windowStates()));
 }
 
 } // namespace EasePass::App

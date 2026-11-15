@@ -136,19 +136,18 @@ void AppBehaviourTest::testFitToScreens() {
     QVERIFY(screens.first().contains(huge));
     QCOMPARE(WindowStateController::fitToScreens(gone, {}), gone);
 
-    QCOMPARE(WindowStateController::toWindowState(0), Qt::WindowMaximized);
-    QCOMPARE(WindowStateController::toWindowState(1), Qt::WindowNoState); // never start minimized
-    QCOMPARE(WindowStateController::toWindowState(2), Qt::WindowNoState);
-    QCOMPARE(WindowStateController::fromWindowState(Qt::WindowMaximized), 0);
-    QCOMPARE(WindowStateController::fromWindowState(Qt::WindowMinimized | Qt::WindowMaximized), 1);
-    QCOMPARE(WindowStateController::fromWindowState(Qt::WindowNoState), 2);
-    QVERIFY(WindowStateController::isDefaultGeometry(QRect(0, 0, 1100, 700)));
+    QVERIFY(WindowStateController::isMaximized(Qt::WindowMaximized));
+    QVERIFY(WindowStateController::isMaximized(Qt::WindowFullScreen));
+    QVERIFY(!WindowStateController::isMaximized(Qt::WindowMinimized | Qt::WindowMaximized));
+    QVERIFY(!WindowStateController::isMaximized(Qt::WindowNoState));
+    QVERIFY(WindowStateController::isNormal(Qt::WindowNoState));
+    QVERIFY(!WindowStateController::isNormal(Qt::WindowMaximized));
+    QVERIFY(!WindowStateController::isNormal(Qt::WindowMinimized));
 }
 
 void AppBehaviourTest::testWindowGeometryRoundTrip() {
     AppSettings settings(std::make_shared<InMemorySettingsStore>());
     settings.setWindowGeometry(QRect(10, 20, 500, 400));
-    settings.setWindowState(WindowStateController::Restored);
     {
         QWindow window;
         WindowStateController controller(&settings);
@@ -164,9 +163,9 @@ void AppBehaviourTest::testWindowGeometryRoundTrip() {
         QTRY_VERIFY(window.windowStates() & Qt::WindowMaximized);
         controller.save();
     }
-    // The normal geometry is kept, the state says maximized (C#: GetWindowSizePosStateIndependent).
+    // The normal geometry is kept next to the maximized flag.
     QCOMPARE(settings.windowGeometry(), QRect(30, 40, 600, 450));
-    QCOMPARE(settings.windowState(), int(WindowStateController::Maximized));
+    QCOMPARE(settings.windowMaximized(), true);
 
     QWindow again;
     WindowStateController restore(&settings);

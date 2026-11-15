@@ -20,6 +20,13 @@ ColumnLayout {
         algorithmBox.currentIndex = i >= 0 ? i : 0
     }
     function focusSecret() { secretBox.forceActiveFocus() }
+    /// Empties the fields (the dialog was closed; nothing secret stays in a hidden field).
+    function clear() {
+        secretBox.text = ""
+        digitsBox.text = ""
+        intervalBox.text = ""
+        algorithmBox.currentIndex = 0
+    }
 
     spacing: Theme.spacingS
 

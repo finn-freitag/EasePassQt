@@ -4,25 +4,22 @@
 #include <QString>
 #include <QStringList>
 #include <QRect>
+#include <QSize>
 #include <memory>
 #include "ISettingsStore.h"
 
 namespace EasePass::Core {
 
 /**
- * Central typed settings object for EasePass (P9).
- * Mirrored from C# AppSettings.cs and DefaultSettingsValues.cs.
+ * The application's settings, typed, with defaults and value ranges. Every setter clamps or
+ * cleans its value, stores it and emits the change signal only when the value really changed.
  */
 class AppSettings : public QObject {
     Q_OBJECT
 
     Q_PROPERTY(QString language READ language WRITE setLanguage NOTIFY languageChanged)
-    Q_PROPERTY(int windowWidth READ windowWidth WRITE setWindowWidth NOTIFY windowWidthChanged)
-    Q_PROPERTY(int windowHeight READ windowHeight WRITE setWindowHeight NOTIFY windowHeightChanged)
-    Q_PROPERTY(int windowLeft READ windowLeft WRITE setWindowLeft NOTIFY windowLeftChanged)
-    Q_PROPERTY(int windowTop READ windowTop WRITE setWindowTop NOTIFY windowTopChanged)
-    Q_PROPERTY(int windowState READ windowState WRITE setWindowState NOTIFY windowStateChanged)
     Q_PROPERTY(QRect windowGeometry READ windowGeometry WRITE setWindowGeometry NOTIFY windowGeometryChanged)
+    Q_PROPERTY(bool windowMaximized READ windowMaximized WRITE setWindowMaximized NOTIFY windowMaximizedChanged)
     Q_PROPERTY(int passwordLength READ passwordLength WRITE setPasswordLength NOTIFY passwordLengthChanged)
     Q_PROPERTY(QString passwordChars READ passwordChars WRITE setPasswordChars NOTIFY passwordCharsChanged)
     Q_PROPERTY(int inactivityLogoutMinutes READ inactivityLogoutMinutes WRITE setInactivityLogoutMinutes NOTIFY
@@ -40,7 +37,6 @@ class AppSettings : public QObject {
     Q_PROPERTY(QString passwordGeneratorPlugin READ passwordGeneratorPlugin WRITE setPasswordGeneratorPlugin NOTIFY
                    passwordGeneratorPluginChanged)
     Q_PROPERTY(bool fetchFavicons READ fetchFavicons WRITE setFetchFavicons NOTIFY fetchFaviconsChanged)
-    Q_PROPERTY(QString appVersion READ appVersion WRITE setAppVersion NOTIFY appVersionChanged)
     Q_PROPERTY(int databaseDeferredSaveSeconds READ databaseDeferredSaveSeconds WRITE setDatabaseDeferredSaveSeconds
                    NOTIFY databaseDeferredSaveSecondsChanged)
 
@@ -49,31 +45,24 @@ public:
         static const QString Language; // "en-US"
         static constexpr int WindowWidth = 1100;
         static constexpr int WindowHeight = 700;
-        static constexpr int WindowLeft = 0;
-        static constexpr int WindowTop = 0;
-        static constexpr int WindowState = 2;     // C#: OverlappedPresenterState.Restored = 2
         static constexpr int PasswordLength = 15; // Min 8
         static const QString
             PasswordChars; // "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890!\"§$%&/()=?*+'#-_.:,;<>"
         static constexpr int InactivityLogoutMinutes = 3; // 1..1000
         static constexpr bool DoubleClickCopy = true;
         static constexpr bool ShowIcons = true;
-        static constexpr bool VerifyNotLeaked = true; // C#: disableLeakedPasswords = false
+        static constexpr bool VerifyNotLeaked = true;
         static constexpr int SplitterWidth = 270;
         static constexpr int ClipboardClearSeconds = 15;
         static constexpr bool RemovePluginSettingsOnUninstall = true;
-        static constexpr bool FetchFavicons = false; // Default OFF (fixes P8)
-        static const QString AppVersion;             // ""
+        static constexpr bool FetchFavicons = false; // off: fetching icons tells web sites which accounts exist
         static constexpr int DatabaseDeferredSaveSeconds = 5;
     };
 
     struct Keys {
         static inline const QString Language = QStringLiteral("language");
-        static inline const QString WindowWidth = QStringLiteral("windowWidth");
-        static inline const QString WindowHeight = QStringLiteral("windowHeight");
-        static inline const QString WindowLeft = QStringLiteral("windowLeft");
-        static inline const QString WindowTop = QStringLiteral("windowTop");
-        static inline const QString WindowState = QStringLiteral("windowState");
+        static inline const QString WindowGeometry = QStringLiteral("windowGeometry");
+        static inline const QString WindowMaximized = QStringLiteral("windowMaximized");
         static inline const QString PasswordLength = QStringLiteral("passwordLength");
         static inline const QString PasswordChars = QStringLiteral("passwordChars");
         static inline const QString InactivityLogoutMinutes = QStringLiteral("inactivityLogoutMinutes");
@@ -87,8 +76,7 @@ public:
         static inline const QString RemovePluginSettingsOnUninstall = QStringLiteral("removePluginSettingsOnUninstall");
         static inline const QString PasswordGeneratorPlugin = QStringLiteral("passwordGeneratorPlugin");
         static inline const QString FetchFavicons = QStringLiteral("fetchFavicons");
-        static inline const QString AppVersion = QStringLiteral("appVersion");
-        static inline const QString DatabaseDeferredSaveSeconds = QStringLiteral("databaseDeferredSaveTime_Sec");
+        static inline const QString DatabaseDeferredSaveSeconds = QStringLiteral("databaseDeferredSaveSeconds");
     };
 
     explicit AppSettings(std::shared_ptr<ISettingsStore> store = nullptr, QObject *parent = nullptr);
@@ -99,29 +87,19 @@ public:
     static QStringList defaultDatabasePaths();
 
     ISettingsStore *store() const { return m_store.get(); }
-    void setStore(std::shared_ptr<ISettingsStore> store);
 
     // Getters & Setters
     QString language() const;
     void setLanguage(const QString &language);
 
-    int windowWidth() const;
-    void setWindowWidth(int width);
-
-    int windowHeight() const;
-    void setWindowHeight(int height);
-
-    int windowLeft() const;
-    void setWindowLeft(int left);
-
-    int windowTop() const;
-    void setWindowTop(int top);
-
-    int windowState() const;
-    void setWindowState(int state);
-
+    /// Geometry of the normal (not maximized) main window. Invalid until the window was
+    /// closed once: the first start uses defaultWindowSize() and the window manager's position.
     QRect windowGeometry() const;
     void setWindowGeometry(const QRect &geometry);
+    static QSize defaultWindowSize() { return QSize(Defaults::WindowWidth, Defaults::WindowHeight); }
+
+    bool windowMaximized() const;
+    void setWindowMaximized(bool maximized);
 
     int passwordLength() const;
     void setPasswordLength(int length);
@@ -158,47 +136,24 @@ public:
     bool removePluginSettingsOnUninstall() const;
     void setRemovePluginSettingsOnUninstall(bool remove);
 
-    /// Id of the password-generator plugin used by the generator; empty = built-in generator (NEW).
+    /// Id of the password-generator plugin used by the generator; empty = built-in generator.
     QString passwordGeneratorPlugin() const;
     void setPasswordGeneratorPlugin(const QString &pluginId);
 
     bool fetchFavicons() const;
     void setFetchFavicons(bool fetch);
 
-    QString appVersion() const;
-    void setAppVersion(const QString &version);
-
     int databaseDeferredSaveSeconds() const;
     void setDatabaseDeferredSaveSeconds(int seconds);
 
-    // C# naming compatibility aliases
-    bool doubleTapToCopy() const { return doubleClickCopy(); }
-    void setDoubleTapToCopy(bool enable) { setDoubleClickCopy(enable); }
-    int inactivityLogoutTime() const { return inactivityLogoutMinutes(); }
-    void setInactivityLogoutTime(int time) { setInactivityLogoutMinutes(time); }
-    bool disableLeakedPasswords() const { return !verifyNotLeaked(); }
-    void setDisableLeakedPasswords(bool disable) { setVerifyNotLeaked(!disable); }
-    int gridSplitterWidth() const { return splitterWidth(); }
-    void setGridSplitterWidth(int width) { setSplitterWidth(width); }
-    int clipboardClearTimeoutSec() const { return clipboardClearSeconds(); }
-    void setClipboardClearTimeoutSec(int sec) { setClipboardClearSeconds(sec); }
-    QString loadedDatabaseSource() const { return lastDatabase(); }
-    void setLoadedDatabaseSource(const QString &src) { setLastDatabase(src); }
-
-    // Reset & Migration
-    void resetToDefaults();
+    // Reset
     void resetPasswordChars();
     void resetPasswordLength();
-    void migrateLegacyKeys();
 
 signals:
     void languageChanged(const QString &language);
-    void windowWidthChanged(int width);
-    void windowHeightChanged(int height);
-    void windowLeftChanged(int left);
-    void windowTopChanged(int top);
-    void windowStateChanged(int state);
     void windowGeometryChanged(const QRect &geometry);
+    void windowMaximizedChanged(bool maximized);
     void passwordLengthChanged(int length);
     void passwordCharsChanged(const QString &chars);
     void inactivityLogoutMinutesChanged(int minutes);
@@ -212,7 +167,6 @@ signals:
     void removePluginSettingsOnUninstallChanged(bool remove);
     void passwordGeneratorPluginChanged(const QString &pluginId);
     void fetchFaviconsChanged(bool fetch);
-    void appVersionChanged(const QString &version);
     void databaseDeferredSaveSecondsChanged(int seconds);
 
 private:

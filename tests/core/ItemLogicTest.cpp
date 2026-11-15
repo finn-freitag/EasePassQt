@@ -10,7 +10,6 @@
 #include "PasswordStrength.h"
 #include "SearchPasswordsManager.h"
 #include "SortingHelper.h"
-#include "TagSearchManager.h"
 
 #include <QDate>
 #include <QDateTime>
@@ -447,10 +446,21 @@ void ItemLogicTest::testClearOldClicksCacheAndResetPopularity() {
     QVERIFY(svc.items().at(0).clicks.isEmpty());
 }
 
-// --- Search & TagSearchManager ------------------------------------------------------------------
+// --- Search ---------------------------------------------------------------------------------------
+
+namespace {
+QStringList matching(const QList<PasswordItem> &items, const QString &query) {
+    QStringList names;
+    for (const PasswordItem &item : items) {
+        if (SearchPasswordsManager::matches(item, query))
+            names << item.displayName;
+    }
+    return names;
+}
+} // namespace
 
 void ItemLogicTest::testFreeTextSearchAllFields() {
-    QList<PasswordItem> items = {
+    const QList<PasswordItem> items = {
         makeItem("GitHub", "octocat", "pw1", "https://github.com", "Developer platform", {"Dev", "Code"}, {},
                  "octocat@github.com"),
         makeItem("House Bank", "jdoe99", "pw2", "https://mybank.de", "PIN is in safe", {"Finance", "Important"}, {},
@@ -459,100 +469,55 @@ void ItemLogicTest::testFreeTextSearchAllFields() {
                  "family@home.net"),
     };
 
-    SearchPasswordsManager mgr;
-
-    // Empty query returns all items and count label
-    auto allRes = mgr.searchPasswords(items, "");
-    QCOMPARE(allRes.items.size(), 3);
-    QCOMPARE(allRes.infoLabel, QString("3"));
-    QVERIFY(!allRes.isTagSearch);
-    QVERIFY(allRes.suggestions.isEmpty());
-
-    // Match by DisplayName
-    QCOMPARE(extractNames(mgr.searchPasswords(items, "git").items), QStringList({"GitHub"}));
-    // Match by Username
-    QCOMPARE(extractNames(mgr.searchPasswords(items, "JDOE").items), QStringList({"House Bank"}));
-    // Match by Email
-    QCOMPARE(extractNames(mgr.searchPasswords(items, "family@home").items), QStringList({"Streaming"}));
-    // Match by Website
-    QCOMPARE(extractNames(mgr.searchPasswords(items, "mybank.de").items), QStringList({"House Bank"}));
-    // Match by Notes
-    QCOMPARE(extractNames(mgr.searchPasswords(items, "shared family").items), QStringList({"Streaming"}));
-    // Match by Tag in free text
-    QCOMPARE(extractNames(mgr.searchPasswords(items, "finance").items), QStringList({"House Bank"}));
-    // Match multiple items
-    QCOMPARE(extractNames(mgr.searchPasswords(items, "https://").items),
-             QStringList({"GitHub", "House Bank", "Streaming"}));
-    // No match
-    auto noneRes = mgr.searchPasswords(items, "nonexistent_xyz");
-    QVERIFY(noneRes.items.isEmpty());
-    QCOMPARE(noneRes.infoLabel, QString("0"));
+    QCOMPARE(matching(items, ""), QStringList({"GitHub", "House Bank", "Streaming"}));
+    QCOMPARE(matching(items, "git"), QStringList({"GitHub"}));               // name
+    QCOMPARE(matching(items, "JDOE"), QStringList({"House Bank"}));          // user name, case-insensitive
+    QCOMPARE(matching(items, "family@home"), QStringList({"Streaming"}));    // email
+    QCOMPARE(matching(items, "mybank.de"), QStringList({"House Bank"}));     // website
+    QCOMPARE(matching(items, "shared family"), QStringList({"Streaming"}));  // notes
+    QCOMPARE(matching(items, "finance"), QStringList({"House Bank"}));       // tag
+    QCOMPARE(matching(items, "https://"), QStringList({"GitHub", "House Bank", "Streaming"}));
+    QVERIFY(matching(items, "nonexistent_xyz").isEmpty());
+    // The password is never searched: typing one into the search box must not reveal who uses it.
+    QVERIFY(matching(items, "pw1").isEmpty());
+    // A free-text query offers no tag suggestions.
+    QVERIFY(SearchPasswordsManager::tagSuggestions(items, "dev").isEmpty());
 }
 
 void ItemLogicTest::testTagSearchSyntaxAndSuggestions() {
-    QList<PasswordItem> items = {
+    const QList<PasswordItem> items = {
         makeItem("GitHub", "octocat", "pw1", "", "", {"Work", "Dev"}),
         makeItem("GitLab", "octocat", "pw2", "", "", {"Work", "CI"}),
-        makeItem("Netflix", "user", "pw3", "", "", {"Personal", "Video"}),
+        makeItem("Netflix", "user", "pw3", "", "", {"Personal", "Video", "a/b"}),
         makeItem("Untagged", "work", "pw4", "https://work.com", "work notes", {}),
     };
 
-    SearchPasswordsManager mgr;
-    mgr.updateTagList(items);
+    QVERIFY(SearchPasswordsManager::isTagQuery("/work"));
+    QVERIFY(!SearchPasswordsManager::isTagQuery("work"));
 
-    // Unique tags should be deduplicated and sorted
-    QCOMPARE(mgr.tagSearchManager().uniqueTagList(), QStringList({"CI", "Dev", "Personal", "Video", "Work"}));
+    // "/" alone: every item that has a tag, and every tag once, sorted.
+    QCOMPARE(matching(items, "/"), QStringList({"GitHub", "GitLab", "Netflix"}));
+    QCOMPARE(SearchPasswordsManager::tagSuggestions(items, "/"),
+             QStringList({"/a/b", "/CI", "/Dev", "/Personal", "/Video", "/Work"}));
 
-    // "/" alone returns all items that have at least one tag (Untagged is excluded!) and all tag suggestions
-    auto slashRes = mgr.searchPasswords(items, "/");
-    QVERIFY(slashRes.isTagSearch);
-    QCOMPARE(extractNames(slashRes.items), QStringList({"GitHub", "GitLab", "Netflix"}));
-    QCOMPARE(slashRes.infoLabel, QString("3"));
-    QCOMPARE(slashRes.suggestions, QStringList({"/CI", "/Dev", "/Personal", "/Video", "/Work"}));
+    // "/work" looks at tags only: "Untagged" has "work" in its user name, website and notes.
+    QCOMPARE(matching(items, "/work"), QStringList({"GitHub", "GitLab"}));
+    QCOMPARE(SearchPasswordsManager::tagSuggestions(items, "/work"), QStringList({"/Work"}));
 
-    // "/work" matches only items with a tag containing "work" (case-insensitive), NOT "Untagged" even though
-    // "Untagged" has "work" in username/website/notes!
-    auto workRes = mgr.searchPasswords(items, "/work");
-    QVERIFY(workRes.isTagSearch);
-    QCOMPARE(extractNames(workRes.items), QStringList({"GitHub", "GitLab"}));
-    QCOMPARE(workRes.infoLabel, QString("2"));
-    QCOMPARE(workRes.suggestions, QStringList({"/Work"}));
+    // Part of a tag.
+    QCOMPARE(matching(items, "/de"), QStringList({"GitHub", "Netflix"}));
+    QCOMPARE(SearchPasswordsManager::tagSuggestions(items, "/de"), QStringList({"/Dev", "/Video"}));
 
-    // Partial tag match "/de" -> matches "Dev" and "Video"
-    auto partialRes = mgr.searchPasswords(items, "/de");
-    QCOMPARE(extractNames(partialRes.items), QStringList({"GitHub", "Netflix"}));
-    QCOMPARE(partialRes.suggestions, QStringList({"/Dev", "/Video"}));
-
-    // Non-user text change (e.g. suggestion selection) with "/Personal"
-    auto chosenRes = mgr.searchPasswords(items, "/Personal", false);
-    QVERIFY(chosenRes.isTagSearch);
-    QCOMPARE(extractNames(chosenRes.items), QStringList({"Netflix"}));
-    QCOMPARE(chosenRes.infoLabel, QString("1"));
+    // Only the first '/' is syntax; a chosen suggestion for a tag with a slash finds its item.
+    QCOMPARE(matching(items, "/a/b"), QStringList({"Netflix"}));
 }
 
-void ItemLogicTest::testTagSearchNoResultsFound() {
-    QList<PasswordItem> items = {
-        makeItem("GitHub", "octocat", "pw1", "", "", {"Work", "Dev"}),
-    };
-
-    SearchPasswordsManager mgr;
-    auto res = mgr.searchPasswords(items, "/nonexistent");
-    QVERIFY(res.isTagSearch);
-    QVERIFY(res.items.isEmpty());
-    QCOMPARE(res.infoLabel, QString("0"));
-    // C# SearchPasswordsManager adds "No results found" when no tag matches
-    QCOMPARE(res.suggestions, QStringList({"No results found"}));
-}
-
-void ItemLogicTest::testFindItemsByNameAndTag() {
-    QList<PasswordItem> items = {
-        makeItem("Alpha Service", "bob", "pw1", "", "", {"TagA"}),
-        makeItem("Beta", "alpha_user", "pw2", "", "", {"TagB"}),
-    };
-
-    // C# DatabaseItem.FindItemsByName checks DisplayName only
-    QCOMPARE(extractNames(SearchPasswordsManager::findItemsByName(items, "alpha")), QStringList({"Alpha Service"}));
-    QCOMPARE(extractNames(SearchPasswordsManager::findItemsByTag(items, "tagb")), QStringList({"Beta"}));
+void ItemLogicTest::testTagSearchWithoutMatch() {
+    const QList<PasswordItem> items = {makeItem("GitHub", "octocat", "pw1", "", "", {"Work", "Dev"})};
+    QVERIFY(matching(items, "/nonexistent").isEmpty());
+    // Nothing to offer: no placeholder entry that the user could pick as if it were a tag.
+    QVERIFY(SearchPasswordsManager::tagSuggestions(items, "/nonexistent").isEmpty());
+    QVERIFY(SearchPasswordsManager::tagSuggestions({}, "/").isEmpty());
 }
 
 // --- EmailAddressIndexer & PasswordItemTagHelper ------------------------------------------------

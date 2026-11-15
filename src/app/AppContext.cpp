@@ -44,8 +44,6 @@
 #include <QStandardPaths>
 #endif
 
-#include <QQmlEngine>
-
 namespace EasePass::App {
 
 using namespace EasePass::Core;
@@ -165,39 +163,6 @@ AppContext::~AppContext() {
     delete m_plugins;
     m_plugins = nullptr;
 #endif
-}
-
-void AppContext::registerQml() {
-    const char *uri = "EasePass.App";
-    auto single = [&](const char *name, QObject *obj) {
-        QQmlEngine::setObjectOwnership(obj, QQmlEngine::CppOwnership);
-        qmlRegisterSingletonInstance(uri, 1, 0, name, obj);
-    };
-    single("AppController", m_appController);
-    single("DatabaseController", m_databaseController);
-    single("PasswordList", m_filterModel);
-    single("ItemViewModel", m_itemViewModel);
-    single("EditorViewModel", m_editorViewModel);
-    single("PasswordGenerator", m_generator);
-    single("QrImport", m_qrImport);
-    single("WebcamScan", m_webcam);
-    single("DatabaseManagement", m_databaseManagement);
-    single("About", m_about);
-    single("AutoLogout", m_autoLogout);
-    single("SettingsViewModel", m_settingsViewModel);
-    single("DialogService", m_dialogService);
-    single("ClipboardService", m_clipboardService);
-    single("PrintViewModel", m_printViewModel);
-    single("ScreenScanViewModel", m_screenScanViewModel);
-    single("TotpTimer", m_totpTimer);
-    single("DailyTip", m_dailyTip);
-    single("PasswordActions", m_actions);
-    single("WebsiteIcons", m_icons);
-#ifdef EASEPASS_HAVE_PLUGINS
-    single("Plugins", m_plugins);
-#endif
-    qmlRegisterUncreatableType<AppSettings>(uri, 1, 0, "AppSettings", QStringLiteral("use SettingsViewModel.settings"));
-    qmlRegisterUncreatableType<PasswordListModel>(uri, 1, 0, "PasswordListModel", QStringLiteral("singleton only"));
 }
 
 } // namespace EasePass::App

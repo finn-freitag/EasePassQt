@@ -195,6 +195,7 @@ ApplicationWindow {
         sourceComponent: Item {
             function chooseInstallFile() { pluginDialogs.chooseInstallFile() }
             function openImport() { pluginImport.open() }
+            function closeImport() { pluginImport.close() }
             function openSettings() { pluginConfig.open() }
             PluginDialogs { id: pluginDialogs; objectName: "pluginDialogs"; plugins: window.plugins }
             PluginImportDialog { id: pluginImport; objectName: "pluginImport"; plugins: window.plugins }
@@ -241,6 +242,7 @@ ApplicationWindow {
             itemDialog.close()
             add2FADialog.close()
             generatorDialog.close()
+            if (pluginUi.item) pluginUi.item.closeImport()
         }
     }
 

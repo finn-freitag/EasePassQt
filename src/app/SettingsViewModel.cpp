@@ -94,7 +94,6 @@ QString SettingsViewModel::applyPasswordLengthText(const QString &text) {
 
 void SettingsViewModel::applyPasswordCharsText(const QString &text) { m_settings->setPasswordChars(text); }
 
-void SettingsViewModel::resetToDefaults() { m_settings->resetToDefaults(); }
 void SettingsViewModel::resetPasswordChars() { m_settings->resetPasswordChars(); }
 void SettingsViewModel::resetPasswordLength() { m_settings->resetPasswordLength(); }
 

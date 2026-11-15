@@ -131,6 +131,51 @@ Item {
             }
         }
 
+        // The page is recreated when the user comes back from the settings (Loader), the
+        // models are not: the new page must show the search and selection that still apply.
+        function test_recreatedPageShowsSearchAndSelection() {
+            findChild(page, "searchBox").text = "b"            // Banking, Cloud (user bob)
+            compare(names(), ["Banking", "Cloud"])
+            clickRow("Cloud")
+            page.destroy()
+            page = createTemporaryObject(pageC, top)
+            waitForRendering(page)
+            compare(findChild(page, "searchBox").text, "b")
+            compare(names(), ["Banking", "Cloud"])
+            compare(page.selectedSource, 2)
+            tryCompare(list(), "currentIndex", 1)
+            compare(findChild(page, "detailTitle").text, "Cloud")
+            findChild(page, "searchBox").text = ""
+            compare(names().length, 3)
+        }
+
+        // Bug: after an (automatic) logout and a new login the search box was empty while the
+        // old search still filtered the list.
+        function test_lockEndsTheSearch() {
+            findChild(page, "searchBox").text = "cloud"
+            compare(names(), ["Cloud"])
+            testContext.controller.lock()
+            compare(testContext.listModel.filterText, "")
+            verify(testContext.openSample())
+            page.destroy()
+            page = createTemporaryObject(pageC, top)
+            waitForRendering(page)
+            compare(findChild(page, "searchBox").text, "")
+            compare(names(), ["Banking", "amazon", "Cloud"])
+            verify(!findChild(page, "details").visible)
+        }
+
+        // A tag search that matches no tag offers nothing to pick.
+        function test_tagSearchWithoutMatchHasNoSuggestions() {
+            const search = findChild(page, "searchBox")
+            search.forceActiveFocus()
+            keyClick(Qt.Key_Slash); keyClick(Qt.Key_Q); keyClick(Qt.Key_Q)
+            compare(testContext.listModel.suggestions.length, 0)
+            verify(!search.suggestionsOpen)
+            compare(list().count, 0)
+            search.text = ""
+        }
+
         function test_searchDownMovesIntoList() {
             const search = findChild(page, "searchBox")
             search.forceActiveFocus()

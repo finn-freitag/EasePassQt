@@ -26,12 +26,12 @@ Item {
         readonly property var vm: testContext.settingsViewModel
 
         function init() {
-            vm.resetToDefaults()
+            testContext.resetSettings()
             settings.verifyNotLeaked = false   // no HIBP lookups in UI tests
             failOnWarning(/.?/)
         }
         function cleanup() {
-            vm.resetToDefaults()
+            testContext.resetSettings()
             settings.verifyNotLeaked = false
         }
 
@@ -83,7 +83,7 @@ Item {
             const box = findChild(page, "inactivityBox")
             stepUp(box, 2)
             compare(settings.inactivityLogoutMinutes, 5)        // default 3
-            vm.resetToDefaults()                                 // external change still shown
+            testContext.resetSettings()                                 // external change still shown
             compare(box.value, 3)
             stepUp(findChild(page, "clipboardBox"))
             compare(settings.clipboardClearSeconds, 16)

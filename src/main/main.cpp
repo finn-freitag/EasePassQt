@@ -86,13 +86,12 @@ int main(int argc, char *argv[]) {
 
     EasePass::App::applyQuickStyle();
 
-    // Composition root: Core services + view models, exposed as "EasePass.App" singletons (T12).
+    // Composition root: Core services + view models, handed to the main window by loadMainWindow().
     EasePass::App::AppContext::Deps deps;
 #ifdef EASEPASS_HAVE_MULTIMEDIA
     deps.webcamScanner = std::make_shared<EasePass::Multimedia::QtWebcamScanner>();
 #endif
     EasePass::App::AppContext context(std::move(deps));
-    context.registerQml();
 
     // Inactivity logout: every key/mouse/touch input restarts the period (T7/T19).
     App::ActivityEventFilter activityFilter([&context] { context.autoLogout()->reportActivity(); });

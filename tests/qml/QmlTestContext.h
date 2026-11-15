@@ -70,6 +70,8 @@ public:
     /// URLs the About page asked to open (fake opener; no browser is started).
     QStringList openedUrls() const { return m_openedUrls; }
     Q_INVOKABLE void clearOpenedUrls();
+    /// Puts the settings a user can change on the settings page back to their defaults.
+    Q_INVOKABLE void resetSettings();
     /// Adds a click to every item of the open database (popularity reset tests).
     Q_INVOKABLE void clickAll();
     QString clipboardText() const { return m_clip->content; }

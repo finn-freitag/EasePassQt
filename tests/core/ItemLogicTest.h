@@ -25,11 +25,10 @@ private slots:
     void testSortStabilityAndUnicodeCase();
     void testClearOldClicksCacheAndResetPopularity();
 
-    // Search & TagSearchManager
+    // Search
     void testFreeTextSearchAllFields();
     void testTagSearchSyntaxAndSuggestions();
-    void testTagSearchNoResultsFound();
-    void testFindItemsByNameAndTag();
+    void testTagSearchWithoutMatch();
 
     // EmailAddressIndexer & PasswordItemTagHelper
     void testEmailAddressIndexer();

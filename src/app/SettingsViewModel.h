@@ -67,7 +67,6 @@ public:
     /// C#: pswd_chars_TextChanged - empty text stores the default characters.
     Q_INVOKABLE void applyPasswordCharsText(const QString &text);
 
-    Q_INVOKABLE void resetToDefaults();
     Q_INVOKABLE void resetPasswordChars();
     Q_INVOKABLE void resetPasswordLength();
     /// C#: ResetPopularity_Click - clears the click history of all items. Emits message().

@@ -165,8 +165,7 @@ set(TEST_CORE_UNIT_FUNCTIONS
     testWindowGeometry
     testDatabasePathsAddRemoveDedupe
     testPersistenceAcrossInstances
-    testLegacyKeysMigration
-    testResetToDefaults
+    testResets
     testSecureBufferBasicAllocAndSize
     testSecureBufferZeroOnDestructionWithHook
     testSecureBufferZeroWithCustomAllocator
@@ -235,8 +234,7 @@ set(TEST_CORE_UNIT_FUNCTIONS
     testClearOldClicksCacheAndResetPopularity
     testFreeTextSearchAllFields
     testTagSearchSyntaxAndSuggestions
-    testTagSearchNoResultsFound
-    testFindItemsByNameAndTag
+    testTagSearchWithoutMatch
     testEmailAddressIndexer
     testPasswordItemTagHelper
     testSecondFactorTypesAndTokenGenerator
@@ -418,7 +416,7 @@ set(TEST_APP_UNIT_FUNCTIONS
     testPrintViewModelExportPdf
     testScreenScanViewModelFound
     testScreenScanViewModelFailureAndClear
-    testAppContextQmlRegistration
+    testAppContextWiring
     testCopyActions
     testTotpCode
     testRegisterClickAndReadOnly

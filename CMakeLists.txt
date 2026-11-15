@@ -107,7 +107,6 @@ set(CORE_SOURCES
     src/core/CommonPasswordSequence.cpp
     src/core/PasswordStrength.cpp
     src/core/SortingHelper.cpp
-    src/core/TagSearchManager.cpp
     src/core/SearchPasswordsManager.cpp
     src/core/EmailAddressIndexer.cpp
     src/core/PasswordItemTagHelper.cpp
@@ -154,7 +153,6 @@ set(CORE_HEADERS
     src/core/CommonPasswordSequence.h
     src/core/PasswordStrength.h
     src/core/SortingHelper.h
-    src/core/TagSearchManager.h
     src/core/SearchPasswordsManager.h
     src/core/EmailAddressIndexer.h
     src/core/PasswordItemTagHelper.h

@@ -54,7 +54,7 @@ class TotpTimerService;
  * Composition root of the QML app (steps.txt T12): owns the Core services and all view
  * models and wires them together. Every platform dependency comes in through Deps, so tests
  * build the whole graph with fakes (no singletons, steps.txt 3.1).
- * registerQml() exposes the objects as singletons of the QML module "EasePass.App".
+ * The main window receives the objects as initial properties (MainWindowLoader).
  */
 class AppContext : public QObject {
     Q_OBJECT
@@ -75,9 +75,6 @@ public:
     explicit AppContext(QObject *parent = nullptr);
     explicit AppContext(Deps deps, QObject *parent = nullptr);
     ~AppContext() override;
-
-    /// Registers the singletons + uncreatable enum types under "EasePass.App" 1.0.
-    void registerQml();
 
     Core::AppSettings *settings() const { return m_settings.get(); }
     Core::DatabaseService *databaseService() const { return m_service; }

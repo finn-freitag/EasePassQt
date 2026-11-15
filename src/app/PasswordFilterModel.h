@@ -12,10 +12,9 @@ namespace EasePass::App {
 class PasswordListModel;
 
 /**
- * Search + sort proxy over PasswordListModel using the Core (T5) logic:
- * SearchPasswordsManager::matches for filtering ("/tag" = tag search, as in C#) and
- * SortingHelper::compare for sorting. sortMode None keeps the database order.
- * C#: Helper/SearchPasswordsManager.cs, Helper/SortingHelper.cs, Views/PasswordsPage.
+ * Search + sort proxy over PasswordListModel: SearchPasswordsManager::matches for filtering
+ * ("/tag" = tag search) and SortingHelper::compare for sorting. sortMode None keeps the
+ * database order. The filter text is cleared when the database is locked; the sort order stays.
  */
 class PasswordFilterModel : public QSortFilterProxyModel {
     Q_OBJECT
@@ -46,7 +45,7 @@ public:
 
     QString filterText() const { return m_filterText; }
     void setFilterText(const QString &text);
-    /// Sets the text without computing tag suggestions (C#: isUserTextChange == false).
+    /// Sets the text without offering tag suggestions (a suggestion was chosen, or the text is restored).
     Q_INVOKABLE void setFilterTextProgrammatically(const QString &text);
     SortMode sortMode() const { return m_sortMode; }
     void setSortMode(SortMode mode);
@@ -54,7 +53,7 @@ public:
     void setDescending(bool descending);
     int count() const { return rowCount(); }
     QString infoLabel() const { return QString::number(rowCount()); }
-    bool isTagSearch() const { return m_filterText.startsWith(u'/'); }
+    bool isTagSearch() const { return Core::SearchPasswordsManager::isTagQuery(m_filterText); }
     QStringList suggestions() const { return m_suggestions; }
 
     /// Database index of the item in proxy row @p row (-1 if out of range).
@@ -80,7 +79,6 @@ private:
 
     PasswordListModel *m_list;
     const Core::IClock *m_clock;
-    Core::SearchPasswordsManager m_search;
     QString m_filterText;
     QStringList m_suggestions;
     SortMode m_sortMode = SortMode::None;

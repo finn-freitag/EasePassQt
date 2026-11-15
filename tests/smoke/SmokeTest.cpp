@@ -91,7 +91,6 @@ void SmokeTest::testUnlockFixtureAndListItems() {
     context.settings()->setDatabasePaths({db});
     context.settings()->setLastDatabase(db);
     context.appController()->start(false);
-    context.registerQml();
 
     QQmlApplicationEngine engine;
     QQuickWindow *window = App::loadMainWindow(engine, context);

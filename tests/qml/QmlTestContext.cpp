@@ -132,6 +132,22 @@ QString QmlTestContext::translate(const QString &context, const QString &source)
     return QCoreApplication::translate(context.toUtf8().constData(), source.toUtf8().constData());
 }
 
+void QmlTestContext::resetSettings() {
+    using D = EasePass::Core::AppSettings::Defaults;
+    EasePass::Core::AppSettings *s = m_ctx->settings();
+    s->setLanguage(D::Language);
+    s->setPasswordLength(D::PasswordLength);
+    s->setPasswordChars(D::PasswordChars);
+    s->setInactivityLogoutMinutes(D::InactivityLogoutMinutes);
+    s->setDoubleClickCopy(D::DoubleClickCopy);
+    s->setShowIcons(D::ShowIcons);
+    s->setVerifyNotLeaked(D::VerifyNotLeaked);
+    s->setClipboardClearSeconds(D::ClipboardClearSeconds);
+    s->setRemovePluginSettingsOnUninstall(D::RemovePluginSettingsOnUninstall);
+    s->setFetchFavicons(D::FetchFavicons);
+    s->setDatabaseDeferredSaveSeconds(D::DatabaseDeferredSaveSeconds);
+}
+
 void QmlTestContext::clearOpenedUrls() {
     m_openedUrls.clear();
     emit openedUrlsChanged();

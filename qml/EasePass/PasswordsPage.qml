@@ -86,7 +86,16 @@ FocusScope {
     }
 
     Accessible.name: qsTr("Passwords")
-    Component.onCompleted: searchBox.forceActiveFocus()
+    // The page is created anew after every login and whenever the user comes back from another
+    // page, while the models live on: show the search and the selection they still have.
+    Component.onCompleted: {
+        searchBox.setTextProgrammatically(listModel.filterText)
+        if (item.hasItem && !item.isNew && item.index >= 0) {
+            selectedSource = item.index
+            Qt.callLater(syncCurrentRow)
+        }
+        searchBox.forceActiveFocus()
+    }
 
     // Reactions to model changes run deferred (Qt.callLater, coalesced): the row signals arrive
     // in the middle of a proxy update, before the ListView has processed them. Changing the
