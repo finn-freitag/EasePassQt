@@ -14,7 +14,7 @@
         "linux",
         "macos"
       ],
-      "download_url": "https://github.com/finn-freitag/EasePassQTDatabaseSourcePlugin/releases/download/v1.1.0/com.finnfreitag.easepass.ftp-database.epplugin",
+      "download_url": "https://github.com/finn-freitag/EasePassQTFTPPlugin/releases/download/v1.1.0/com.finnfreitag.easepass.ftp-database.epplugin",
       "sha256": "fd31bbd7c883889c60edacc10eb1d48ddc34804b89e7a088f4f66636451e5ec6",
       "sensitive": true,
       "revoked": false
@@ -48,7 +48,7 @@
         "linux",
         "macos"
       ],
-      "download_url": "https://github.com/finn-freitag/EasePassQTRemoteDatabaseSourcePlugin/releases/download/v1.1.0/com.finnfreitag.easepass.url-database.epplugin",
+      "download_url": "https://github.com/finn-freitag/EasePassQTRemoteDBPlugin/releases/download/v1.1.0/com.finnfreitag.easepass.url-database.epplugin",
       "sha256": "56d27c9746e034cd9c217a3884125982e9ca182d1115a66f6981a507eda88e2a",
       "sensitive": true,
       "revoked": false
